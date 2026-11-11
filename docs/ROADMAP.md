@@ -8,7 +8,7 @@
 - [x] Получить независимый аудит Grok — [отчёт](AUDIT_GROK_2026-11-11.md), проверенный commit `725167438d1f04cd6771fdfc1bfa06315a06246a`.
 - [x] Зафиксировать Godot 4.7.2-stable; Godot 4.8 beta не использовать для production.
 - [x] Создать `THIRD_PARTY_NOTICES.md`; заполнить при добавлении первого стороннего компонента.
-- [x] Настроить GitHub Actions CI на Godot 4.7.2: импорт/парсинг, headless smoke tests, Windows export и запуск EXE на Windows runner. Дополнительный PR-trigger для `phase-1/flight-prototype` и запуск тестов FlightModel добавлены; выполнение самих тестов ожидает подтверждения PR CI.
+- [x] Настроить GitHub Actions CI на Godot 4.7.2: импорт/парсинг, headless smoke tests, Windows export и запуск EXE на Windows runner. Дополнительный PR-trigger для `phase-1/flight-prototype` и запуск тестов FlightModel добавлены; FlightModel tests PASS в CI run #39.
 Выход: документация согласована, стек и лицензии определены.
 
 ## Phase 1 — Flight prototype (IN PROGRESS; source code added, runtime NOT VERIFIED)
@@ -23,8 +23,8 @@
 - [x] Добавить базовый HUD и стартовые Input Map controls.
 - [x] Добавить паузу и изменение чувствительности мыши клавишами [ / ]. Полное переназначение клавиш пока не реализовано.
 - [x] Добавить Windows Desktop export preset — export NOT RUN.
-- [ ] Интегрировать отдельные headless-тесты `FlightModel.integrate_velocity()` из PR #3 после review (Godot 4.7.2 CI execution PASS: run #33, 9 assertions, exit code 0; PR пока открыт).
-- [ ] Проверить движение при разных FPS и сохранение скорости/вращения при переключении камер.
+- [ ] Интегрировать отдельные headless-тесты `FlightModel.integrate_velocity()` из PR #3 после финального review (Godot 4.7.2 CI execution PASS: run #39, 9 assertions, exit code 0; документация тестов обновлена в коммите Grok `d1054adcc15ac9bebb20ff6f41d954adfc47a6ec`; PR пока открыт).
+- [ ] Проверить движение при разных FPS и сохранение скорости/вращения при переключении камер. PR #4 исправляет двойное затухание угловой скорости; CI run #42 PASS, интерактивная проверка NOT RUN.
 - [ ] Запустить сцену и зафиксировать интерактивный runtime-результат.
 - [ ] Проверить Windows export на реальной Windows-системе; CI headless EXE launch уже PASS, но это не ручной тест.
 Выход: корабль управляется предсказуемо, камеры работают, критических runtime-ошибок нет. До фактического запуска все runtime/export пункты остаются NOT RUN.
