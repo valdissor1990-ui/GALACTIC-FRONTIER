@@ -50,8 +50,13 @@ def make_material(name, color, metallic=0.0, roughness=0.4, emission=None, emiss
         principled.inputs["Emission Color"].default_value = (emission[0], emission[1], emission[2], 1.0)
         principled.inputs["Emission Strength"].default_value = emission_strength
     if alpha < 1.0:
-        material.blend_method = "BLEND"
-        material.use_screen_refraction = True
+        # Blender 4.2+ uses surface_render_method; older releases use blend_method.
+        if hasattr(material, "surface_render_method"):
+            material.surface_render_method = "DITHERED"
+        elif hasattr(material, "blend_method"):
+            material.blend_method = "BLEND"
+        if hasattr(material, "use_screen_refraction"):
+            material.use_screen_refraction = True
     return material
 
 
