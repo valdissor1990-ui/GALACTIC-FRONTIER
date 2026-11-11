@@ -62,7 +62,7 @@ A successful headless smoke test does not verify interactive flight feel, mouse 
 
 ## Verification status
 
-Latest previously confirmed successful workflow: GitHub Actions run #16, run ID `43116781752`, source branch HEAD `ed3ea1c30cb24194aa883ec40b81565a1b607e40`; result: **success**. The workflow has since been extended to trigger for pull requests targeting `phase-1/flight-prototype` and to run the FlightModel test script when that file is present. The new test execution is not yet recorded as PASS. For the `pull_request` event, GitHub checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45` (PR head merged with the current `main` base).
+Latest confirmed successful workflow for PR #3: GitHub Actions run #33, run ID `43118567354`, PR merge ref `18ee503f21029c213e24702c261956fb6a4c44ff` (PR head `335bc6bb372c5d595f3e95de99bb1d7608b482c8` merged into base `c66eda43b61dfa94b4b490183a0a1b0561cf5d3e`); result: **success**. The run installed Godot 4.7.2, imported and parsed the project, executed the FlightModel test runner (all nine assertions passed, process exit 0), ran both headless scene smoke tests, exported Windows Desktop, uploaded the EXE/PCK artifact, downloaded it on Windows with matching SHA-256 (`72c4bb96127239bd6fa4461c11c733c7e8858b812d7d44a1925cf7f15826ba50`), and launched the EXE successfully. This verifies the test script on the PR merge checkout; PR #3 remains unmerged. For the `pull_request` event, GitHub checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45` (PR head merged with the current `main` base).
 
 | Check | Status |
 |---|---|
@@ -75,7 +75,7 @@ Latest previously confirmed successful workflow: GitHub Actions run #16, run ID 
 | EXE/PCK artifact upload | PASS |
 | Windows artifact download and SHA-256 digest match | PASS |
 | Windows EXE headless launch and process exit code 0 | PASS |
-| FlightModel unit-test runner in PR #3 | PENDING — PR CI must execute the script before the tests are accepted |
+| FlightModel unit-test runner in PR #3 | PASS — run #33 (`43118567354`), nine assertions passed, exit code 0; PR is not yet merged |
 | Interactive flight physics and input feel | NOT RUN |
 | Mouse capture and real mouse look | NOT RUN |
 | Camera switching by user input in an interactive session | NOT RUN |
