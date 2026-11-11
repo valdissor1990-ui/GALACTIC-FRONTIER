@@ -163,8 +163,9 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 			projectile_found = true
 			child.queue_free()
 	if not projectile_found:
-		print("DEBUG enemy position=%s player=%s muzzle=%s cooldown=%s" % [
-			enemy.global_position, player.global_position, enemy.get("_muzzle"), enemy.get("_cooldown")
+		print("DEBUG enemy position=%s player=%s ai_player=%s muzzle=%s projectile_scene=%s cooldown=%s current_scene=%s parent=%s" % [
+			enemy.global_position, player.global_position, enemy.get("player"), enemy.get("_muzzle"),
+			enemy.get("projectile_scene"), enemy.get("_cooldown"), current_scene, enemy.get_parent()
 		])
 	_assert_true(projectile_found, "enemy fires a shared CombatProjectile from its muzzle")
 
@@ -177,10 +178,13 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 	await create_timer(0.8).timeout
 	await process_frame
 	if not bool(controller.call("has_active_enemy")):
-		print("DEBUG respawn timer=%s current_enemy=%s processing=%s" % [
+		print("DEBUG respawn timer=%s current_enemy=%s processing=%s player=%s enemy_scene=%s active=%s" % [
 			controller.call("get_respawn_timer"),
 			controller.get("_current_enemy"),
-			controller.is_processing()
+			controller.is_processing(),
+			controller.get("_player"),
+			controller.get("enemy_scene"),
+			controller.get("_encounter_active")
 		])
 	_assert_true(bool(controller.call("has_active_enemy")), "controller respawns an enemy after the delay")
 
