@@ -78,31 +78,22 @@ GitHub используется для исходников и ревью, но 
 
 Этап не считается работающим до запуска соответствующей сцены или сборки и проверки поведения.
 
-### 11. Текущая задача для Grok — аудит GitHub Actions CI Phase 1
+### 11. Повторный аудит исправлений GitHub Actions CI
 
-Проведи независимый аудит актуального HEAD ветки `phase-1/flight-prototype` и PR #1. Сначала определи точный HEAD SHA из GitHub и укажи его в отчёте; не используй устаревшие SHA из предыдущих заданий.
-
-Основной файл:
-- `.github/workflows/godot-ci.yml`
-
-Непосредственно связанные файлы:
-- `project.godot`
-- `export_presets.cfg`
-- `docs/PHASE1_IMPLEMENTATION_NOTES.md`
+Проведи точечный независимый аудит актуального HEAD ветки `phase-1/flight-prototype`. Сначала получи реальный HEAD SHA из GitHub.
 
 Проверь:
-1. Корректность YAML и синтаксиса GitHub Actions: события push / pull_request / workflow_dispatch, permissions, concurrency, зависимости jobs.
-2. Совместимость `chickensoft-games/setup-godot@v2` с точной версией Godot 4.7.2-stable, параметрами `use-dotnet: false` и `include-templates: true`.
-3. Корректность команд headless import/editor parse и запуска главной сцены.
-4. Корректность экспорта preset `Windows Desktop` на Ubuntu и путей к EXE/PCK.
-5. Корректность передачи artifact между Linux и Windows jobs и запуска EXE с аргументами headless smoke test.
-6. Не создаёт ли workflow ложного PASS: отличай загрузку/парсинг, headless smoke test, Windows export и интерактивный playtest.
-7. Соответствие документации реальному workflow и честность статусов NOT RUN до первого успешного выполнения.
+- `.github/workflows/godot-ci.yml`
+- `docs/PHASE1_IMPLEMENTATION_NOTES.md`
+- связанные `project.godot` и `export_presets.cfg`
 
-Формат отчёта:
-- PASS / FAIL / NOT RUN по каждому пункту.
-- При проблеме: приоритет P0–P3, точный файл/строка, причина и минимальное исправление.
-- Отдельно укажи, какие проверки действительно выполнялись на GitHub Actions, а какие являются только статическим анализом.
-- Не вноси изменения в GitHub. Верни отчёт в чат.
+Контекст первого CI запуска (#6, SHA `b70f0fcafe0b5819ef55e685e252a1c83e8b1aaa`):
+- Linux job успешно установил Godot 4.7.2, импортировал проект, прошёл bootstrap smoke-test, экспортировал Windows EXE/PCK и загрузил artifact.
+- Windows job скачал artifact, но PowerShell завершил шаг с ошибкой: `Windows executable exited with code ` (значение оказалось пустым при проверке через `$LASTEXITCODE`).
+- Это указывает на проблему обработки/получения exit code в прежнем PowerShell шаге; не делай вывод, что сам EXE обязательно неисправен.
 
-Точка входа PR: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/pull/1
+В HEAD после этого:
+1. Добавлен отдельный прямой запуск `res://scenes/flight/test_flight.tscn` в headless-режиме, чтобы bootstrap-переход не был единственным покрытием сцены.
+2. Windows smoke-test использует `Start-Process -Wait -PassThru` и проверяет `$game.ExitCode`.
+
+Проверь синтаксис и корректность обоих изменений, передачу аргументов, фактический смысл exit code, отсутствие ложного PASS и соответствие документации. Не вноси изменения. Отчёт: PASS/FAIL/NOT RUN, при проблемах приоритет P0–P3 и минимальный патч.
