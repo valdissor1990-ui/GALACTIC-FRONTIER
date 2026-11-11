@@ -1,0 +1,74 @@
+name: Blender Asset Build
+
+on:
+  push:
+    branches:
+      - chatgpt/blender-player-ship
+    paths:
+      - "scripts/blender/**"
+      - ".github/workflows/blender-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blender-assets-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-player-fighter:
+    name: Build player fighter with Blender
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout asset source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes blender
+          blender --version
+
+      - name: Generate Blender project, glTF and preview
+        run: |
+          mkdir -p build/blender
+          blender --background --python scripts/blender/build_player_fighter.py -- --output-dir build/blender
+
+      - name: Validate generated outputs
+        run: |
+          test -s build/blender/player_fighter.blend
+          test -s build/blender/player_fighter.glb
+          test -s build/blender/player_fighter_preview.png
+          file build/blender/player_fighter.blend
+          file build/blender/player_fighter.glb
+          file build/blender/player_fighter_preview.png
+
+      - name: Publish generated assets to this branch
+        run: |
+          mkdir -p assets/models/ships assets/previews
+          cp build/blender/player_fighter.blend assets/models/ships/player_fighter.blend
+          cp build/blender/player_fighter.glb assets/models/ships/player_fighter.glb
+          cp build/blender/player_fighter_preview.png assets/previews/player_fighter_preview.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/ships/player_fighter.blend assets/models/ships/player_fighter.glb assets/previews/player_fighter_preview.png
+          if git diff --cached --quiet; then
+            echo "Generated assets are unchanged."
+          else
+            git commit -m "Build player fighter Blender assets"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: galactic-frontier-player-fighter
+          path: |
+            build/blender/player_fighter.blend
+            build/blender/player_fighter.glb
+            build/blender/player_fighter_preview.png
+          if-no-files-found: error
+          retention-days: 30
