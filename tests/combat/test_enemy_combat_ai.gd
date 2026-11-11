@@ -153,12 +153,19 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 
 	# The enemy's -Z nose faces the player at z=-100, so this also exercises
 	# the shared projectile scene and muzzle path without waiting for AI steering.
+	enemy.set("_cooldown", 0.0)
+	enemy.set("state", STATE_APPROACH)
 	enemy.call("_try_fire")
 	var projectile_found := false
-	for child in root.get_children():
-		if child is CombatProjectile:
+	var projectile_script: Script = load("res://scripts/combat/projectile.gd")
+	for child in root.find_children("*", "Area3D", true, false):
+		if child.get_script() == projectile_script:
 			projectile_found = true
 			child.queue_free()
+	if not projectile_found:
+		print("DEBUG enemy position=%s player=%s muzzle=%s cooldown=%s" % [
+			enemy.global_position, player.global_position, enemy.get("_muzzle"), enemy.get("_cooldown")
+		])
 	_assert_true(projectile_found, "enemy fires a shared CombatProjectile from its muzzle")
 
 	var damageable: Node = enemy.get_node("Damageable")
@@ -166,8 +173,15 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 	_assert_true(not bool(controller.call("has_active_enemy")), "destroyed enemy is removed from active encounter")
 	_assert_true(float(controller.call("get_respawn_timer")) > 0.0, "destruction starts respawn countdown")
 
-	await create_timer(0.3).timeout
+	controller.set_process(true)
+	await create_timer(0.8).timeout
 	await process_frame
+	if not bool(controller.call("has_active_enemy")):
+		print("DEBUG respawn timer=%s current_enemy=%s processing=%s" % [
+			controller.call("get_respawn_timer"),
+			controller.get("_current_enemy"),
+			controller.is_processing()
+		])
 	_assert_true(bool(controller.call("has_active_enemy")), "controller respawns an enemy after the delay")
 
 	controller.queue_free()
