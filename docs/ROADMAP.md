@@ -11,18 +11,19 @@
 - [ ] Настроить бесплатный CI, если доступен подходящий runner.
 Выход: документация согласована, стек и лицензии определены.
 
-## Phase 1 — Flight prototype
-- [ ] Создать минимальный Godot-проект (`project.godot`) под Godot 4.7.2-stable.
-- [ ] Создать стартовую тестовую сцену (`scenes/bootstrap/main.tscn` и `scenes/flight/test_flight.tscn`).
-- [ ] Создать один корабль на базе `CharacterBody3D` с ручной инерцией и chase camera.
-- [ ] Вынести параметры корабля в Resource; не создавать заранее пустые папки и глобальные singleton-системы.
-- [ ] Реализовать yaw/pitch/roll и тягу по осям.
-- [ ] Реализовать инерцию, торможение и стабилизацию.
-- [ ] Добавить boost.
-- [ ] Добавить cockpit camera и переключение.
-- [ ] Добавить базовый HUD и настройки ввода.
+## Phase 1 — Flight prototype (IN PROGRESS; source code added, runtime NOT VERIFIED)
+- [x] Создать минимальный Godot-проект (`project.godot`) под Godot 4.7.2-stable — Godot parse NOT RUN.
+- [x] Создать стартовые сцены (`scenes/bootstrap/main.tscn` и `scenes/flight/test_flight.tscn`) — scene import/open NOT RUN.
+- [x] Создать один корабль на базе `CharacterBody3D` с ручной инерцией и chase camera — runtime NOT RUN.
+- [x] Вынести параметры корабля в Resource; не создавать заранее пустые папки и глобальные singleton-системы.
+- [x] Реализовать исходный вариант yaw/pitch/roll и тяги по осям — tuning/runtime NOT RUN.
+- [x] Реализовать исходный вариант инерции, торможения и стабилизации — tuning/runtime NOT RUN.
+- [x] Добавить boost с восстанавливаемым запасом энергии — tuning/runtime NOT RUN.
+- [x] Добавить cockpit camera и переключение — camera runtime NOT RUN.
+- [x] Добавить базовый HUD и стартовые Input Map controls.
+- [x] Добавить паузу и изменение чувствительности мыши клавишами [ / ]. Полное переназначение клавиш пока не реализовано.
+- [x] Добавить Windows Desktop export preset — export NOT RUN.
 - [ ] Проверить движение при разных FPS и сохранение скорости/вращения при переключении камер.
-- [ ] Добавить паузу и настройку чувствительности мыши/переназначения ввода.
 - [ ] Запустить сцену и зафиксировать runtime-результат.
 - [ ] Проверить Windows export на реальной Windows-системе.
 Выход: корабль управляется предсказуемо, камеры работают, критических runtime-ошибок нет. До фактического запуска все runtime/export пункты остаются NOT RUN.
