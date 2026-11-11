@@ -7,7 +7,6 @@ class_name ShipController
 @export_range(0.01, 1.0, 0.01) var mouse_sensitivity: float = 0.12
 
 @onready var camera_rig: CameraRig = $CameraRig
-@onready var ship_visual: Node3D = $Visual
 
 var _flight_model: FlightModel = FlightModel.new()
 var _angular_velocity: Vector3 = Vector3.ZERO
@@ -24,7 +23,18 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_mouse_delta = Vector2.ZERO
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and not get_tree().paused:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if get_tree().paused:
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_mouse_delta += event.relative
 
@@ -53,7 +63,10 @@ func _update_translation(delta: float) -> void:
 	if boosting:
 		boost_amount = maxf(0.0, boost_amount - delta)
 	else:
-		boost_amount = minf(flight_config.boost_capacity, boost_amount + flight_config.boost_recharge_rate * delta)
+		boost_amount = minf(
+			flight_config.boost_capacity,
+			boost_amount + flight_config.boost_recharge_rate * delta
+		)
 
 	var acceleration_multiplier: float = flight_config.boost_acceleration_multiplier if boosting else 1.0
 	var speed_multiplier: float = flight_config.boost_speed_multiplier if boosting else 1.0
@@ -90,11 +103,12 @@ func _update_rotation(delta: float) -> void:
 		rotate_object_local(Vector3.RIGHT, -_mouse_delta.y * mouse_scale)
 		_mouse_delta = Vector2.ZERO
 
-	# Passive angular damping is the flight stabilizer.
-	_angular_velocity = _angular_velocity.move_toward(
-		Vector3.ZERO if desired_angular_velocity == Vector3.ZERO else desired_angular_velocity,
-		flight_config.rotation_stabilization * delta if desired_angular_velocity == Vector3.ZERO else 0.0
-	)
+	# Dampen residual angular velocity only when no rotation key is held.
+	if desired_angular_velocity == Vector3.ZERO:
+		_angular_velocity = _angular_velocity.move_toward(
+			Vector3.ZERO,
+			flight_config.rotation_stabilization * delta
+		)
 
 
 func set_mouse_sensitivity(value: float) -> void:
