@@ -45,6 +45,14 @@ jobs:
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
+      - name: Run CameraRig unit tests
+        if: hashFiles('tests/flight/test_camera_rig.gd') != ''
+        run: godot --headless --path . --script res://tests/flight/test_camera_rig.gd
+
+      - name: Run pause and mouse unit tests
+        if: hashFiles('tests/flight/test_pause_and_mouse.gd') != ''
+        run: godot --headless --path . --script res://tests/flight/test_pause_and_mouse.gd
+
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
