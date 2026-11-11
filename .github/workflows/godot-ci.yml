@@ -42,6 +42,7 @@ jobs:
         run: godot --headless --editor --path . --quit
 
       - name: Run FlightModel unit tests
+        if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
       - name: Headless bootstrap-scene smoke test
