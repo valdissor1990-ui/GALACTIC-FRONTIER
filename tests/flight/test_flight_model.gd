@@ -23,7 +23,7 @@ func _initialize() -> void:
 
 	print("")
 	if _failed == 0:
-		print("RESULT: PASS  (%d tests)" % _passed)
+		print("RESULT: PASS  (%d assertions)" % _passed)
 		quit(0)
 	else:
 		print("RESULT: FAIL  (%d passed, %d failed)" % [_passed, _failed])
