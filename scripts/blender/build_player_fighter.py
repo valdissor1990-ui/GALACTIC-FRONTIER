@@ -60,6 +60,14 @@ def make_material(name, color, metallic=0.0, roughness=0.4, emission=None, emiss
     return material
 
 
+def add_weighted_normals(obj):
+    # Blender 4.0 still requires Auto Smooth for the weighted-normal modifier.
+    if hasattr(obj.data, "use_auto_smooth"):
+        obj.data.use_auto_smooth = True
+    normal = obj.modifiers.new("Weighted corner normals", "WEIGHTED_NORMAL")
+    normal.keep_sharp = True
+
+
 def finish_mesh(obj, material, bevel=0.0, smooth=False):
     if material:
         obj.data.materials.append(material)
@@ -68,8 +76,7 @@ def finish_mesh(obj, material, bevel=0.0, smooth=False):
         modifier.width = bevel
         modifier.segments = 3
         modifier.limit_method = "ANGLE"
-        normal = obj.modifiers.new("Weighted corner normals", "WEIGHTED_NORMAL")
-        normal.keep_sharp = True
+        add_weighted_normals(obj)
     if smooth and obj.type == "MESH":
         for polygon in obj.data.polygons:
             polygon.use_smooth = True
@@ -147,7 +154,7 @@ def loft_fuselage(name, sections, material, sides=12):
     bevel = obj.modifiers.new("Fuselage edge refinement", "BEVEL")
     bevel.width = 0.045
     bevel.segments = 2
-    obj.modifiers.new("Fuselage weighted normals", "WEIGHTED_NORMAL")
+    add_weighted_normals(obj)
     return obj
 
 
@@ -171,7 +178,7 @@ def extruded_wing(name, outline, z_bottom, z_top, material, bevel=0.10):
         mod = obj.modifiers.new("Aerodynamic edge bevel", "BEVEL")
         mod.width = bevel
         mod.segments = 3
-        obj.modifiers.new("Weighted normals", "WEIGHTED_NORMAL")
+        add_weighted_normals(obj)
     return obj
 
 
@@ -278,7 +285,8 @@ def create_ship(materials):
 
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
+    scene.render.engine = "BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1100
     scene.render.resolution_percentage = 100
