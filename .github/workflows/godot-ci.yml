@@ -40,8 +40,11 @@ jobs:
       - name: Import project and parse scripts
         run: godot --headless --editor --path . --quit
 
-      - name: Headless main-scene smoke test
+      - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
+
+      - name: Headless flight-scene smoke test
+        run: godot --headless --path . res://scenes/flight/test_flight.tscn --quit-after 8
 
       - name: Export Windows Desktop build
         run: |
@@ -74,7 +77,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          & ".\\build\\GALACTIC-FRONTIER.exe" --headless --quit-after 10
-          if ($LASTEXITCODE -ne 0) {
-            throw "Windows executable exited with code $LASTEXITCODE"
+          $game = Start-Process -FilePath ".\\build\\GALACTIC-FRONTIER.exe" -ArgumentList @("--headless", "--quit-after", "10") -Wait -PassThru
+          if ($game.ExitCode -ne 0) {
+            throw "Windows executable exited with code $($game.ExitCode)"
           }
