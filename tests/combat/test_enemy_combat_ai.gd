@@ -137,7 +137,7 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 	# _ready() schedules the first encounter spawn for the next idle cycle.
 	await process_frame
 	await process_frame
-	var active_enemy := controller.call("has_active_enemy") as bool
+	var active_enemy: bool = bool(controller.call("has_active_enemy"))
 	_assert_true(active_enemy, "controller creates the first enemy")
 	if not active_enemy:
 		controller.queue_free()
