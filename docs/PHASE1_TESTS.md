@@ -50,7 +50,7 @@ and lists each failed assertion.
 |-------|--------|
 | Test file added | PASS |
 | Documentation added | PASS |
-| Godot execution | NOT RUN — awaiting PR CI result |
+| Godot execution | NOT RUN — PR CI is being triggered after the workflow fix |
 | Production code modified | No (by design) |
 
 The GitHub Actions workflow now includes this test command for pull requests targeting `phase-1/flight-prototype`. The command is skipped on the base branch until the test file is present, and runs in the pull-request merge checkout.
