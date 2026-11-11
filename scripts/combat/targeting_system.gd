@@ -46,7 +46,7 @@ func acquire_target() -> Node3D:
 	var best_target: Node3D
 
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
-		if not candidate is Node3D:
+		if not (candidate is Node3D):
 			continue
 		var target := candidate as Node3D
 		if target == _ship or not target.is_inside_tree():
