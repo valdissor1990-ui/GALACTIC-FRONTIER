@@ -2,6 +2,8 @@
 
 Headless deterministic tests for Phase 1 flight systems. All runners use only built-in Godot 4.7.2 APIs (no third-party frameworks).
 
+GitHub Actions (`.github/workflows/godot-ci.yml`) runs every present test script after project import and Godot 4.7.2 version verification. A failing test fails the job; there is no `continue-on-error`.
+
 ---
 
 ## 1. FlightModel.integrate_velocity()
@@ -28,6 +30,11 @@ godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
 **Script:** `tests/flight/test_camera_rig.gd`
 
+**CI command:**
+```bash
+godot --headless --path . --script res://tests/flight/test_camera_rig.gd
+```
+
 Covers:
 
 1. Initial mode is Chase.
@@ -40,15 +47,10 @@ Covers:
 
 Initialization relies on Godot calling `_ready()` once when the node enters the tree; tests do not call `_ready()` manually.
 
-```bash
-godot --headless --path . --script res://tests/flight/test_camera_rig.gd
-```
-
-- Exit code `0` — all assertions passed.
-
 | Check | Status |
 |-------|--------|
-| Godot execution | NOT RUN (pending CI on this PR) |
+| Wired into CI | Yes |
+| Godot execution | **NOT RUN** — waiting for a successful GitHub Actions run of this branch/PR |
 | Interactive camera feel | NOT RUN |
 
 ---
@@ -56,6 +58,11 @@ godot --headless --path . --script res://tests/flight/test_camera_rig.gd
 ## 3. Pause and mouse input
 
 **Script:** `tests/flight/test_pause_and_mouse.gd`
+
+**CI command:**
+```bash
+godot --headless --path . --script res://tests/flight/test_pause_and_mouse.gd
+```
 
 Covers:
 
@@ -71,15 +78,10 @@ Covers:
    - resume disables pause, PausePanel hides, mouse is captured again.
 9. Mouse sensitivity stays within `[0.02, 0.5]`.
 
-```bash
-godot --headless --path . --script res://tests/flight/test_pause_and_mouse.gd
-```
-
-- Exit code `0` — all assertions passed.
-
 | Check | Status |
 |-------|--------|
-| Godot execution | NOT RUN (pending CI on this PR) |
+| Wired into CI | Yes |
+| Godot execution | **NOT RUN** — waiting for a successful GitHub Actions run of this branch/PR |
 | Interactive mouse / pause feel | NOT RUN |
 
 ---
@@ -97,4 +99,4 @@ Those remain **NOT RUN** until a manual Windows playtest is performed.
 
 ## Production code
 
-These tests do not modify any production scripts, project settings or CI workflow files.
+Test scripts and this document do not modify production gameplay scripts or scenes. The only non-test change in the hardening package is the CI workflow step list above.
