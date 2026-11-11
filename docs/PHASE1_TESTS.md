@@ -33,7 +33,7 @@ godot --headless --path . --script res://tests/flight/test_flight_model.gd
 Successful console output ends with:
 
 ```
-RESULT: PASS  (9 tests)
+RESULT: PASS  (9 assertions)
 ```
 
 Failure output ends with:
