@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - chatgpt/blender-player-ship
+      - phase-1/flight-prototype
     paths:
       - "scripts/blender/**"
       - ".github/workflows/blender-assets.yml"
