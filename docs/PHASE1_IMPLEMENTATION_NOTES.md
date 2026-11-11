@@ -15,7 +15,7 @@ The first Godot project skeleton and flight prototype source files have been add
 - HUD: speed, camera mode, boost and mouse sensitivity; missing flight configuration is handled without a HUD division error.
 - Pause: Escape; mouse capture is released on pause and restored on resume.
 - Window focus: mouse capture is released when the application loses focus and restored when it regains focus while the game is not paused.
-- Windows export preset: source configuration added. GitHub Actions run #12 completed successfully on 2026-11-11. It installed Godot 4.7.2, imported/parsed the project, launched both the bootstrap and flight scenes headlessly, exported the Windows build, uploaded the EXE/PCK artifact, downloaded it on a Windows runner, and launched the EXE headlessly with a successful process exit code. The PR workflow checked the synthetic merge commit `5efaffab8cd6c98a37aaa5e6a3889fbc34666714`, combining branch HEAD `99196571c795544b59133668fdba8addea62bb65` with base `main` at `725167438d1f04cd6771fdfc1bfa06315a06246a`.
+- Windows export preset: source configuration added. GitHub Actions run #16 (run ID `43116781752`) completed successfully on 2026-11-11 for branch HEAD `ed3ea1c30cb24194aa883ec40b81565a1b607e40`. It installed Godot 4.7.2, imported/parsed the project, launched both the bootstrap and flight scenes headlessly, exported the Windows build, uploaded the EXE/PCK artifact, downloaded it on a Windows runner with a matching SHA-256 digest (`b0ec71c09932725da3f826f92eeb42d0dbf4058ab7bcf336fba45b367fb6e07a`), and launched the EXE headlessly. The Windows step completed successfully; its PowerShell condition throws on any nonzero `$game.ExitCode`. The PR workflow checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45`, combining the branch HEAD with the `main` base.
 
 ## Flight input model
 
@@ -61,7 +61,7 @@ A successful headless smoke test does not verify interactive flight feel, mouse 
 
 ## Verification status
 
-Latest completed workflow: GitHub Actions run #12, run ID `43116298734`, source branch HEAD `99196571c795544b59133668fdba8addea62bb65`; result: **success**. For the `pull_request` event, GitHub checked the merge ref commit `5efaffab8cd6c98a37aaa5e6a3889fbc34666714` (PR head merged with the current `main` base).
+Latest completed workflow: GitHub Actions run #16, run ID `43116781752`, source branch HEAD `ed3ea1c30cb24194aa883ec40b81565a1b607e40`; result: **success**. For the `pull_request` event, GitHub checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45` (PR head merged with the current `main` base).
 
 | Check | Status |
 |---|---|
