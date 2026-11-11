@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -28,6 +28,17 @@ size = Vector3(3.1, 0.12, 1.05)
 [sub_resource type="BoxMesh" id="BoxMesh_engine"]
 size = Vector3(0.34, 0.34, 0.8)
 
+[sub_resource type="SphereMesh" id="SphereMesh_planet"]
+radius = 1.0
+height = 2.0
+radial_segments = 48
+rings = 24
+
+[sub_resource type="StandardMaterial3D" id="Material_planet"]
+albedo_color = Color(0.055, 0.16, 0.29, 1)
+metallic = 0.12
+roughness = 0.88
+
 [sub_resource type="StandardMaterial3D" id="Material_hull"]
 albedo_color = Color(0.12, 0.22, 0.34, 1)
 metallic = 0.72
@@ -54,8 +65,8 @@ shadow_enabled = true
 [node name="DistantPlanet" type="MeshInstance3D" parent="."]
 position = Vector3(0, 18, -190)
 scale = Vector3(28, 28, 28)
-mesh = SphereMesh.new()
-surface_material_override/0 = SubResource("Material_hull")
+mesh = SubResource("SphereMesh_planet")
+surface_material_override/0 = SubResource("Material_planet")
 
 [node name="PlayerShip" type="CharacterBody3D" parent="."]
 script = ExtResource("1")
