@@ -15,7 +15,7 @@ The first Godot project skeleton and flight prototype source files have been add
 - HUD: speed, camera mode, boost and mouse sensitivity; missing flight configuration is handled without a HUD division error.
 - Pause: Escape; mouse capture is released on pause and restored on resume.
 - Window focus: mouse capture is released when the application loses focus and restored when it regains focus while the game is not paused.
-- Windows export preset: source configuration added. A GitHub Actions workflow now installs Godot 4.7.2, imports/parses the project, performs a headless main-scene smoke test, exports a Windows build and attempts a Windows executable smoke test. The workflow has not yet completed; these checks remain unverified until GitHub reports a result.
+- Windows export preset: source configuration added. GitHub Actions run #12 completed successfully on 2026-11-11. It installed Godot 4.7.2, imported/parsed the project, launched both the bootstrap and flight scenes headlessly, exported the Windows build, uploaded the EXE/PCK artifact, downloaded it on a Windows runner, and launched the EXE headlessly with a successful process exit code. The PR workflow checked the synthetic merge commit `5efaffab8cd6c98a37aaa5e6a3889fbc34666714`, combining branch HEAD `99196571c795544b59133668fdba8addea62bb65` with base `main` at `725167438d1f04cd6771fdfc1bfa06315a06246a`.
 
 ## Flight input model
 
@@ -61,20 +61,26 @@ A successful headless smoke test does not verify interactive flight feel, mouse 
 
 ## Verification status
 
+Latest completed workflow: GitHub Actions run #12, run ID `43116298734`, source branch HEAD `99196571c795544b59133668fdba8addea62bb65`; result: **success**. For the `pull_request` event, GitHub checked the merge ref commit `5efaffab8cd6c98a37aaa5e6a3889fbc34666714` (PR head merged with the current `main` base).
+
 | Check | Status |
 |---|---|
 | Workflow file committed to GitHub | PASS |
-| GitHub Actions first run | NOT RUN / pending trigger |
-| Godot 4.7.2 installed by CI | NOT RUN |
-| Project import and script parsing by Godot | NOT RUN |
-| Headless main-scene smoke test | NOT RUN |
-| Windows export | NOT RUN |
-| Windows executable headless smoke test | NOT RUN |
-| Flight physics and input feel | NOT RUN |
-| Camera switching by user input | NOT RUN |
-| Pause/HUD and window focus behavior | NOT RUN |
+| Godot 4.7.2 installed and exact version verified | PASS |
+| Project import and GDScript parsing by Godot | PASS |
+| Headless bootstrap-scene smoke test | PASS |
+| Direct headless flight-scene smoke test | PASS |
+| Windows Desktop export | PASS |
+| EXE/PCK artifact upload | PASS |
+| Windows artifact download and SHA-256 digest match | PASS |
+| Windows EXE headless launch and process exit code 0 | PASS |
+| Interactive flight physics and input feel | NOT RUN |
+| Mouse capture and real mouse look | NOT RUN |
+| Camera switching by user input in an interactive session | NOT RUN |
+| Pause/HUD and window-focus behavior in an interactive session | NOT RUN |
+| Visual quality and normal Windows desktop session | NOT RUN |
 
-No performance, FPS, stability, interactive playability or export-success claim is made until the corresponding automated or manual check has actually completed.
+The CI result confirms import/parsing, scene startup in headless mode, export, artifact transfer and headless executable startup. It does not establish interactive playability, visual quality, performance/FPS, or a complete game loop. Those remain unverified until a real interactive playtest.
 
 ## Known prototype limitations
 
