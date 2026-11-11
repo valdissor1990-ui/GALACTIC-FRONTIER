@@ -12,8 +12,9 @@ The first Godot project skeleton and flight prototype source files have been add
 - Ship tuning: `resources/ships/player_ship.tres`.
 - Cameras: chase and cockpit; the placeholder ship mesh is hidden in cockpit mode.
 - Boost: finite energy that recharges when not used.
-- HUD: speed, camera mode, boost and mouse sensitivity.
-- Pause: Escape.
+- HUD: speed, camera mode, boost and mouse sensitivity; missing flight configuration is handled without a HUD division error.
+- Pause: Escape; mouse capture is released on pause and restored on resume.
+- Window focus: mouse capture is released when the application loses focus and restored when it regains focus while the game is not paused.
 - Windows export preset: source configuration added; export templates and Windows runtime are not verified.
 
 ## Controls
@@ -33,7 +34,7 @@ The first Godot project skeleton and flight prototype source files have been add
 | Mouse sensitivity down / up | [ / ] |
 | Mouse look | Mouse movement |
 
-Mouse look is captured while flying. Escape pauses and releases the mouse; Escape again resumes and captures it.
+Mouse look is captured while flying. Escape pauses and releases the mouse; Escape again resumes and captures it. If the application loses focus, mouse capture is released; it is restored when focus returns unless the game is paused.
 
 ## Verification status
 
@@ -46,6 +47,7 @@ Mouse look is captured while flying. Escape pauses and releases the mouse; Escap
 | Flight physics and input feel | NOT RUN |
 | Camera switching in runtime | NOT RUN |
 | Pause/HUD in runtime | NOT RUN |
+| Window focus behavior in runtime | NOT RUN |
 | Windows export | NOT RUN |
 | Windows executable launch | NOT RUN |
 
