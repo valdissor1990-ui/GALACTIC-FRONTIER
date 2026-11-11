@@ -68,7 +68,7 @@ roll_right={
 }
 boost={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":4194325,"shift_pressed":true)]
+"events": [Object(InputEventKey,"physical_keycode":4194325)]
 }
 brake={
 "deadzone": 0.2,
