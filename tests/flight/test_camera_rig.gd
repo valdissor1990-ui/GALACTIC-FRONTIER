@@ -65,9 +65,8 @@ func _make_ship_with_cameras(include_visual: bool = true) -> CharacterBody3D:
 	rig.add_child(cockpit)
 
 	ship.add_child(rig)
+	# Adding to the tree triggers @onready assignment and _ready() once.
 	root.add_child(ship)
-	# Force @onready vars and _ready.
-	rig._ready()
 	return ship
 
 
