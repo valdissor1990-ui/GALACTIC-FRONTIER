@@ -10,6 +10,7 @@ const STATE_DISABLED := 3
 
 var _failed := 0
 var _passed := 0
+var _player_index := 0
 
 
 func _initialize() -> void:
@@ -56,8 +57,9 @@ func _make_enemy() -> CharacterBody3D:
 
 
 func _make_player_at(position: Vector3) -> Node3D:
+	_player_index += 1
 	var player := Node3D.new()
-	player.name = "TestPlayer"
+	player.name = "TestPlayer_%d" % _player_index
 	root.add_child(player)
 	player.global_position = position
 	return player
@@ -129,7 +131,7 @@ func _test_real_encounter_spawn_fire_and_respawn() -> void:
 	var controller := Node.new()
 	controller.set_script(load("res://scripts/combat/combat_encounter_controller.gd"))
 	controller.set("enemy_scene", load("res://scenes/combat/enemy_fighter.tscn"))
-	controller.set("player_path", NodePath("../TestPlayer"))
+	controller.set("player_path", NodePath("../" + player.name))
 	controller.set("spawn_position", Vector3(0, 0, -80))
 	controller.set("respawn_delay", 0.2)
 	root.add_child(controller)
