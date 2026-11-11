@@ -1,0 +1,102 @@
+; Engine configuration file.
+; GALACTIC FRONTIER — first flight prototype.
+; Target engine: Godot 4.7.2-stable. Runtime status: NOT RUN.
+
+config_version=5
+
+[application]
+config/name="GALACTIC FRONTIER"
+run/main_scene="res://scenes/bootstrap/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/description="Original single-player space action RPG prototype."
+
+[display]
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+
+[input]
+move_forward={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":87)]
+}
+move_backward={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":83)]
+}
+move_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":65)]
+}
+move_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":68)]
+}
+move_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":32)]
+}
+move_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194325)]
+}
+yaw_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":81)]
+}
+yaw_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":69)]
+}
+pitch_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":73)]
+}
+pitch_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":75)]
+}
+roll_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":74)]
+}
+roll_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":76)]
+}
+boost={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194325,"shift_pressed":true)]
+}
+brake={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":88)]
+}
+toggle_camera={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":67)]
+}
+pause_game={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194305)]
+}
+sensitivity_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":91)]
+}
+sensitivity_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":93)]
+}
+
+[physics]
+3d/default_gravity=0.0
+common/physics_ticks_per_second=60
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.008, 0.014, 0.035, 1)
+textures/default_filters/use_nearest_mipmap_filter=false
