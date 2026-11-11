@@ -1,5 +1,5 @@
 extends SceneTree
-## Headless tests for pause handling and mouse-delta behaviour in ShipController.
+## Headless tests for pause handling and mouse-delta behaviour.
 ## Run:
 ##   godot --headless --path . --script res://tests/flight/test_pause_and_mouse.gd
 ## Exit code 0 = all assertions passed.
@@ -14,12 +14,13 @@ func _initialize() -> void:
 	print("=== GALACTIC FRONTIER — Pause & mouse tests ===")
 
 	_test_mouse_not_accumulated_while_paused()
-	_test_mouse_delta_is_capped()
+	_test_mouse_delta_is_capped_single_event()
+	_test_mouse_delta_capped_across_multiple_events()
 	_test_focus_out_clears_mouse_delta()
 	_test_focus_in_clears_mouse_delta()
 	_test_focus_in_captures_mouse_when_not_paused()
 	_test_focus_in_does_not_capture_mouse_when_paused()
-	_test_unpause_restores_mouse_capture()
+	_test_hud_toggle_pause_cycle()
 	_test_sensitivity_clamped()
 
 	print("")
@@ -50,7 +51,6 @@ func _make_ship() -> ShipController:
 	var config := ShipFlightConfig.new()
 	ship.flight_config = config
 
-	# Minimal camera rig so @onready does not fail hard.
 	var rig := Node3D.new()
 	rig.name = "CameraRig"
 	rig.set_script(load("res://scripts/flight/camera_rig.gd"))
@@ -63,9 +63,40 @@ func _make_ship() -> ShipController:
 	ship.add_child(rig)
 
 	root.add_child(ship)
-	# Manually run ready-side effects that do not require a full scene.
 	ship.boost_amount = config.boost_capacity
 	return ship as ShipController
+
+
+func _make_hud(ship: ShipController) -> CanvasLayer:
+	var hud := CanvasLayer.new()
+	hud.set_script(load("res://scripts/ui/hud.gd"))
+	hud.ship_path = ship.get_path()
+
+	# Minimal node tree required by hud.gd @onready paths.
+	var telemetry := Control.new()
+	telemetry.name = "Telemetry"
+	var panel := PanelContainer.new()
+	panel.name = "Panel"
+	var margin := MarginContainer.new()
+	margin.name = "Margin"
+	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
+	for label_name in ["SpeedLabel", "ModeLabel", "BoostLabel", "SensitivityLabel"]:
+		var lbl := Label.new()
+		lbl.name = label_name
+		vbox.add_child(lbl)
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	telemetry.add_child(panel)
+	hud.add_child(telemetry)
+
+	var pause_panel := PanelContainer.new()
+	pause_panel.name = "PausePanel"
+	pause_panel.visible = false
+	hud.add_child(pause_panel)
+
+	root.add_child(hud)
+	return hud
 
 
 func _make_mouse_motion(relative: Vector2) -> InputEventMouseMotion:
@@ -79,22 +110,33 @@ func _test_mouse_not_accumulated_while_paused() -> void:
 	var ship := _make_ship()
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Directly invoke the handler used by the production code.
 	ship._unhandled_input(_make_mouse_motion(Vector2(100.0, 50.0)))
 	_assert_true(ship._mouse_delta.length_squared() <= EPSILON, "paused: mouse delta stays zero")
 	get_tree().paused = false
 	ship.queue_free()
 
 
-func _test_mouse_delta_is_capped() -> void:
-	print("\n[mouse delta is capped per physics tick]")
+func _test_mouse_delta_is_capped_single_event() -> void:
+	print("\n[mouse delta capped on single large event]")
 	var ship := _make_ship()
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	var huge := Vector2(1000.0, 1000.0)
-	ship._unhandled_input(_make_mouse_motion(huge))
+	ship._unhandled_input(_make_mouse_motion(Vector2(1000.0, 1000.0)))
 	var max_len: float = ShipController.MAX_MOUSE_DELTA_PER_PHYSICS_TICK
-	_assert_true(ship._mouse_delta.length() <= max_len + EPSILON, "delta length capped at MAX_MOUSE_DELTA")
+	_assert_true(ship._mouse_delta.length() <= max_len + EPSILON, "single event delta length capped")
+	ship.queue_free()
+
+
+func _test_mouse_delta_capped_across_multiple_events() -> void:
+	print("\n[mouse delta capped across multiple sequential events]")
+	var ship := _make_ship()
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var max_len: float = ShipController.MAX_MOUSE_DELTA_PER_PHYSICS_TICK
+	# Several medium moves that would exceed the cap if unbounded.
+	for i in range(5):
+		ship._unhandled_input(_make_mouse_motion(Vector2(100.0, 80.0)))
+	_assert_true(ship._mouse_delta.length() <= max_len + EPSILON, "accumulated sequential delta stays within cap")
 	ship.queue_free()
 
 
@@ -140,18 +182,30 @@ func _test_focus_in_does_not_capture_mouse_when_paused() -> void:
 	ship.queue_free()
 
 
-func _test_unpause_restores_mouse_capture() -> void:
-	print("\n[unpause restores mouse capture]")
-	# HUD owns the actual pause toggle; we verify the contract that
-	# resuming sets mouse capture (mirrors hud.gd _toggle_pause).
+func _test_hud_toggle_pause_cycle() -> void:
+	print("\n[HUD _toggle_pause full cycle]")
 	var ship := _make_ship()
-	get_tree().paused = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	# Simulate the unpause path used by HUD.
+	var hud := _make_hud(ship)
+	var pause_panel: Control = hud.get_node("PausePanel") as Control
+
+	# Start unpaused.
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	_assert_true(not get_tree().paused, "tree is unpaused")
-	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "mouse captured after unpause")
+	pause_panel.visible = false
+
+	# Pause via real production method.
+	hud._toggle_pause()
+	_assert_true(get_tree().paused, "pause enabled")
+	_assert_true(pause_panel.visible, "PausePanel visible while paused")
+	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "mouse released while paused")
+
+	# Resume via real production method.
+	hud._toggle_pause()
+	_assert_true(not get_tree().paused, "pause disabled")
+	_assert_true(not pause_panel.visible, "PausePanel hidden after resume")
+	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "mouse captured after resume")
+
+	hud.queue_free()
 	ship.queue_free()
 
 
