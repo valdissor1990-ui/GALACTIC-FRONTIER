@@ -1,0 +1,80 @@
+name: Godot CI
+
+on:
+  push:
+    branches:
+      - phase-1/flight-prototype
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  godot-validation:
+    name: Godot 4.7.2 validation and Windows export
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.7.2-stable and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Verify engine version
+        run: |
+          godot --version
+          godot --version | grep -E '^4\.7\.2\.stable'
+
+      - name: Import project and parse scripts
+        run: godot --headless --editor --path . --quit
+
+      - name: Headless main-scene smoke test
+        run: godot --headless --path . --quit-after 10
+
+      - name: Export Windows Desktop build
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Windows Desktop" "build/GALACTIC-FRONTIER.exe"
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-windows-${{ github.sha }}
+          path: |
+            build/GALACTIC-FRONTIER.exe
+            build/GALACTIC-FRONTIER.pck
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-executable-smoke-test:
+    name: Windows executable smoke test
+    runs-on: windows-latest
+    needs: godot-validation
+    timeout-minutes: 10
+    steps:
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-windows-${{ github.sha }}
+          path: build
+
+      - name: Launch exported game in headless smoke-test mode
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & ".\\build\\GALACTIC-FRONTIER.exe" --headless --quit-after 10
+          if ($LASTEXITCODE -ne 0) {
+            throw "Windows executable exited with code $LASTEXITCODE"
+          }
