@@ -23,7 +23,7 @@
 - [x] Добавить базовый HUD и стартовые Input Map controls.
 - [x] Добавить паузу и изменение чувствительности мыши клавишами [ / ]. Полное переназначение клавиш пока не реализовано.
 - [x] Добавить Windows Desktop export preset — export NOT RUN.
-- [ ] Интегрировать отдельные headless-тесты `FlightModel.integrate_velocity()` из PR #3 после review и подтверждения Godot CI (сейчас PR открыт, Godot execution PENDING).
+- [ ] Интегрировать отдельные headless-тесты `FlightModel.integrate_velocity()` из PR #3 после review (Godot 4.7.2 CI execution PASS: run #33, 9 assertions, exit code 0; PR пока открыт).
 - [ ] Проверить движение при разных FPS и сохранение скорости/вращения при переключении камер.
 - [ ] Запустить сцену и зафиксировать интерактивный runtime-результат.
 - [ ] Проверить Windows export на реальной Windows-системе; CI headless EXE launch уже PASS, но это не ручной тест.
