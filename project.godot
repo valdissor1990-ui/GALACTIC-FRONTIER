@@ -40,7 +40,7 @@ move_up={
 }
 move_down={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":4194325)]
+"events": [Object(InputEventKey,"physical_keycode":90)]
 }
 yaw_left={
 "deadzone": 0.2,
