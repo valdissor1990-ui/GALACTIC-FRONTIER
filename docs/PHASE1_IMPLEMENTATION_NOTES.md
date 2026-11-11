@@ -53,9 +53,9 @@ Mouse look is captured while flying. Escape pauses and releases the mouse; Escap
 
 1. Install the pinned Godot 4.7.2 release and export templates on an Ubuntu runner.
 2. Import the project and ask the Godot editor to parse/load project scripts in headless mode.
-3. Start the configured main scene headlessly for a short smoke test.
+3. Start the configured bootstrap scene headlessly, then launch `res://scenes/flight/test_flight.tscn` directly for a separate smoke test.
 4. Export the `Windows Desktop` preset and upload the executable plus PCK as a 14-day artifact.
-5. Download that artifact on a Windows runner and start the exported executable in headless smoke-test mode.
+5. Download that artifact on a Windows runner, start the exported executable in headless mode, wait for completion, and check its process exit code.
 
 A successful headless smoke test does not verify interactive flight feel, mouse capture, camera switching by user input, visual rendering quality, or a normal interactive Windows session. Those still require manual playtesting.
 
