@@ -66,6 +66,45 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  blender-asset-validation:
+    name: Blender player-fighter asset generation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes blender
+          blender --version
+
+      - name: Generate editable model, Godot glTF and render preview
+        run: |
+          mkdir -p build/blender
+          blender --background --python scripts/blender/build_player_fighter.py -- --output-dir build/blender
+
+      - name: Validate generated model files
+        run: |
+          test -s build/blender/player_fighter.blend
+          test -s build/blender/player_fighter.glb
+          test -s build/blender/player_fighter_preview.png
+          file build/blender/player_fighter.blend
+          file build/blender/player_fighter.glb
+          file build/blender/player_fighter_preview.png
+
+      - name: Upload Blender model and preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-player-fighter-blender
+          path: |
+            build/blender/player_fighter.blend
+            build/blender/player_fighter.glb
+            build/blender/player_fighter_preview.png
+          if-no-files-found: error
+          retention-days: 30
+
   windows-executable-smoke-test:
     name: Windows executable smoke test
     runs-on: windows-latest
