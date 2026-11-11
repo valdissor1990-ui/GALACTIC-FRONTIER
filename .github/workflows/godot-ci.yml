@@ -45,6 +45,10 @@ jobs:
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
+      - name: Run enemy combat and encounter tests
+        if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
+        run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
+
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
