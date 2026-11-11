@@ -23,9 +23,6 @@ func is_cockpit_active() -> bool:
 
 
 func _apply_camera_mode() -> void:
-	if not is_node_ready():
-		return
-
 	chase_camera.current = not _cockpit_active
 	cockpit_camera.current = _cockpit_active
 	# Hide the placeholder hull from inside the cockpit camera.
