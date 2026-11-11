@@ -19,6 +19,12 @@ import os
 import sys
 from mathutils import Vector
 
+# Ubuntu's packaged Blender may use the system Python package directory for
+# optional glTF exporter dependencies such as NumPy.
+SYSTEM_PYTHON_PACKAGES = "/usr/lib/python3/dist-packages"
+if os.path.isdir(SYSTEM_PYTHON_PACKAGES) and SYSTEM_PYTHON_PACKAGES not in sys.path:
+    sys.path.append(SYSTEM_PYTHON_PACKAGES)
+
 
 def output_dir_from_args():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
