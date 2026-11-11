@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scripts/combat/targeting_system.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/combat/damageable.gd" id="8"]
 [ext_resource type="Script" path="res://scripts/ui/combat_hud.gd" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="10"]
+[ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
 
 [sub_resource type="Environment" id="Environment_space"]
 background_mode = 1
@@ -244,3 +246,10 @@ text = "SHIELDS  100%"
 [node name="HullLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
 layout_mode = 2
 text = "HULL  100%"
+
+[node name="CombatEncounterController" type="Node" parent="."]
+script = ExtResource("11")
+enemy_scene = ExtResource("10")
+player_path = NodePath("../PlayerShip")
+spawn_position = Vector3(0, 0, -80)
+respawn_delay = 4.0
