@@ -15,7 +15,7 @@ The first Godot project skeleton and flight prototype source files have been add
 - HUD: speed, camera mode, boost and mouse sensitivity; missing flight configuration is handled without a HUD division error.
 - Pause: Escape; mouse capture is released on pause and restored on resume.
 - Window focus: mouse capture is released when the application loses focus and restored when it regains focus while the game is not paused.
-- Windows export preset: source configuration added; export templates and Windows runtime are not verified.
+- Windows export preset: source configuration added. A GitHub Actions workflow now installs Godot 4.7.2, imports/parses the project, performs a headless main-scene smoke test, exports a Windows build and attempts a Windows executable smoke test. The workflow has not yet completed; these checks remain unverified until GitHub reports a result.
 
 ## Flight input model
 
@@ -47,23 +47,34 @@ The cap is a defensive starting value, not a playtested tuning result. It may be
 
 Mouse look is captured while flying. Escape pauses and releases the mouse; Escape again resumes and captures it. If the application loses focus, mouse capture is released; it is restored when focus returns unless the game is paused.
 
+## Automated validation workflow
+
+`.github/workflows/godot-ci.yml` runs on pushes to `phase-1/flight-prototype`, pull requests targeting `main`, and manual dispatch. It is designed to:
+
+1. Install the pinned Godot 4.7.2 release and export templates on an Ubuntu runner.
+2. Import the project and ask the Godot editor to parse/load project scripts in headless mode.
+3. Start the configured main scene headlessly for a short smoke test.
+4. Export the `Windows Desktop` preset and upload the executable plus PCK as a 14-day artifact.
+5. Download that artifact on a Windows runner and start the exported executable in headless smoke-test mode.
+
+A successful headless smoke test does not verify interactive flight feel, mouse capture, camera switching by user input, visual rendering quality, or a normal interactive Windows session. Those still require manual playtesting.
+
 ## Verification status
 
 | Check | Status |
 |---|---|
-| Files written to GitHub | PASS |
-| Static review of changed logic | PASS (source inspection only) |
-| Project configuration parsed by Godot 4.7.2 | NOT RUN |
-| GDScript static parse by Godot | NOT RUN |
-| Scene import/open | NOT RUN |
-| Flight physics and input feel | NOT RUN |
-| Camera switching in runtime | NOT RUN |
-| Pause/HUD in runtime | NOT RUN |
-| Window focus behavior in runtime | NOT RUN |
+| Workflow file committed to GitHub | PASS |
+| GitHub Actions first run | NOT RUN / pending trigger |
+| Godot 4.7.2 installed by CI | NOT RUN |
+| Project import and script parsing by Godot | NOT RUN |
+| Headless main-scene smoke test | NOT RUN |
 | Windows export | NOT RUN |
-| Windows executable launch | NOT RUN |
+| Windows executable headless smoke test | NOT RUN |
+| Flight physics and input feel | NOT RUN |
+| Camera switching by user input | NOT RUN |
+| Pause/HUD and window focus behavior | NOT RUN |
 
-No performance, FPS, stability or playability claim is made until the project is opened and run in Godot.
+No performance, FPS, stability, interactive playability or export-success claim is made until the corresponding automated or manual check has actually completed.
 
 ## Known prototype limitations
 
