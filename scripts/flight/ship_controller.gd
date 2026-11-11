@@ -1,7 +1,9 @@
 extends CharacterBody3D
 class_name ShipController
 ## Player ship controller for the Phase 1 flight prototype.
-## Movement is manually integrated so the ship remains controllable and tunable.
+## Keyboard rotation has angular inertia; mouse look is an immediate view adjustment.
+
+const MAX_MOUSE_DELTA_PER_PHYSICS_TICK: float = 250.0
 
 @export var flight_config: ShipFlightConfig
 @export_range(0.01, 1.0, 0.01) var mouse_sensitivity: float = 0.12
@@ -28,6 +30,7 @@ func _notification(what: int) -> void:
 		_mouse_delta = Vector2.ZERO
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and not get_tree().paused:
+		_mouse_delta = Vector2.ZERO
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -36,7 +39,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_mouse_delta += event.relative
+		# Bound accumulated input so a delayed physics tick cannot cause a large snap.
+		_mouse_delta = (_mouse_delta + event.relative).limit_length(
+			MAX_MOUSE_DELTA_PER_PHYSICS_TICK
+		)
 
 	if event.is_action_pressed("toggle_camera"):
 		camera_rig.toggle_camera()
@@ -45,6 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if flight_config == null:
+		_mouse_delta = Vector2.ZERO
 		return
 
 	_update_translation(delta)
@@ -93,17 +100,20 @@ func _update_rotation(delta: float) -> void:
 		flight_config.rotation_acceleration * delta
 	)
 
+	# Keyboard rotation is rate-based and accelerates/decelerates smoothly.
 	rotate_object_local(Vector3.RIGHT, _angular_velocity.x * delta)
 	rotate_object_local(Vector3.UP, _angular_velocity.y * delta)
 	rotate_object_local(Vector3.BACK, _angular_velocity.z * delta)
 
+	# Mouse look is intentionally immediate (not added to keyboard angular inertia).
+	# The accumulated pixel delta is bounded and consumed exactly once per physics tick.
 	if _mouse_delta.length_squared() > 0.0:
 		var mouse_scale: float = mouse_sensitivity * 0.002
 		rotate_object_local(Vector3.UP, -_mouse_delta.x * mouse_scale)
 		rotate_object_local(Vector3.RIGHT, -_mouse_delta.y * mouse_scale)
 		_mouse_delta = Vector2.ZERO
 
-	# Dampen residual angular velocity only when no rotation key is held.
+	# Release damping applies after keyboard rotation input is released.
 	if desired_angular_velocity == Vector3.ZERO:
 		_angular_velocity = _angular_velocity.move_toward(
 			Vector3.ZERO,
