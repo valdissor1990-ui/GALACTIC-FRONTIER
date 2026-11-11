@@ -78,21 +78,31 @@ GitHub используется для исходников и ревью, но 
 
 Этап не считается работающим до запуска соответствующей сцены или сборки и проверки поведения.
 
-### 11. Текущая задача для Grok — точечный повторный аудит Phase 1
+### 11. Текущая задача для Grok — аудит GitHub Actions CI Phase 1
 
-Проведи короткий независимый статический аудит изменённых файлов ветки `phase-1/flight-prototype`, commit SHA `2da93e0c445995e1b5fb8fbaee0ea9a407af31cf` (PR #1).
+Проведи независимый аудит актуального HEAD ветки `phase-1/flight-prototype` и PR #1. Сначала определи точный HEAD SHA из GitHub и укажи его в отчёте; не используй устаревшие SHA из предыдущих заданий.
 
-Проверяй только изменения и их непосредственные зависимости:
-1. `scripts/flight/ship_controller.gd`: ограничение накопления mouse delta, очистка при потере/возврате фокуса, однократное потребление в physics tick, разделение мгновенного mouse look и инерционного keyboard rotation, отсутствие накопления во время pause.
-2. `scripts/flight/camera_rig.gd`: получение `Visual` через родительский узел, корректная работа при отсутствии Visual, отсутствие изменения transform/velocity корабля при переключении камер.
-3. `docs/PHASE1_IMPLEMENTATION_NOTES.md`: соответствие описания реальному коду и честность статусов проверок.
-4. Проверь, не внесены ли новые синтаксические/API-ошибки в изменённые GDScript-файлы.
+Основной файл:
+- `.github/workflows/godot-ci.yml`
 
-Формат:
+Непосредственно связанные файлы:
+- `project.godot`
+- `export_presets.cfg`
+- `docs/PHASE1_IMPLEMENTATION_NOTES.md`
+
+Проверь:
+1. Корректность YAML и синтаксиса GitHub Actions: события push / pull_request / workflow_dispatch, permissions, concurrency, зависимости jobs.
+2. Совместимость `chickensoft-games/setup-godot@v2` с точной версией Godot 4.7.2-stable, параметрами `use-dotnet: false` и `include-templates: true`.
+3. Корректность команд headless import/editor parse и запуска главной сцены.
+4. Корректность экспорта preset `Windows Desktop` на Ubuntu и путей к EXE/PCK.
+5. Корректность передачи artifact между Linux и Windows jobs и запуска EXE с аргументами headless smoke test.
+6. Не создаёт ли workflow ложного PASS: отличай загрузку/парсинг, headless smoke test, Windows export и интерактивный playtest.
+7. Соответствие документации реальному workflow и честность статусов NOT RUN до первого успешного выполнения.
+
+Формат отчёта:
 - PASS / FAIL / NOT RUN по каждому пункту.
-- Если найдена проблема — приоритет P0–P3, точный файл/фрагмент, причина и минимальное исправление.
-- Не расширяй аудит на системы Phase 2+.
-- Godot parse, runtime, поведение мыши/камер и Windows export остаются NOT RUN, если реально не запускались.
-- Не вноси изменения в GitHub; верни короткий отчёт в чат.
+- При проблеме: приоритет P0–P3, точный файл/строка, причина и минимальное исправление.
+- Отдельно укажи, какие проверки действительно выполнялись на GitHub Actions, а какие являются только статическим анализом.
+- Не вноси изменения в GitHub. Верни отчёт в чат.
 
 Точка входа PR: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/pull/1
