@@ -36,7 +36,7 @@ jobs:
       - name: Verify engine version
         run: |
           godot --version
-          godot --version | grep -E '^4\\.7\\.2\\.stable'
+          godot --version | grep -E '^4\.7\.2\.stable'
 
       - name: Import project and parse scripts
         run: godot --headless --editor --path . --quit
