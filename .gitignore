@@ -1,0 +1,15 @@
+# Godot generated files
+.godot/
+.import/
+export.cfg
+export_presets.cfg.tmp
+
+# Exported builds
+/build/
+/dist/
+
+# Editor and operating-system noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
