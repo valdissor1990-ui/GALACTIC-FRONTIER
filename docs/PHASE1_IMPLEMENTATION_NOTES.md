@@ -49,19 +49,20 @@ Mouse look is captured while flying. Escape pauses and releases the mouse; Escap
 
 ## Automated validation workflow
 
-`.github/workflows/godot-ci.yml` runs on pushes to `phase-1/flight-prototype`, pull requests targeting `main`, and manual dispatch. It is designed to:
+`.github/workflows/godot-ci.yml` runs on pushes to `phase-1/flight-prototype`, pull requests targeting `main` or `phase-1/flight-prototype`, and manual dispatch. It is designed to:
 
 1. Install the pinned Godot 4.7.2 release and export templates on an Ubuntu runner.
 2. Import the project and ask the Godot editor to parse/load project scripts in headless mode.
-3. Start the configured bootstrap scene headlessly, then launch `res://scenes/flight/test_flight.tscn` directly for a separate smoke test.
-4. Export the `Windows Desktop` preset and upload the executable plus PCK as a 14-day artifact.
-5. Download that artifact on a Windows runner, start the exported executable in headless mode, wait for completion, and check its process exit code.
+3. When `tests/flight/test_flight_model.gd` exists in the checked-out revision, run its deterministic `FlightModel.integrate_velocity()` assertions. The conditional keeps base-branch pushes valid before the test file is integrated.
+4. Start the configured bootstrap scene headlessly, then launch `res://scenes/flight/test_flight.tscn` directly for a separate smoke test.
+5. Export the `Windows Desktop` preset and upload the executable plus PCK as a 14-day artifact.
+6. Download that artifact on a Windows runner, start the exported executable in headless mode, wait for completion, and check its process exit code.
 
 A successful headless smoke test does not verify interactive flight feel, mouse capture, camera switching by user input, visual rendering quality, or a normal interactive Windows session. Those still require manual playtesting.
 
 ## Verification status
 
-Latest completed workflow: GitHub Actions run #16, run ID `43116781752`, source branch HEAD `ed3ea1c30cb24194aa883ec40b81565a1b607e40`; result: **success**. For the `pull_request` event, GitHub checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45` (PR head merged with the current `main` base).
+Latest previously confirmed successful workflow: GitHub Actions run #16, run ID `43116781752`, source branch HEAD `ed3ea1c30cb24194aa883ec40b81565a1b607e40`; result: **success**. The workflow has since been extended to trigger for pull requests targeting `phase-1/flight-prototype` and to run the FlightModel test script when that file is present. The new test execution is not yet recorded as PASS. For the `pull_request` event, GitHub checked merge ref `91ac7ff47ec706523a72c77051cb752de8a27a45` (PR head merged with the current `main` base).
 
 | Check | Status |
 |---|---|
@@ -74,6 +75,7 @@ Latest completed workflow: GitHub Actions run #16, run ID `43116781752`, source 
 | EXE/PCK artifact upload | PASS |
 | Windows artifact download and SHA-256 digest match | PASS |
 | Windows EXE headless launch and process exit code 0 | PASS |
+| FlightModel unit-test runner in PR #3 | PENDING — PR CI must execute the script before the tests are accepted |
 | Interactive flight physics and input feel | NOT RUN |
 | Mouse capture and real mouse look | NOT RUN |
 | Camera switching by user input in an interactive session | NOT RUN |
