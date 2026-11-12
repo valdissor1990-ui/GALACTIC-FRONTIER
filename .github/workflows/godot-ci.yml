@@ -63,6 +63,9 @@ jobs:
       - name: Run space obstacle and compound hitbox physics tests
         run: godot --headless --path . --script res://tests/environment/test_space_collisions.gd -- --test-mode
 
+      - name: Validate actual Aurelia route clearance and scan binding
+        run: godot --headless --path . res://tests/demo/test_route_safety.tscn
+
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
