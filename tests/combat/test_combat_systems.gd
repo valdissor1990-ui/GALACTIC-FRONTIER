@@ -15,6 +15,9 @@ func _initialize() -> void:
 	_test_destroyed_combatant_stops_regenerating()
 	_test_targeting_selects_forward_target()
 	_test_targeting_ignores_out_of_cone_target()
+	_test_intercept_for_stationary_target()
+	_test_intercept_leads_lateral_target_velocity()
+	_test_intercept_falls_back_for_unreachable_target()
 	print("")
 	if _failed == 0:
 		print("RESULT: PASS  (%d assertions)" % _passed)
@@ -132,3 +135,41 @@ func _test_targeting_ignores_out_of_cone_target() -> void:
 	scene["ship"].queue_free()
 	scene["camera"].queue_free()
 	target.queue_free()
+
+
+func _test_intercept_for_stationary_target() -> void:
+	print("\n[predictive aim — stationary target]")
+	var time := EnemyCombatAI.calculate_intercept_time(Vector3(100.0, 0.0, 0.0), Vector3.ZERO, 100.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, Vector3(100.0, 0.0, 0.0), Vector3.ZERO, 100.0)
+	_assert_approx(time, 1.0, "stationary target intercept time is distance / projectile speed")
+	_assert_true(direction.is_equal_approx(Vector3.RIGHT), "stationary target aim remains direct")
+
+
+func _test_intercept_leads_lateral_target_velocity() -> void:
+	print("\n[predictive aim — lateral target]")
+	var direction := EnemyCombatAI.calculate_intercept_direction(
+		Vector3.ZERO,
+		Vector3(100.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, 20.0),
+		100.0
+	)
+	_assert_true(direction.x > 0.9, "lead direction still points toward target range")
+	_assert_true(direction.z > 0.1, "lead direction accounts for lateral target motion")
+	_assert_approx(direction.length(), 1.0, "lead direction is normalized")
+
+
+func _test_intercept_falls_back_for_unreachable_target() -> void:
+	print("\n[predictive aim — unreachable target fallback]")
+	var time := EnemyCombatAI.calculate_intercept_time(
+		Vector3(100.0, 0.0, 0.0),
+		Vector3(200.0, 0.0, 0.0),
+		100.0
+	)
+	var direction := EnemyCombatAI.calculate_intercept_direction(
+		Vector3.ZERO,
+		Vector3(100.0, 0.0, 0.0),
+		Vector3(200.0, 0.0, 0.0),
+		100.0
+	)
+	_assert_approx(time, 1.0, "unreachable target uses a safe direct-aim fallback time")
+	_assert_true(direction.is_finite() and direction.is_equal_approx(Vector3.RIGHT), "unreachable target fallback remains stable")
