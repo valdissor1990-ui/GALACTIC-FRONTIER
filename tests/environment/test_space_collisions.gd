@@ -3,6 +3,7 @@ extends SceneTree
 
 const ENVIRONMENT_SCENE: PackedScene = preload("res://scenes/environment/space_environment.tscn")
 const FLIGHT_SCENE: PackedScene = preload("res://scenes/flight/test_flight.tscn")
+const ENEMY_SCENE: PackedScene = preload("res://scenes/combat/enemy_fighter.tscn")
 const ROUTE_START := Vector3(0.0, 18.0, 0.0)
 const ROUTE_END := Vector3(0.0, 18.0, -720.0)
 
@@ -35,8 +36,15 @@ func _run() -> void:
 	var player := flight.get_node("PlayerShip") as CharacterBody3D
 	var wing_hit := _ray(Vector3(1.45, -0.05, 1.0), Vector3(1.45, -0.05, -1.0))
 	_check(not wing_hit.is_empty() and wing_hit.get("collider") == player, "a ray through the outer wing must hit the player compound collider")
+
+	var enemy := ENEMY_SCENE.instantiate() as CharacterBody3D
+	enemy.position = Vector3(10.0, 0.0, 0.0)
+	root.add_child(enemy)
+	await physics_frame
+	var enemy_wing_hit := _ray(Vector3(11.7, -0.05, 1.0), Vector3(11.7, -0.05, -1.0))
+	_check(not enemy_wing_hit.is_empty() and enemy_wing_hit.get("collider") == enemy, "a ray through the enemy outer wing must hit its compound collider")
 	if _failed == 0:
-		print("SPACE_COLLISION_TEST_PASS: ", obstacles.size(), " obstacle proxies; route clear; wing hitbox active")
+		print("SPACE_COLLISION_TEST_PASS: ", obstacles.size(), " obstacle proxies; route clear; player and enemy wing hitboxes active")
 		quit(0)
 	else:
 		print("SPACE_COLLISION_TEST_FAIL: ", _failed, " assertions failed")
