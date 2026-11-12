@@ -1,5 +1,7 @@
 # Ship visual fallback
 
+Engine baseline: Godot 4.7.2-stable.
+
 The player fighter and Raider interceptor prefer their imported GLB models. The scene also contains a native Godot blockout mesh set so that the ship remains visible if a GLB cannot be imported on a target renderer or build machine.
 
 `ShipVisualFallback` runs on the ship's `Visual` node:
