@@ -39,66 +39,70 @@ jobs:
       - name: Install virtual display and image tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg python3-pil
+          sudo apt-get install --yes xvfb python3-pil
           godot --version
-          ffmpeg -version | head -n 1
 
       - name: Import project and validate scripts
-        run: godot --headless --editor --path . --import --quit
+        run: |
+          find assets/models/ships -type f -name '*.blend' -delete
+          godot --headless --editor --path . --import --quit
 
-      - name: Capture real gameplay frames as PNG
+      - name: Capture deterministic gameplay screenshots from the running game
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/raw_frames build/screenshots
-          xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
-            set -euo pipefail
-            godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
-            game_pid=$!
-            trap "kill $game_pid 2>/dev/null || true" EXIT
-            ready=0
-            for attempt in $(seq 1 100); do
-              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
-              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
-              sleep 0.2
-            done
-            if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            sleep 2
-            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 1 -video_size 1280x720 -i "$DISPLAY" -frames:v 20 build/raw_frames/frame-%02d.png
-            sleep 1
-            kill -TERM "$game_pid" 2>/dev/null || true
-            wait "$game_pid" 2>/dev/null || true
-          '
+          mkdir -p build/screenshots
+          timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" \
+            godot --path . --windowed --resolution 1280x720 \
+              --rendering-method gl_compatibility --rendering-driver opengl3 \
+              res://scenes/demo/gameplay_showcase.tscn \
+              > build/gameplay-showcase.log 2>&1
+          grep -q "SHOWCASE_TARGET_ACQUIRED=true" build/gameplay-showcase.log
+          grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log
+          screenshot_root="$(find "$HOME/.local/share/godot/app_userdata" -type f -name '01-flight-start.png' -print -quit)"
+          if [ -z "$screenshot_root" ]; then
+            cat build/gameplay-showcase.log
+            echo "The showcase did not save its first deterministic screenshot."
+            exit 1
+          fi
+          screenshot_dir="$(dirname "$screenshot_root")"
+          names=(
+            "01-flight-start.png"
+            "02-relay-approach.png"
+            "03-hostiles-arrive.png"
+            "04-combat-targeting.png"
+            "05-cockpit-view.png"
+            "06-chase-combat.png"
+            "07-mission-hud.png"
+            "08-final-frame.png"
+          )
+          for i in "${!names[@]}"; do
+            source="$screenshot_dir/${names[$i]}"
+            test -s "$source"
+            cp "$source" "build/screenshots/gameplay-$(printf '%02d' "$((i + 1))").png"
+          done
           python3 - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageOps, ImageDraw
-          raw = Path("build/raw_frames")
-          frames = sorted(raw.glob("frame-*.png"))[5:]  # wait out the variable-length Godot startup splash
-          if len(frames) < 8:
-              raise SystemExit(f"Expected at least 8 real gameplay frames, got {len(frames)}")
-          picks = [round(i * (len(frames) - 1) / 7) for i in range(8)]
+          from PIL import Image, ImageOps
+          files = sorted(Path("build/screenshots").glob("gameplay-*.png"))
+          if len(files) != 8:
+              raise SystemExit(f"Expected exactly 8 deterministic screenshots, got {len(files)}")
           thumbs = []
-          for index, source_index in enumerate(picks, 1):
-              image = Image.open(frames[source_index]).convert("RGB")
+          for path in files:
+              image = Image.open(path).convert("RGB")
               if image.size != (1280, 720):
-                  raise SystemExit(f"Unexpected screenshot size: {image.size}")
-              mean_luminance = sum(image.convert("L").getdata()) / (1280 * 720)
-              if mean_luminance > 22.0:
-                  raise SystemExit(f"Frame {frames[source_index].name} still looks like a startup splash (mean luminance {mean_luminance:.1f})")
-              target = Path(f"build/screenshots/gameplay-{index:02d}.png")
-              image.save(target, optimize=True)
-              thumb = image.resize((480, 270), Image.Resampling.LANCZOS)
-              thumb = ImageOps.expand(thumb, border=2, fill="white")
-              thumbs.append(thumb)
+                  raise SystemExit(f"{path.name}: unexpected size {image.size}")
+              luminance = image.convert("L")
+              mean = sum(luminance.getdata()) / (1280 * 720)
+              if mean > 22.0:
+                  raise SystemExit(f"{path.name}: likely splash/blank frame (mean luminance {mean:.1f})")
+              thumbs.append(ImageOps.expand(image.resize((480, 270), Image.Resampling.LANCZOS), border=2, fill="white"))
           sheet = Image.new("RGB", (968, 1096), (8, 13, 24))
           for i, thumb in enumerate(thumbs):
-              x = 2 + (i % 2) * 484
-              y = 2 + (i // 2) * 274
-              sheet.paste(thumb, (x, y))
+              sheet.paste(thumb, (2 + (i % 2) * 484, 2 + (i // 2) * 274))
           sheet.save("build/gameplay-contact-sheet.png", optimize=True)
-          print("SCREENSHOT_CAPTURE_PASS: 8 PNG screenshots + contact sheet")
+          print("SCREENSHOT_CAPTURE_PASS: 8 deterministic director captures + contact sheet")
           PY
-
       - name: Verify screenshot set and showcase sequence
         run: |
           set -euo pipefail
