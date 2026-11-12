@@ -11,6 +11,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/visual-overhaul
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
