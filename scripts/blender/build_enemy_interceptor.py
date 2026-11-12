@@ -194,12 +194,102 @@ def add_micro_detail(root, mats):
             obj.parent = root
 
 
+
+def add_integrated_raider_detail(root, mats):
+    """Layered armor and functional-looking structures integrated into the Raider hull."""
+    hull, armor, dark, red, glass, glow = mats
+    for s in (-1, 1):
+        # Swept composite armor skins follow the delta wing shape.
+        outline=[(s*x,y) for x,y in [
+            (0.72,-2.75),(1.20,-2.10),(5.55,1.05),
+            (6.02,1.92),(5.20,1.80),(1.55,.72)
+        ]]
+        wing("Raider integrated delta armor skin %s"%s,outline,.105,.205,armor)
+        tip=[(s*x,y) for x,y in [
+            (4.55,.95),(5.25,1.35),(6.15,2.02),
+            (5.75,2.24),(4.85,1.68)
+        ]]
+        wing("Raider wingtip armored shell %s"%s,tip,.12,.245,dark)
+        # Raised leading edge spar and articulated trailing control surface.
+        beam("Raider leading-edge titanium spar %s"%s,
+             (s*.85,-3.05,.12),(s*6.08,2.0,.12),.075,armor,.035)
+        flap=[(s*x,y) for x,y in [
+            (2.25,.55),(2.80,.90),(5.35,1.85),(4.95,2.04),(2.70,1.28)
+        ]]
+        wing("Raider split elevon %s"%s,flap,-.015,.075,hull)
+        # Armor bays with dark recessed centers, rather than detached block clutter.
+        for idx,(x,y) in enumerate(((2.05,-.45),(3.20,.45),(4.35,1.18))):
+            x*=s
+            box("Raider recessed wing bay rim %s %s"%(s,idx),
+                (x,y,.225),(.52,.70,.05),dark,.06,(0,0,s*-.13))
+            box("Raider wing bay inset plate %s %s"%(s,idx),
+                (x,y,.255),(.36,.52,.025),armor,.035,(0,0,s*-.13))
+            for k in range(4):
+                bpy.ops.mesh.primitive_uv_sphere_add(segments=12,ring_count=8,radius=.018,
+                    location=(x+s*(-.15+(k%2)*.30),y-.22+(k//2)*.44,.273))
+                finish(bpy.context.object,red,0)
+        # Twin tail booms gain armored shoulders and segmented heat exchanger arrays.
+        x=s*1.15
+        box("Raider boom shoulder fairing %s"%s,(x,2.55,.30),(.64,1.65,.30),hull,.13)
+        for k in range(7):
+            box("Raider boom radiator fin %s %s"%(s,k),
+                (x,3.45+k*.25,-.29),(.50,.09,.16),dark,.025)
+        # Wing-root weapon housings blend into the leading edge.
+        box("Raider cannon armored socket %s"%s,(s*1.18,-1.85,-.04),(.32,1.55,.25),armor,.10)
+        beam("Raider cannon recessed barrel %s"%s,
+             (s*1.18,-1.45,-.12),(s*1.18,-2.90,-.12),.075,dark,.055)
+        beam("Raider cannon muzzle ring %s"%s,
+             (s*1.18,-2.78,-.12),(s*1.18,-2.96,-.12),.085,red,.065)
+        # Embedded warning beacons and fin edge armor.
+        box("Raider wingtip beacon socket %s"%s,(s*5.82,1.82,.18),(.30,.42,.12),dark,.06)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=24,ring_count=12,radius=.085,
+            location=(s*5.86,1.82,.245))
+        finish(bpy.context.object,glow if s<0 else red,0)
+        box("Raider stabilizer armored leading edge %s"%s,
+            (s*1.42,4.55,.96),(.10,1.45,.08),red,.025)
+        # Side-mounted sensor and thruster service modules.
+        box("Raider side sensor housing %s"%s,(s*.57,-3.65,.02),(.20,.70,.28),dark,.07)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=20,ring_count=12,radius=.07,
+            location=(s*.69,-3.72,.08))
+        finish(bpy.context.object,glow,0)
+    # Triple engine block gets layered thermal collars and recessed throats.
+    for i,x in enumerate((-1.15,0,1.15)):
+        y=5.7 if i!=1 else 5.95
+        beam("Raider ceramic nozzle outer collar %s"%i,(x,y+.28,0),(x,y+.66,0),
+             .36,armor,.29)
+        beam("Raider recessed nozzle throat %s"%i,(x,y+.42,0),(x,y+.78,0),
+             .235,dark,.17)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=32,ring_count=16,radius=.15,
+            location=(x,y+.79,0))
+        finish(bpy.context.object,glow,0)
+        for k in range(5):
+            box("Raider engine thermal rib %s %s"%(i,k),
+                (x+(k-2)*.10,y-.30,.34),(.045,.62,.06),dark,.015)
+    # Cockpit is framed by armored cheeks and a forward brow, not a bare glass bubble.
+    box("Raider cockpit forward brow",(0,-3.88,.69),(1.05,.24,.18),armor,.09)
+    box("Raider cockpit rear bulkhead",(0,-1.58,.56),(1.12,.28,.18),dark,.08)
+    for s in (-1,1):
+        box("Raider canopy armored sill %s"%s,(s*.48,-2.72,.51),(.11,1.65,.13),armor,.05,
+            (math.radians(-10),0,s*math.radians(-5)))
+        box("Raider canopy latch %s"%s,(s*.40,-1.75,.70),(.12,.18,.12),red,.03)
+    # Central dorsal armor spine, segmented reactor covers and belly access hardware.
+    wing("Raider dorsal spine armor",[(-.28,-1.8),(-.22,-2.2),(.22,-2.2),(.28,-1.8),
+         (.25,2.9),(0,3.3),(-.25,2.9)],.39,.55,armor)
+    box("Raider ventral reactor shield",(0,.85,-.51),(.72,1.45,.14),armor,.07)
+    for k in range(7):
+        box("Raider ventral heat slot %s"%k,(-.27+k*.09,1.05,-.59),(.035,.68,.025),dark,.008)
+    for obj in list(bpy.context.scene.objects):
+        if obj!=root and obj.parent is None and obj.type in {"MESH","EMPTY"}:
+            obj.parent=root
+
+
 def main():
     dest=outdir();os.makedirs(dest,exist_ok=True)
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
     mats=(mat("Raider | obsidian ceramic",(0.035,.052,.075),.82,.26),mat("Raider | titanium armor",(.22,.27,.31),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
-    # Retain the clean silhouette; the former dense micro-detail pass caused detached-looking parts.
+    add_integrated_raider_detail(root,mats)
+    # Retain the clean silhouette; new details are integrated into the existing wing and hull surfaces.
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)
     target=Vector((0,0,0));bpy.ops.object.camera_add(location=(16,-19,13));cam=bpy.context.object;cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler();cam.data.lens=58;scene.camera=cam
