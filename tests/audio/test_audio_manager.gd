@@ -23,6 +23,7 @@ func _run() -> void:
 	_check(impact != null, "impact stream exists")
 	if engine != null:
 		_check(engine.data.size() == 44100, "engine loop contains two seconds of 16-bit PCM")
+		_check(_has_nonzero_sample(engine.data), "engine loop contains audible waveform data")
 		_check(engine.loop_mode == AudioStreamWAV.LOOP_FORWARD, "engine stream loops forward")
 	if weapon != null:
 		_check(weapon.data.size() > 4000, "weapon transient has PCM data")
@@ -36,6 +37,13 @@ func _run() -> void:
 	else:
 		print("PROCEDURAL_AUDIO_TEST_FAIL assertions=", _failed)
 		quit(1)
+
+func _has_nonzero_sample(data: PackedByteArray) -> bool:
+	for value in data:
+		if value != 0:
+			return true
+	return false
+
 
 func _check(condition: bool, message: String) -> void:
 	if condition:
