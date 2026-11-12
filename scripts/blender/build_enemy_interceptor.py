@@ -81,8 +81,9 @@ def build(m):
         box("Boom armor cap %s"%s,(x,3.3,.25),(.42,2.6,.16),dark,.07)
         wing("Canted tail fin %s"%s,[(s*.72,3.0),(s*1.05,3.4),(s*1.75,6.0),(s*1.35,5.7)],.22,1.0,armor)
         # Weapon rails and recessed muzzles.
-        beam("Wing cannon barrel %s"%s,(s*3.35,-2.0,-.10),(s*3.35,-5.4,-.10),.105,dark,.075)
-        beam("Cannon emitter %s"%s,(s*3.35,-5.2,-.10),(s*3.35,-5.55,-.10),.075,glow,.055)
+        # Compact cannons integrated into the inner wing leading edge (not detached pods).
+        beam("Wing-root cannon barrel %s"%s,(s*1.18,-1.15,-.12),(s*1.18,-2.75,-.12),.085,dark,.065)
+        beam("Wing-root cannon emitter %s"%s,(s*1.18,-2.62,-.12),(s*1.18,-2.82,-.12),.060,glow,.045)
         box("Wing red IFF stripe %s"%s,(s*4.35,.65,.17),(.16,1.8,.035),red,.015,(0,0,s*-.16))
         box("Wing service panel %s"%s,(s*3.15,1.2,.17),(.78,1.05,.045),armor,.035,(0,0,s*-.12))
         for j in range(5):
@@ -198,7 +199,7 @@ def main():
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
     mats=(mat("Raider | obsidian ceramic",(0.035,.052,.075),.82,.26),mat("Raider | titanium armor",(.22,.27,.31),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
-    add_micro_detail(root, mats)
+    # Retain the clean silhouette; the former dense micro-detail pass caused detached-looking parts.
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)
     target=Vector((0,0,0));bpy.ops.object.camera_add(location=(16,-19,13));cam=bpy.context.object;cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler();cam.data.lens=58;scene.camera=cam
