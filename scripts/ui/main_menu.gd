@@ -51,6 +51,7 @@ func _build_menu() -> void:
 	add_child(margins)
 
 	var layout := VBoxContainer.new()
+	layout.name = "MenuLayout"
 	layout.add_theme_constant_override("separation", 0)
 	margins.add_child(layout)
 
