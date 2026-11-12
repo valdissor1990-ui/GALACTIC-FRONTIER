@@ -33,6 +33,10 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.seed = 74112026
+	call_deferred("_initialize_mission")
+
+
+func _initialize_mission() -> void:
 	if encounter != null:
 		encounter.set_process(false)
 		encounter.set_physics_process(false)
@@ -192,7 +196,7 @@ func _update_hud() -> void:
 		completed_waves = 3 + wave_index - 1
 	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
 		completed_waves = 6
-	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES" % [completed_waves, total_waves]
+	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [completed_waves, total_waves]
 
 
 func _build_mission_hud() -> void:
