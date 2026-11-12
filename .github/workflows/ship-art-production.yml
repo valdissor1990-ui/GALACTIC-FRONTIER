@@ -1,3 +1,4 @@
+# This workflow is also present on the PR base branch so GitHub can run it for stacked draft PRs.
 name: Ship art production — seven-class fleet
 
 on:
