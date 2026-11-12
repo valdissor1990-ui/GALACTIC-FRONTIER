@@ -11,6 +11,10 @@ const SHIP_SCENES := [
 ]
 
 func _initialize() -> void:
+    call_deferred("_run")
+
+
+func _run() -> void:
     var failures := 0
     for path in SHIP_SCENES:
         var packed := load(path) as PackedScene
@@ -23,14 +27,13 @@ func _initialize() -> void:
             push_error("SHIP_ASSET_INSTANTIATE_FAILED: " + path)
             failures += 1
             continue
-        root.add_child(instance)
         var mesh_count := _count_meshes(instance)
         if mesh_count == 0:
             push_error("SHIP_ASSET_HAS_NO_MESH: " + path)
             failures += 1
         else:
             print("SHIP_ASSET_OK: ", path, " meshes=", mesh_count)
-        instance.queue_free()
+        instance.free()
     quit(1 if failures > 0 else 0)
 
 
