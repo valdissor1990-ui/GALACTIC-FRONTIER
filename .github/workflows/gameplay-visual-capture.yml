@@ -44,7 +44,7 @@ jobs:
           ffmpeg -version | head -n 1
 
       - name: Import project and validate scripts
-        run: godot --headless --editor --path . --quit
+        run: godot --headless --editor --path . --import --quit
 
       - name: Capture eight real gameplay screenshots
         shell: bash
