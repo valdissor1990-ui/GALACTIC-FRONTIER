@@ -45,6 +45,15 @@ func _build_world_environment() -> void:
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.55
 	environment.glow_strength = 0.8
+	environment.ssao_enabled = true
+	environment.ssao_radius = 2.0
+	environment.ssao_intensity = 1.15
+	environment.ssil_enabled = true
+	environment.ssil_radius = 5.0
+	environment.ssil_intensity = 0.65
+	environment.sdfgi_enabled = true
+	environment.sdfgi_cascades = 4
+	environment.sdfgi_min_cell_size = 0.2
 	world.environment = environment
 	add_child(world)
 
