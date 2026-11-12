@@ -63,8 +63,9 @@ func _test_round_trip() -> void:
 	var saved := _manager.save_slot("slot_1", payload)
 	var loaded := _manager.load_slot("slot_1")
 	_assert_true(saved.ok, "valid payload saves")
-	_assert_true(loaded.ok, "saved slot loads")
-	_assert_true(loaded.payload == payload, "loaded payload matches original data")
+	_assert_true(loaded.ok, "saved slot loads" + ("" if loaded.ok else ": " + str(loaded.get("error", "unknown"))))
+	if loaded.ok:
+		_assert_true(loaded.payload == payload, "loaded payload matches original data")
 	_assert_true(not loaded.recovered_from_backup, "normal load does not use backup")
 
 
@@ -96,8 +97,9 @@ func _test_recovers_from_corrupt_primary() -> void:
 	file.close()
 	var loaded := _manager.load_slot("recovery")
 	_assert_true(loaded.ok, "corrupt primary falls back to backup")
-	_assert_true(loaded.recovered_from_backup, "load reports backup recovery")
-	_assert_true(int(loaded.payload.credits) == 100, "backup contains previous committed save")
+	if loaded.ok:
+		_assert_true(loaded.recovered_from_backup, "load reports backup recovery")
+		_assert_true(int(loaded.payload.credits) == 100, "backup contains previous committed save")
 
 
 func _test_delete_removes_slot_and_backup() -> void:
