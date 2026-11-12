@@ -270,7 +270,7 @@ def render_setup(target, extent):
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.color=(.018,.025,.04)
-    distance=max(extent*1.15,18.0)
+    distance=max(extent*1.65,18.0)
     camera_offset=Vector((distance*.68,-distance*.86,distance*.58))
     bpy.ops.object.camera_add(location=target+camera_offset)
     cam=bpy.context.object; cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler()
