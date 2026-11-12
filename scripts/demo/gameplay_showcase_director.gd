@@ -14,9 +14,9 @@ func _ready() -> void:
 
 
 func _run_showcase() -> void:
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(0.5).timeout
 	var travel_elapsed := 0.0
-	while mission.stage == 0 and travel_elapsed < 12.0:
+	while mission.stage == 0 and travel_elapsed < 9.0:
 		player.look_at(mission._objective_position, Vector3.UP)
 		Input.action_press("move_forward")
 		Input.action_press("boost")
@@ -30,12 +30,12 @@ func _run_showcase() -> void:
 		mission._complete_relay_scan()
 	var acquired := targeting.acquire_target()
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
-	await _engage_for(7.0)
+	await _engage_for(4.0)
 
 	camera_rig.toggle_camera()
 	await get_tree().create_timer(2.0).timeout
 	camera_rig.toggle_camera()
-	await _engage_for(3.0)
+	await _engage_for(2.0)
 
 	Input.action_release("fire_primary")
 	Input.action_release("move_forward")
