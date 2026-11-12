@@ -29,10 +29,10 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Install Vulkan software renderer and capture tools
+      - name: Install virtual display and video capture tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg mesa-vulkan-drivers libvulkan1 vulkan-tools
+          sudo apt-get install --yes xvfb ffmpeg
           godot --version
           ffmpeg -version | head -n 1
 
@@ -62,8 +62,8 @@ jobs:
 
       - name: Verify video and gameplay sequence
         run: |
-          test -s build/GALACTIC-FRONTIER-gameplay-30s.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-30s.mp4 | tee build/video-duration.txt
+          test -s build/GALACTIC-FRONTIER-gameplay-15s.mp4
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-15s.mp4 | tee build/video-duration.txt
           awk '{ if ($1 < 14.9 || $1 > 15.1) exit 1 }' build/video-duration.txt
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
 
@@ -72,7 +72,7 @@ jobs:
         with:
           name: GALACTIC-FRONTIER-gameplay-visual-qa
           path: |
-            build/GALACTIC-FRONTIER-gameplay-30s.mp4
+            build/GALACTIC-FRONTIER-gameplay-15s.mp4
             build/video-duration.txt
             build/gameplay-showcase.log
           if-no-files-found: error
