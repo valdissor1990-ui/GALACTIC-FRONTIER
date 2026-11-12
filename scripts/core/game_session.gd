@@ -1,7 +1,7 @@
 extends Node
-## Minimal bootstrap. The flight scene is the only game scene in Phase 1.
+## Bootstraps the playable Silent Relay vertical-slice mission.
 
-const FLIGHT_SCENE: String = "res://scenes/flight/visual_flight.tscn"
+const FLIGHT_SCENE: String = "res://scenes/demo/ten_minute_demo.tscn"
 
 
 func _ready() -> void:
