@@ -95,7 +95,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $exe = Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe"
+          $exe = (Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe").Path
           & $exe --version
           if ($LASTEXITCODE -ne 0) {
             throw "Windows executable failed its engine-version startup with code $LASTEXITCODE"
