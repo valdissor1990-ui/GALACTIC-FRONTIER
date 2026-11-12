@@ -5,3 +5,4 @@
 [node name="FrigateVisual" type="Node3D"]
 
 [node name="VanguardFrigate" parent="." instance=ExtResource("1")]
+rotation_degrees = Vector3(0, 180, 0)
