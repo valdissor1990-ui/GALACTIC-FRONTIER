@@ -324,7 +324,7 @@ func _select_current_ship() -> void:
 
 
 func _format_credits(value: int) -> String:
-	return String.num_int64(value).reverse().insert(" ", 3).reverse()
+	return str(value)
 
 
 func get_ship_count() -> int:
