@@ -47,7 +47,8 @@ func _build_menu() -> void:
 	start.custom_minimum_size = Vector2(390, 54)
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
-	var saved_game := GameSave.load_slot("silent_relay")
+	var save_manager := get_node_or_null("/root/GameSave")
+	var saved_game: Dictionary = save_manager.call("load_slot", "silent_relay") if save_manager != null else {"ok": false}
 	if saved_game.ok:
 		var continue_button := Button.new()
 		continue_button.text = "  CONTINUE FLIGHT"
@@ -66,14 +67,20 @@ func _build_menu() -> void:
 	layout.add_child(quit)
 
 func _start_game() -> void:
-	GameSave.delete_slot("silent_relay")
+	var save_manager := get_node_or_null("/root/GameSave")
+	if save_manager != null:
+		save_manager.call("delete_slot", "silent_relay")
 	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
 	if error != OK:
 		push_error("Could not load Silent Relay mission: %s" % error)
 
 
 func _continue_game() -> void:
-	var saved := GameSave.load_slot("silent_relay")
+	var save_manager := get_node_or_null("/root/GameSave")
+	if save_manager == null:
+		push_error("Continue is unavailable: local save manager is missing.")
+		return
+	var saved: Dictionary = save_manager.call("load_slot", "silent_relay")
 	if not saved.ok:
 		push_error("Could not load the local mission checkpoint: %s" % saved.get("error", "unknown"))
 		return
