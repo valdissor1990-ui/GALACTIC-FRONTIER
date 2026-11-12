@@ -32,6 +32,7 @@ var _progress_label: Label
 var _target_marker: Control
 var _rng := RandomNumberGenerator.new()
 var enemies_destroyed: int = 0
+var mission_reward_credits: int = 0
 var _result_shown: bool = false
 
 
@@ -129,6 +130,12 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.COMPLETE
 				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
 				print("MISSION_COMPLETE seconds=", mission_seconds)
+				if get_tree().get_first_node_in_group("qa_demo_driver") == null:
+					var profile := get_node_or_null("/root/GameProfile")
+					if profile != null:
+						mission_reward_credits = int(profile.call("complete_mission", "silent_relay", 5000))
+				else:
+					print("MISSION_REWARD_QA_SUPPRESSED")
 				var save_manager := _get_save_manager()
 				if save_manager != null:
 					save_manager.call("delete_slot", "silent_relay")
@@ -510,7 +517,7 @@ func _show_mission_result(success: bool) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(520, 330)
+	panel.custom_minimum_size = Vector2(520, 370)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.018, 0.045, 0.075, 0.98)
 	style.border_color = Color(0.12, 0.62, 0.82, 0.9) if success else Color(0.78, 0.24, 0.18, 0.9)
@@ -537,7 +544,7 @@ func _show_mission_result(success: bool) -> void:
 	subtitle.add_theme_color_override("font_color", Color("#9eb8c8"))
 	column.add_child(subtitle)
 	var stats := Label.new()
-	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, _get_waves_cleared(success)]
+	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6\nCREDITS EARNED     +%d" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, _get_waves_cleared(success), mission_reward_credits]
 	stats.add_theme_font_size_override("font_size", 16)
 	stats.add_theme_color_override("font_color", Color("#d5e8f2"))
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

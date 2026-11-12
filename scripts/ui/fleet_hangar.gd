@@ -4,10 +4,10 @@ extends Control
 const FLIGHT_SCENE := "res://scenes/demo/ten_minute_demo.tscn"
 const RUNTIME_GLTF_SCRIPT: Script = preload("res://scripts/visual/runtime_gltf_model.gd")
 const SHIPS := [
-	{"id": "player_fighter", "flyable": true, "name": "PLAYER FIGHTER MK.I", "role": "MULTIROLE / PLAYER CRAFT", "path": "res://assets/models/ships/player_fighter.glb", "scale": 0.42, "description": "A compact, agile frontline fighter built for independent patrols and precision engagements.", "specs": "CLASS  LIGHT FIGHTER     DRIVE  TWIN ION"},
-	{"id": "raider_interceptor", "flyable": true, "name": "RAIDER INTERCEPTOR", "role": "HOSTILE / INTERCEPTOR", "path": "res://assets/models/ships/enemy_fighter.glb", "scale": 0.42, "description": "A fast attack craft with a narrow armored spine, split-delta wings and a triple engine cluster.", "specs": "CLASS  INTERCEPTOR       ROLE  PURSUIT"},
-	{"id": "aegis_heavy_fighter", "flyable": true, "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY / SPACE SUPERIORITY", "path": "res://assets/models/ships/heavy_fighter.glb", "scale": 0.32, "description": "A heavily armored superiority fighter with reinforced wing roots, turret coverage and high-output drives.", "specs": "CLASS  HEAVY FIGHTER     ARMOR  HEAVY"},
-	{"id": "bastion_bomber", "flyable": true, "name": "BASTION BOMBER", "role": "STRIKE / ORDNANCE", "path": "res://assets/models/ships/bomber.glb", "scale": 0.28, "description": "A broad strike platform carrying internal payload bays and remote defensive turrets.", "specs": "CLASS  BOMBER            PAYLOAD  INTERNAL"},
+	{"id": "player_fighter", "flyable": true, "price": 0, "name": "PLAYER FIGHTER MK.I", "role": "MULTIROLE / PLAYER CRAFT", "path": "res://assets/models/ships/player_fighter.glb", "scale": 0.42, "description": "A compact, agile frontline fighter built for independent patrols and precision engagements.", "specs": "CLASS  LIGHT FIGHTER     DRIVE  TWIN ION"},
+	{"id": "raider_interceptor", "flyable": true, "price": 2500, "name": "RAIDER INTERCEPTOR", "role": "HOSTILE / INTERCEPTOR", "path": "res://assets/models/ships/enemy_fighter.glb", "scale": 0.42, "description": "A fast attack craft with a narrow armored spine, split-delta wings and a triple engine cluster.", "specs": "CLASS  INTERCEPTOR       ROLE  PURSUIT"},
+	{"id": "aegis_heavy_fighter", "flyable": true, "price": 5000, "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY / SPACE SUPERIORITY", "path": "res://assets/models/ships/heavy_fighter.glb", "scale": 0.32, "description": "A heavily armored superiority fighter with reinforced wing roots, turret coverage and high-output drives.", "specs": "CLASS  HEAVY FIGHTER     ARMOR  HEAVY"},
+	{"id": "bastion_bomber", "flyable": true, "price": 7500, "name": "BASTION BOMBER", "role": "STRIKE / ORDNANCE", "path": "res://assets/models/ships/bomber.glb", "scale": 0.28, "description": "A broad strike platform carrying internal payload bays and remote defensive turrets.", "specs": "CLASS  BOMBER            PAYLOAD  INTERNAL"},
 	{"id": "mule_cargo_hauler", "flyable": false, "name": "MULE CARGO HAULER", "role": "CIVILIAN / LOGISTICS", "path": "res://assets/models/ships/cargo_hauler.glb", "scale": 0.28, "description": "A modular industrial hauler with exposed container racks, docking interfaces and multiple drive nacelles.", "specs": "CLASS  HAULER            CARGO  MODULAR"},
 	{"id": "vanguard_frigate", "flyable": false, "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "path": "res://assets/models/ships/frigate.glb", "scale": 0.22, "description": "A long-range escort warship designed to protect convoys and maintain a defensive perimeter.", "specs": "CLASS  FRIGATE           ROLE  ESCORT"},
 	{"id": "leviathan_cruiser", "flyable": false, "name": "LEVIATHAN CRUISER", "role": "CAPITAL / COMMAND", "path": "res://assets/models/ships/cruiser.glb", "scale": 0.16, "description": "A capital command vessel with a broad armored hull, layered batteries and long-duration fleet support systems.", "specs": "CLASS  CRUISER           ROLE  CAPITAL"}
@@ -298,10 +298,17 @@ func _update_selection_controls() -> void:
 		_select_button.text = "PROFILE UNAVAILABLE"
 		_selection_status.text = "PILOT PROFILE COULD NOT BE LOADED"
 		return
-	_select_button.disabled = false
-	var selected := str(profile.call("get_selected_ship_id")) == ship_id
-	_select_button.text = "CURRENT FLIGHT SHIP" if selected else "SELECT FOR NEXT FLIGHT"
-	_selection_status.text = "ACTIVE SHIP  /  " + str(profile.call("get_selected_ship_id")).to_upper()
+	var credits := int(profile.call("get_credits"))
+	if bool(profile.call("is_ship_unlocked", ship_id)):
+		_select_button.disabled = false
+		var selected := str(profile.call("get_selected_ship_id")) == ship_id
+		_select_button.text = "CURRENT FLIGHT SHIP" if selected else "SELECT FOR NEXT FLIGHT"
+		_selection_status.text = "BALANCE  /  %s CR" % _format_credits(credits)
+	else:
+		var price := int(profile.call("get_ship_price", ship_id))
+		_select_button.disabled = credits < price
+		_select_button.text = "BUY & SELECT  /  %s CR" % _format_credits(price)
+		_selection_status.text = "BALANCE  /  %s CR     •     REQUIRED  /  %s CR" % [_format_credits(credits), _format_credits(price)]
 
 
 func _select_current_ship() -> void:
@@ -309,10 +316,15 @@ func _select_current_ship() -> void:
 	if profile == null:
 		return
 	var ship_id := str(SHIPS[_ship_index].id)
-	if not bool(profile.call("select_ship", ship_id)):
-		push_error("Could not save selected ship: " + ship_id)
+	var success := bool(profile.call("select_ship", ship_id)) if bool(profile.call("is_ship_unlocked", ship_id)) else bool(profile.call("purchase_ship", ship_id))
+	if not success:
+		_selection_status.text = "INSUFFICIENT CREDITS  /  COMPLETE CONTRACTS TO EARN MORE"
 		return
 	_update_selection_controls()
+
+
+func _format_credits(value: int) -> String:
+	return str(value)
 
 
 func get_ship_count() -> int:
