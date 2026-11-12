@@ -517,7 +517,7 @@ func _show_mission_result(success: bool) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(520, 330)
+	panel.custom_minimum_size = Vector2(520, 370)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.018, 0.045, 0.075, 0.98)
 	style.border_color = Color(0.12, 0.62, 0.82, 0.9) if success else Color(0.78, 0.24, 0.18, 0.9)
