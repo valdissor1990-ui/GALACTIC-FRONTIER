@@ -36,7 +36,20 @@ func _run_showcase() -> void:
 		mission._complete_relay_scan()
 	await get_tree().create_timer(0.4).timeout
 
-	var acquired := targeting.acquire_target()
+	var acquired: Node3D
+	var nearest_distance := INF
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if not (candidate is Node3D):
+			continue
+		var target := candidate as Node3D
+		if not is_instance_valid(target) or not target.is_inside_tree():
+			continue
+		var distance := player.global_position.distance_to(target.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			acquired = target
+	if acquired != null:
+		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
