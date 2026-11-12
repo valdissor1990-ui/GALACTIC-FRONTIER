@@ -29,16 +29,31 @@ func _run_showcase() -> void:
 	await get_tree().create_timer(0.4).timeout
 	await _capture_screenshot("02-relay-approach.png")
 	if mission.stage == 0:
-		player.global_position = mission._objective_position
-		await get_tree().physics_frame
-
+		player.global_position = mission._objective_position + Vector3(0.0, 0.0, 75.0)
+		await get_tree().create_timer(0.2).timeout
 	if mission.stage == 1:
 		mission._complete_relay_scan()
-	await get_tree().process_frame
+	await get_tree().create_timer(0.4).timeout
 	await _capture_screenshot("03-hostiles-arrive.png")
 
-	var acquired := targeting.acquire_target()
+	var acquired: Node3D
+	var nearest_distance := INF
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if not (candidate is Node3D):
+			continue
+		var target := candidate as Node3D
+		if not is_instance_valid(target) or not target.is_inside_tree():
+			continue
+		var distance := player.global_position.distance_to(target.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			acquired = target
+	if acquired != null:
+		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
+	if acquired == null:
+		push_error("SHOWCASE failed: no combat target was acquired")
+		return
 	await _engage_for(4.0)
 	await _capture_screenshot("04-combat-targeting.png")
 
@@ -93,9 +108,7 @@ func _engage_for(duration: float) -> void:
 				best_target = target
 		if best_target != null:
 			player.look_at(best_target.global_position, Vector3.UP)
-			var locked_target := targeting.acquire_target()
-			if locked_target != null:
-				print("SHOWCASE_TARGET_ACQUIRED=true")
+			targeting.set_target(best_target)
 			Input.action_press("fire_primary")
 		else:
 			Input.action_release("fire_primary")
