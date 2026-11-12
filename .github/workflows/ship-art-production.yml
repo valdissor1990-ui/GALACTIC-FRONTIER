@@ -12,6 +12,11 @@ on:
   pull_request:
     branches:
       - chatgpt/ten-minute-vertical-slice
+    paths:
+      - "scripts/blender/**"
+      - "tests/assets/**"
+      - "assets/models/ships/**"
+      - "assets/previews/**"
   workflow_dispatch:
 
 permissions:
