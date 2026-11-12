@@ -50,6 +50,17 @@ func _run_showcase() -> void:
 		push_error("SHOWCASE failed: enemy GLB has no visible mesh instances")
 		get_tree().quit(1)
 		return
+	# This is a visual-QA run, not a difficulty test. Keep hostile projectiles
+	# visible but non-lethal so the scripted capture can reach every camera stage.
+	var showcase_targets := get_tree().get_nodes_in_group("combat_targets")
+	for candidate in showcase_targets:
+		if candidate is Node3D:
+			candidate.set("projectile_damage", 0.0)
+	print("SHOWCASE_NONLETHAL_TARGETS=", showcase_targets.size())
+	var player_weapon := player.get_node_or_null("WeaponSystem")
+	if player_weapon != null:
+		player_weapon.set("projectile_damage", 4.0)
+	print("SHOWCASE_PLAYER_WEAPON_DAMAGE=", 4.0)
 	await _capture_screenshot("03-hostiles-arrive.png")
 
 	var acquired: Node3D
@@ -65,13 +76,25 @@ func _run_showcase() -> void:
 			nearest_distance = distance
 			acquired = target
 	if acquired != null:
+		# Move the selected craft into a deliberate medium shot for the capture.
+		# The real mission spawn distances are unchanged outside this showcase.
+		var forward := -player.global_transform.basis.z
+		var right := player.global_transform.basis.x
+		acquired.global_position = player.global_position + forward * 18.0 + right * 3.0
+		if acquired is CharacterBody3D:
+			(acquired as CharacterBody3D).velocity = Vector3.ZERO
+			acquired.set("max_speed", 0.0)
+			acquired.set("acceleration", 0.0)
+			acquired.set("turn_rate", 3.0)
+		acquired.look_at(player.global_position, Vector3.UP)
+		player.look_at(acquired.global_position, Vector3.UP)
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		get_tree().quit(1)
 		return
-	await _engage_for(4.0)
+	await _engage_for(2.5)
 	await _capture_screenshot("04-combat-targeting.png")
 
 	camera_rig.toggle_camera()
