@@ -29,7 +29,7 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Install virtual display and video capture tools
+      - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
           sudo apt-get install --yes xvfb ffmpeg
@@ -39,7 +39,7 @@ jobs:
       - name: Import project and validate scripts
         run: godot --headless --editor --path . --quit
 
-      - name: Capture a 20-second gameplay sequence
+      - name: Capture eight real gameplay screenshots
         shell: bash
         run: |
           set -euo pipefail
@@ -56,26 +56,47 @@ jobs:
               sleep 0.25
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 30 -video_size 1280x720 -i "$DISPLAY" -t 20.0 -an -c:v libx264 -preset veryfast -crf 19 -pix_fmt yuv420p build/GALACTIC-FRONTIER-gameplay-20s.mp4
+            for shot in $(seq -w 1 8); do
+              sleep 2.5
+              ffmpeg -y -hide_banner -loglevel error -f x11grab -video_size 1280x720 -i "$DISPLAY" -frames:v 1 "build/screenshots/gameplay-${shot}.png"
+            done
+            python3 - <<'PY'
+            from pathlib import Path
+            from PIL import Image, ImageOps, ImageDraw
+            files = sorted(Path('build/screenshots').glob('gameplay-*.png'))
+            if len(files) != 8:
+                raise SystemExit(f'Expected 8 screenshots, got {len(files)}')
+            thumbs = []
+            for path in files:
+                image = Image.open(path).convert('RGB')
+                if image.size != (1280, 720):
+                    raise SystemExit(f'Unexpected screenshot size: {path} {image.size}')
+                thumbs.append(image.resize((480, 270)))
+            sheet = Image.new('RGB', (960, 1080), '#10151d')
+            for i, image in enumerate(thumbs):
+                x = (i % 2) * 480
+                y = (i // 2) * 270
+                sheet.paste(image, (x, y))
+            sheet.save('build/screenshots/contact-sheet.png')
+            PY
             sleep 1
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
           '
 
-      - name: Verify video and gameplay sequence
+      - name: Verify screenshots and gameplay sequence
         run: |
-          test -s build/GALACTIC-FRONTIER-gameplay-20s.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-20s.mp4 | tee build/video-duration.txt
-          awk '{ if ($1 < 19.9 || $1 > 20.1) exit 1 }' build/video-duration.txt
+          test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
+          test -s build/screenshots/contact-sheet.png
+          file build/screenshots/gameplay-*.png
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
 
-      - name: Upload gameplay capture and diagnostics
+      - name: Upload gameplay screenshots and diagnostics
         uses: actions/upload-artifact@v4
         with:
           name: GALACTIC-FRONTIER-gameplay-visual-qa
           path: |
-            build/GALACTIC-FRONTIER-gameplay-20s.mp4
-            build/video-duration.txt
+            build/screenshots/*.png
             build/gameplay-showcase.log
           if-no-files-found: error
           retention-days: 30
