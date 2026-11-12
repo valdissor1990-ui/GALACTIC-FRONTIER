@@ -52,6 +52,9 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Run full demo mission progression test
+        run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
+
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
