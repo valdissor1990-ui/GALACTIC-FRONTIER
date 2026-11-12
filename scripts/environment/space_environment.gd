@@ -22,8 +22,30 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(_starfield):
 		return
 	var camera := get_viewport().get_camera_3d()
-	if camera != null:
-		_starfield.global_position = camera.global_position
+	if camera == null:
+		return
+
+	# Keep the distant sky landmarks around the active ship. The mission spans
+	# tens of kilometres; static backdrop geometry would otherwise be left
+	# behind at the starting carrier and leave later combat shots almost black.
+	_starfield.global_position = camera.global_position
+	var camera_transform := camera.global_transform
+	var azure := get_node_or_null("AzureNebula") as Node3D
+	if azure != null:
+		azure.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
+	var violet := get_node_or_null("VioletNebula") as Node3D
+	if violet != null:
+		violet.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	var planet := get_node_or_null("Aurelia") as Node3D
+	var atmosphere := get_node_or_null("AureliaAtmosphere") as Node3D
+	var planet_offset := Vector3(0.0, 26.0, -285.0)
+	if planet != null:
+		planet.global_position = camera.global_position + camera.global_basis * planet_offset
+	if atmosphere != null:
+		atmosphere.global_position = planet.global_position if planet != null else camera.global_position + camera.global_basis * planet_offset
+	var asteroids := get_node_or_null("AsteroidField") as Node3D
+	if asteroids != null:
+		asteroids.global_position = camera.global_position
 
 
 func _build_world_environment() -> void:
