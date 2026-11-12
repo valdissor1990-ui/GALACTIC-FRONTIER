@@ -150,7 +150,10 @@ func get_selected_ship_flight_config_path() -> String:
 
 
 func get_selected_ship_stats() -> Dictionary:
-	return (FLYABLE_SHIPS[selected_ship_id].stats as Dictionary).duplicate(true)
+	var stats: Variant = FLYABLE_SHIPS[selected_ship_id].get("stats", {})
+	if stats is Dictionary:
+		return stats.duplicate(true)
+	return {}
 
 
 func _save_profile() -> bool:
