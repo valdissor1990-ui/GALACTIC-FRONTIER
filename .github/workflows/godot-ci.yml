@@ -15,6 +15,7 @@ on:
       - main
       - phase-1/flight-prototype
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/audit-fixes-pr24
   workflow_dispatch:
 
 permissions:
