@@ -22,7 +22,7 @@ func _apply_hostile_materials() -> void:
 			if not (source is StandardMaterial3D):
 				continue
 			var material := (source as StandardMaterial3D).duplicate() as StandardMaterial3D
-			if material.name.to_lower().contains("glass"):
+			if material.resource_name.to_lower().contains("glass"):
 				continue
 			var original := material.albedo_color
 			material.albedo_color = Color(
