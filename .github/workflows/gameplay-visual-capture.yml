@@ -110,6 +110,7 @@ jobs:
 
       - name: Verify screenshots and gameplay sequence
         run: |
+          cat build/gameplay-showcase.log
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
           test -s build/screenshots/contact-sheet.png
           file build/screenshots/gameplay-*.png
@@ -122,6 +123,7 @@ jobs:
           fi
 
       - name: Upload gameplay screenshots and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: GALACTIC-FRONTIER-gameplay-visual-qa
