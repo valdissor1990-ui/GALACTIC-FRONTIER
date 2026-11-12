@@ -46,7 +46,7 @@ jobs:
           godot --version | grep -E '^4\.7\.2\.stable'
 
       - name: Import project and parse scripts
-        run: godot --headless --editor --path . --quit
+        run: godot --headless --editor --path . --import --quit
 
       - name: Run FlightModel unit tests
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
