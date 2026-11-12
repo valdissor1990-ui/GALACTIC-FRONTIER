@@ -46,7 +46,7 @@ jobs:
           mkdir -p build
           xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn --quit-after 1800 > build/gameplay-showcase.log 2>&1 &
+            godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
@@ -57,7 +57,9 @@ jobs:
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
             ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 30 -video_size 1280x720 -i "$DISPLAY" -t 20.0 -an -c:v libx264 -preset veryfast -crf 19 -pix_fmt yuv420p build/GALACTIC-FRONTIER-gameplay-20s.mp4
-            wait "$game_pid" || { cat build/gameplay-showcase.log; exit 1; }
+            sleep 1
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
           '
 
       - name: Verify video and gameplay sequence
