@@ -41,18 +41,18 @@ func _build_world_environment() -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.22, 0.31, 0.52)
-	environment.ambient_light_energy = 0.38
+	environment.ambient_light_energy = 0.62
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.55
 	environment.glow_strength = 0.8
 	environment.ssao_enabled = true
-	environment.ssao_radius = 2.0
-	environment.ssao_intensity = 1.15
-	environment.ssil_enabled = true
+	environment.ssao_radius = 1.35
+	environment.ssao_intensity = 0.62
+	environment.ssil_enabled = false
 	environment.ssil_radius = 5.0
 	environment.ssil_intensity = 0.65
-	environment.sdfgi_enabled = true
+	environment.sdfgi_enabled = false
 	environment.sdfgi_cascades = 4
 	environment.sdfgi_min_cell_size = 0.2
 	world.environment = environment
@@ -62,7 +62,7 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = Color(0.72, 0.82, 1.0)
-	key_light.light_energy = 1.35
+	key_light.light_energy = 1.65
 	key_light.shadow_enabled = true
 	add_child(key_light)
 
