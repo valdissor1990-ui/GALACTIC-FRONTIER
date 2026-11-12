@@ -17,6 +17,7 @@ func _ready() -> void:
 
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
+	await _capture_screenshot("gameplay-01.png")
 	var travel_elapsed := 0.0
 	while mission.stage == 0 and travel_elapsed < 9.0:
 		player.look_at(mission._objective_position, Vector3.UP)
@@ -37,6 +38,7 @@ func _run_showcase() -> void:
 	if mission.stage == 1:
 		mission._complete_relay_scan()
 	await get_tree().create_timer(0.4).timeout
+	await _capture_screenshot("gameplay-02.png")
 
 	var acquired: Node3D
 	var nearest_distance := INF
@@ -51,25 +53,50 @@ func _run_showcase() -> void:
 			nearest_distance = distance
 			acquired = target
 	if acquired != null:
+		# Bring one hostile into a readable showcase range; normal mission spawn
+		# distances and combat behavior remain unchanged outside this QA scene.
+		acquired.global_position = player.global_position + (-player.global_basis.z * 34.0) + Vector3.UP * 2.0
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired != null:
 		var enemy_model := acquired.find_child("RaiderInterceptorModel", true, false)
 		print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(enemy_model))
+	await _capture_screenshot("gameplay-03.png")
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		return
-	await _engage_for(4.0)
+	await _engage_for(1.5)
+	await _capture_screenshot("gameplay-04.png")
+	await _engage_for(2.0)
 
 	camera_rig.toggle_camera()
-	await get_tree().create_timer(2.0).timeout
+	await get_tree().create_timer(0.8).timeout
+	await _capture_screenshot("gameplay-05.png")
+	await get_tree().create_timer(1.2).timeout
 	camera_rig.toggle_camera()
-	await _engage_for(2.0)
+	await _engage_for(1.0)
+	await _capture_screenshot("gameplay-06.png")
+	await _engage_for(1.0)
+	await _capture_screenshot("gameplay-07.png")
 
 	Input.action_release("fire_primary")
 	Input.action_release("move_forward")
 	Input.action_release("boost")
+	await _capture_screenshot("gameplay-08.png")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+
+
+func _capture_screenshot(filename: String) -> void:
+	await RenderingServer.frame_post_draw
+	var directory := ProjectSettings.globalize_path("user://screenshots")
+	DirAccess.make_dir_recursive_absolute(directory)
+	var path := directory.path_join(filename)
+	var image := get_viewport().get_texture().get_image()
+	var error := image.save_png(path)
+	if error != OK:
+		push_error("SHOWCASE screenshot failed: %s (error %d)" % [filename, error])
+		return
+	print("SHOWCASE_SCREENSHOT=", path)
 
 
 func _count_meshes(root_node: Node) -> int:
