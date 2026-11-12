@@ -66,6 +66,9 @@ jobs:
       - name: Validate actual Aurelia route clearance and scan binding
         run: godot --headless --path . res://tests/demo/test_route_safety.tscn
 
+      - name: Validate procedural engine, weapon and impact audio streams
+        run: godot --headless --path . --script res://tests/audio/test_audio_manager.gd
+
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
