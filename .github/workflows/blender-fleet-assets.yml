@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: blender-fleet-${{ github.ref }}
+  group: blender-fleet-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
