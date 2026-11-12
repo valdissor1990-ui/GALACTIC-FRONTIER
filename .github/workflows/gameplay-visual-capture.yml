@@ -58,11 +58,12 @@ jobs:
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
             for attempt in $(seq 1 80); do
-              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
+              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log && grep -q "MISSION_READY" build/gameplay-showcase.log; then ready=1; break; fi
               if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
               sleep 0.25
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
+            sleep 1.5
             for shot in $(seq -w 1 8); do
               sleep 2.5
               ffmpeg -y -hide_banner -loglevel error -f x11grab -video_size 1280x720 -i "$DISPLAY" -frames:v 1 "build/screenshots/gameplay-${shot}.png"
