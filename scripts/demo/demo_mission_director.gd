@@ -44,7 +44,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if is_instance_valid(_station):
+		_station.rotate_z(delta * 0.012)
+	if is_instance_valid(_beacon):
+		_beacon.rotate_z(delta * 0.32)
 	if stage == MissionStage.COMPLETE or stage == MissionStage.FAILED:
+		_update_hud()
 		return
 	mission_seconds += delta
 	if player == null or not is_instance_valid(player):
@@ -178,7 +183,15 @@ func _update_hud() -> void:
 	_distance_label.text = "NAV  %05.0f m" % _distance_to_objective()
 	_timer_label.text = "%02d:%02d" % [int(mission_seconds) / 60, int(mission_seconds) % 60]
 	var total_waves := 6
-	var completed_waves := (3 - wave_index if stage == MissionStage.DEFEND_RELAY else 3 + (3 - wave_index) if stage == MissionStage.DEFEND_WRECK else 0)
+	var completed_waves := 0
+	if stage == MissionStage.DEFEND_RELAY:
+		completed_waves = wave_index - 1
+	elif stage == MissionStage.INVESTIGATE_WRECK or stage == MissionStage.SCAN_WRECK:
+		completed_waves = 3
+	elif stage == MissionStage.DEFEND_WRECK:
+		completed_waves = 3 + wave_index - 1
+	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
+		completed_waves = 6
 	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES" % [completed_waves, total_waves]
 
 
