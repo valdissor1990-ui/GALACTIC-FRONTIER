@@ -5,3 +5,4 @@
 [node name="CruiserVisual" type="Node3D"]
 
 [node name="LeviathanCruiser" parent="." instance=ExtResource("1")]
+rotation_degrees = Vector3(0, 180, 0)
