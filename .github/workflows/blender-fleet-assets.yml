@@ -1,14 +1,6 @@
 name: Blender Fleet Asset Build
 
 on:
-  push:
-    branches:
-      - chatgpt/ten-minute-vertical-slice
-      - chatgpt/ship-art-production
-    paths:
-      - "scripts/blender/**"
-      - "tests/assets/**"
-      - ".github/workflows/blender-fleet-assets.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -25,13 +17,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: blender-fleet-${{ github.ref }}
+  group: blender-fleet-global
   cancel-in-progress: false
 
 jobs:
   build-fleet:
     timeout-minutes: 40
-    name: Build and publish seven-class fleet
+    name: Build, validate and package seven-class fleet
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
