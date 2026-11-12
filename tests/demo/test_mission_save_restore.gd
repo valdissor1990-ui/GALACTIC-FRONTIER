@@ -1,4 +1,4 @@
-extends SceneTree
+extends Node
 ## End-to-end quick-save test against the actual Silent Relay scene.
 ## Run:
 ##   godot --headless --path . --script res://tests/demo/test_mission_save_restore.gd
@@ -8,7 +8,7 @@ var _failed: int = 0
 var _mission: Node
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	print("=== GALACTIC FRONTIER — Mission quick-save tests ===")
 	call_deferred("_run_tests")
 
@@ -22,7 +22,7 @@ func _run_tests() -> void:
 		_finish()
 		return
 	_mission = packed.instantiate()
-	root.add_child(_mission)
+	get_tree().root.add_child(_mission)
 	await process_frame
 	await process_frame
 
@@ -97,7 +97,7 @@ func _finish() -> void:
 	print("")
 	if _failed == 0:
 		print("RESULT: PASS (%d assertions)" % _passed)
-		quit(0)
+		get_tree().quit(0)
 	else:
 		print("RESULT: FAIL (%d passed, %d failed)" % [_passed, _failed])
-		quit(1)
+		get_tree().quit(1)
