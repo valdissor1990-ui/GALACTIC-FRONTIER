@@ -245,15 +245,41 @@ func _create_planet_texture() -> Texture2D:
 
 
 func _build_asteroid_field() -> void:
+	# A denser base sphere plus deterministic vertex displacement avoids the
+	# smooth blue-marble look of the first capture and gives each instance a
+	# fractured, rocky silhouette without spawning hundreds of separate nodes.
 	var asteroid_mesh := SphereMesh.new()
 	asteroid_mesh.radius = 1.0
 	asteroid_mesh.height = 2.0
-	asteroid_mesh.radial_segments = 9
-	asteroid_mesh.rings = 5
-	var asteroid_material := StandardMaterial3D.new()
-	asteroid_material.albedo_color = Color(0.19, 0.22, 0.28)
-	asteroid_material.metallic = 0.18
-	asteroid_material.roughness = 0.96
+	asteroid_mesh.radial_segments = 20
+	asteroid_mesh.rings = 12
+	var asteroid_shader := Shader.new()
+	asteroid_shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+
+varying float rock_variation;
+
+void vertex() {
+	vec3 p = VERTEX;
+	float broad = sin(p.x * 4.7 + p.y * 2.1) * cos(p.z * 3.8 - p.x * 1.9);
+	float fracture = sin(p.y * 9.3 + p.z * 6.1) * cos(p.x * 8.2 + p.z * 4.4);
+	float chips = sin(p.x * 15.0 + p.y * 11.0) * sin(p.z * 13.0 - p.y * 7.0);
+	float displacement = broad * 0.105 + fracture * 0.042 + chips * 0.014;
+	VERTEX += NORMAL * displacement;
+	rock_variation = broad * 0.5 + fracture * 0.22 + chips * 0.12;
+}
+
+void fragment() {
+	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
+	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
+	ALBEDO = vec3(value * 0.88, value * 0.93, value);
+	METALLIC = 0.12;
+	ROUGHNESS = 0.94;
+}
+"""
+	var asteroid_material := ShaderMaterial.new()
+	asteroid_material.shader = asteroid_shader
 	asteroid_mesh.material = asteroid_material
 
 	var field := _make_multimesh("AsteroidField", asteroid_mesh, asteroid_count)
