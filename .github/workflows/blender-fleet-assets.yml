@@ -8,6 +8,9 @@ on:
     paths:
       - "scripts/blender/**"
       - ".github/workflows/blender-fleet-assets.yml"
+  pull_request:
+    branches:
+      - chatgpt/ten-minute-vertical-slice
   workflow_dispatch:
 
 permissions:
@@ -25,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Install Blender 4.5.16
         run: |
           sudo apt-get update
@@ -67,7 +70,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/models/ships assets/previews
-          if git diff --cached --quiet; then echo "Ship assets unchanged."; else git commit -m "Build expanded seven-class original ship fleet"; git push origin "HEAD:${GITHUB_REF_NAME}"; fi
+          if git diff --cached --quiet; then echo "Ship assets unchanged."; else git commit -m "Build expanded seven-class original ship fleet"; git push origin "HEAD:${{ github.head_ref || github.ref_name }}"; fi
       - uses: actions/upload-artifact@v4
         with:
           name: galactic-frontier-ship-fleet
