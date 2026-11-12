@@ -378,7 +378,7 @@ def add_micro_detail(root, materials):
                  (0,0,side*-.10))
         # Exposed hinge cylinders, hydraulic lines and actuator covers.
         cylinder_between("Player wing pivot %s" % side,
-                         (side*.82,-.10,-.22),(side*1.85,.55,-.22),.10,dark,.07)
+                         (side*.82,-.10,-.22),(side*1.85,.55,-.22),.10,dark,radius_end=.07)
         cube("Player actuator cover %s" % side,
              (side*1.42,.42,-.17),(.34,.62,.12),armor,.055,(0,0,side*-.25))
         # Engine heat exchanger stacks and ceramic nozzle collars.
@@ -387,7 +387,7 @@ def add_micro_detail(root, materials):
             cube("Player engine heat sink %s %s" % (side,k),
                  (side*1.34,y,-.43),(.52,.075,.13),dark,.022)
         cylinder_between("Player engine ceramic collar %s" % side,
-                         (side*.92,6.05,-.02),(side*.92,6.35,-.02),.39,armor,.34)
+                         (side*.92,6.05,-.02),(side*.92,6.35,-.02),.39,armor,radius_end=.34)
         # Small optical/navigation modules on wing tips.
         cube("Player wingtip nav pod %s" % side,
              (side*4.98,2.28,.24),(.30,.50,.16),dark,.065)
