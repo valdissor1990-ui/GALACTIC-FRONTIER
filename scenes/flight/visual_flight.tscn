@@ -33,6 +33,7 @@ visible = false
 visible = false
 
 [node name="PlayerFighterModel" parent="PlayerShip/Visual" instance=ExtResource("2")]
+rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(0.30, 0.30, 0.30)
 
 [node name="ChaseCamera" parent="PlayerShip/CameraRig"]
