@@ -20,4 +20,4 @@ visible = false
 [node name="RaiderInterceptorModel" type="Node3D" parent="Visual"]
 script = ExtResource("2")
 source_path = "res://assets/models/ships/enemy_fighter.glb"
-model_scale = Vector3(0.46, 0.46, 0.46)
+model_scale = Vector3(0.68, 0.68, 0.68)
