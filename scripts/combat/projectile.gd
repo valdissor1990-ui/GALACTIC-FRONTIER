@@ -1,6 +1,6 @@
 extends Area3D
 class_name CombatProjectile
-## Straight-line projectile used by the first combat prototype.
+## Energy bolt with a visible luminous core, trail and impact burst.
 
 @export_range(1.0, 2000.0, 1.0) var speed: float = 180.0
 @export_range(0.1, 1000.0, 0.1) var damage: float = 18.0
@@ -21,6 +21,7 @@ func configure(direction: Vector3, source: Node3D, projectile_speed: float, proj
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	_create_trail()
 
 
 func _physics_process(delta: float) -> void:
@@ -30,6 +31,52 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 
 
+func _create_trail() -> void:
+	var hostile := _source is EnemyCombatAI
+	var tint := Color(1.0, 0.16, 0.045) if hostile else Color(0.08, 0.66, 1.0)
+	var trail := GPUParticles3D.new()
+	trail.name = "EnergyTrail"
+	trail.amount = 26
+	trail.lifetime = 0.24
+	trail.explosiveness = 0.0
+	trail.randomness = 0.22
+	trail.local_coords = false
+	trail.position = Vector3(0.0, 0.0, 0.22)
+	var process := ParticleProcessMaterial.new()
+	process.direction = Vector3(0.0, 0.0, 1.0)
+	process.spread = 8.0
+	process.initial_velocity_min = 3.0
+	process.initial_velocity_max = 8.0
+	process.gravity = Vector3.ZERO
+	process.damping_min = 1.0
+	process.damping_max = 2.5
+	process.scale_min = 0.035
+	process.scale_max = 0.09
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(1.0, 1.0, 1.0, 0.95))
+	gradient.add_point(0.35, tint)
+	gradient.set_color(gradient.get_point_count() - 1, Color(tint.r, tint.g, tint.b, 0.0))
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = gradient
+	process.color_ramp = ramp
+	trail.process_material = process
+	var particle_mesh := SphereMesh.new()
+	particle_mesh.radius = 0.08
+	particle_mesh.height = 0.16
+	particle_mesh.radial_segments = 8
+	particle_mesh.rings = 4
+	var particle_material := StandardMaterial3D.new()
+	particle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	particle_material.albedo_color = tint
+	particle_material.emission_enabled = true
+	particle_material.emission = tint
+	particle_material.emission_energy_multiplier = 3.0
+	particle_mesh.material = particle_material
+	trail.draw_pass_1 = particle_mesh
+	add_child(trail)
+	trail.emitting = true
+
+
 func _on_body_entered(body: Node3D) -> void:
 	if body == null or _is_source_or_child(body):
 		return
@@ -37,6 +84,8 @@ func _on_body_entered(body: Node3D) -> void:
 	var damageable := _find_damageable(body)
 	if damageable != null:
 		damageable.call("take_damage", damage)
+	var tint := Color(1.0, 0.16, 0.045) if _source is EnemyCombatAI else Color(0.08, 0.66, 1.0)
+	CombatEffects.spawn_burst(get_tree().current_scene, global_position, tint, 0.55)
 	queue_free()
 
 
