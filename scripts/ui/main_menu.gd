@@ -5,6 +5,7 @@ const BACKDROP_SCRIPT := preload("res://scripts/ui/menu_backdrop.gd")
 
 var _update_button: Button
 var _update_status: Label
+var _rollback_button: Button
 var _update_ready := false
 
 
@@ -87,6 +88,14 @@ func _build_menu() -> void:
 	_update_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_update_status.custom_minimum_size = Vector2(390, 24)
 	layout.add_child(_update_status)
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater != null and updater.has_method("has_rollback_backup") and updater.has_rollback_backup():
+		_rollback_button = Button.new()
+		_rollback_button.name = "RollbackUpdateButton"
+		_rollback_button.text = "  ROLL BACK LAST VERSION"
+		_rollback_button.custom_minimum_size = Vector2(390, 40)
+		_rollback_button.pressed.connect(_confirm_rollback)
+		layout.add_child(_rollback_button)
 	var controls := Label.new()
 	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F5 — SAVE     F9 — LOAD"
 	controls.add_theme_font_size_override("font_size", 12)
@@ -97,6 +106,23 @@ func _build_menu() -> void:
 	quit.custom_minimum_size = Vector2(390, 42)
 	quit.pressed.connect(func() -> void: get_tree().quit())
 	layout.add_child(quit)
+
+
+func _confirm_rollback() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Restore previous version?"
+	dialog.dialog_text = "The current game files will be replaced with the previous version. Your save files will remain unchanged."
+	add_child(dialog)
+	dialog.confirmed.connect(_perform_rollback)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.popup_centered()
+
+
+func _perform_rollback() -> void:
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater != null:
+		updater.rollback_last_update()
 
 
 func _on_update_button_pressed() -> void:
