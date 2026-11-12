@@ -81,7 +81,7 @@ def wing(name, outline, z0, z1, material, bevel=.07):
     return o
 
 def turret(name,x,y,z,scale,mats):
-    hullmat,armor,dark,accent,glow=mats
+    hullmat,armor,dark,accent,glass,glow=mats
     box(name+" armored base",(x,y,z),(scale*1.35,scale*1.55,scale*.38),dark,scale*.12)
     sphere(name+" rotating turret",(x,y,z+scale*.30),(scale*.54,scale*.62,scale*.32),armor)
     for s in (-1,1):
@@ -92,7 +92,7 @@ def turret(name,x,y,z,scale,mats):
     return
 
 def engine(name,x,y,z,radius,mats):
-    hullmat,armor,dark,accent,glow=mats
+    hullmat,armor,dark,accent,glass,glow=mats
     beam(name+" nacelle",(x,y-.55,z),(x,y+.48,z),radius,dark,radius*.78)
     beam(name+" ceramic lip",(x,y+.30,z),(x,y+.68,z),radius*.82,armor,radius*.65)
     beam(name+" recessed throat",(x,y+.45,z),(x,y+.72,z),radius*.52,dark,radius*.38)
@@ -102,7 +102,7 @@ def engine(name,x,y,z,radius,mats):
             (radius*.10,radius*.48,radius*.16),armor,.018)
 
 def detail_panels(prefix, xspan, ylist, z, mats, count=5):
-    hullmat,armor,dark,accent,glow=mats
+    hullmat,armor,dark,accent,glass,glow=mats
     for side in (-1,1):
         for i,y in enumerate(ylist):
             x=side*(xspan*(.32+.12*(i%3)))
@@ -270,7 +270,7 @@ def render_setup(target, extent):
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.color=(.018,.025,.04)
-    distance=max(extent*1.15,18.0)
+    distance=max(extent*1.65,18.0)
     camera_offset=Vector((distance*.68,-distance*.86,distance*.58))
     bpy.ops.object.camera_add(location=target+camera_offset)
     cam=bpy.context.object; cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler()
