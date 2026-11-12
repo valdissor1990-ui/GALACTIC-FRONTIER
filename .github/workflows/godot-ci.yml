@@ -55,6 +55,44 @@ jobs:
             exit 1
           fi
 
+      - name: Validate every scene and its external dependencies
+        run: |
+          mkdir -p build
+          cat > build/check_scenes.gd <<'EOF'
+          extends SceneTree
+          func _initialize() -> void:
+              call_deferred("_run")
+          func _run() -> void:
+              var directories: Array[String] = ["res://scenes", "res://tests"]
+              var failures := 0
+              while not directories.is_empty():
+                  var directory: String = directories.pop_back()
+                  var access := DirAccess.open(directory)
+                  if access == null:
+                      push_error("SCENE_SCAN_DIR_FAIL: " + directory)
+                      failures += 1
+                      continue
+                  access.list_dir_begin()
+                  while true:
+                      var entry := access.get_next()
+                      if entry.is_empty():
+                          break
+                      if entry.begins_with("."):
+                          continue
+                      var path := directory.path_join(entry)
+                      if access.current_is_dir():
+                          directories.append(path)
+                      elif entry.ends_with(".tscn"):
+                          var packed := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+                          if packed == null:
+                              push_error("SCENE_LOAD_FAIL: " + path)
+                              failures += 1
+                  access.list_dir_end()
+              print("SCENE_DEPENDENCY_VALIDATION failures=", failures)
+              quit(1 if failures > 0 else 0)
+          EOF
+          godot --headless --path . --script build/check_scenes.gd
+
       - name: Run FlightModel unit tests
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
@@ -68,8 +106,11 @@ jobs:
 
       - name: Run full demo mission progression test
         run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
-      - name: Run mission failure and retry-flow regression test
+      - name: Run mission failure and wave-statistics regression test
         run: godot --headless --path . res://tests/demo/test_mission_failure.tscn
+
+      - name: Run mission retry and main-menu navigation test
+        run: godot --headless --path . --script res://tests/demo/test_mission_retry.gd
 
       - name: Headless main menu smoke test
         run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
