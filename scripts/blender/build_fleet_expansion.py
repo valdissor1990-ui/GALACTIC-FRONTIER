@@ -131,7 +131,12 @@ def build_heavy_fighter(m):
         wing("Aegis layered wing armor "+str(s),[(s*x,y) for x,y in ([(.95,-2.5),(1.5,-1.7),(5.2,.8),(5.55,1.7),(4.3,1.55),(1.25,.9)] if s>0 else reversed([(.95,-2.5),(1.5,-1.7),(5.2,.8),(5.55,1.7),(4.3,1.55),(1.25,.9)]))],.13,.22,a,.045)
         box("Aegis wing root actuator "+str(s),(s*1.45,.0,-.22),(.55,2.1,.32),d,.12)
         box("Aegis wing IFF stripe "+str(s),(s*4.55,1.15,.24),(.12,.92,.035),ac,.018)
-        beam("Aegis wing cannon "+str(s),(s*1.55,-2.0,-.12),(s*1.55,-5.2,-.12),.12,d)
+        # Integrated forward cannon: armored socket sits on the wing root and
+        # the barrel follows the wing upper surface before projecting past the nose.
+        box("Aegis cannon armored socket "+str(s),(s*1.22,-2.85,.245),(.34,1.48,.22),d,.075)
+        beam("Aegis recessed cannon barrel "+str(s),(s*1.22,-2.45,.31),(s*1.22,-5.95,.31),.105,d,.085)
+        beam("Aegis cannon muzzle ring "+str(s),(s*1.22,-5.78,.31),(s*1.22,-6.02,.31),.14,a,.11)
+        sphere("Aegis ion emitter "+str(s),(s*1.22,-6.05,.31),(.105,.09,.105),gl)
         turret("Aegis dorsal turret "+str(s),s*1.8,1.4,.55,.62,m)
         wing("Aegis canted tail fin "+str(s),[(s*.55,3.0),(s*1.1,3.3),(s*1.65,5.8),(s*1.2,5.3)],.25,1.15,a,.055)
         engine("Aegis main drive "+str(s),s*.95,5.7,-.05,.52,m)
@@ -153,13 +158,20 @@ def build_bomber(m):
             engine("Bastion wing drive %s %s"%(s,j),x,5.4,-.05,.48,m)
         turret("Bastion remote defense turret "+str(s),s*2.3,1.9,.86,.72,m)
         for j in range(4):
-            box("Bastion wing bomb pylon %s %s"%(s,j),(s*(3.0+j*1.35),-.1+j*.72,-.43),(.34,.9,.25),d,.06)
-    # Two recessed internal payload bays with mechanical doors.
+            x=s*(3.0+j*1.35)
+            y=-.1+j*.72
+            box("Bastion wing bomb pylon %s %s"%(s,j),(x,y,-.43),(.34,.9,.25),d,.06)
+            # Each ordnance unit is visibly hard-mounted beneath its own pylon.
+            beam("Bastion ordnance suspension %s %s"%(s,j),(x,y,-.54),(x,y,-.68),.085,a,.07)
+            beam("Bastion smart bomb casing %s %s"%(s,j),(x,y+.62,-.78),(x,y-.62,-.78),.205,ac,.16)
+            sphere("Bastion bomb nose %s %s"%(s,j),(x,y-.62,-.78),(.16,.16,.16),a)
+            for fin_side in (-1,1):
+                box("Bastion bomb stabilizer %s %s %s"%(s,j,fin_side),
+                    (x+fin_side*.13,y+.42,-.78),(.26,.24,.045),d,.025)
+    # Two recessed internal payload bays remain closed until the release animation.
     for s in (-1,1):
         box("Bastion bomb bay rim "+str(s),(s*.56,1.0,-.78),(.72,4.4,.16),d,.10)
         box("Bastion sliding bay door "+str(s),(s*.56,1.0,-.89),(.58,3.95,.10),a,.06)
-        for j in range(4):
-            beam("Bastion precision payload "+str(s)+" "+str(j),(s*.56,-.8+j*1.15,-1.02),(s*.56,-.8+j*1.15,-1.75),.16,ac)
     box("Bastion armored cockpit",(0,-5.2,.70),(1.75,2.4,.25),d,.22)
     sphere("Bastion cockpit glazing",(0,-5.3,.92),(.65,1.2,.36),g)
     detail_panels("Bastion",1.4,[-3,-1,1,3,5],.82,m)
@@ -270,22 +282,22 @@ def render_setup(target, extent):
     scene.render.resolution_x=1500; scene.render.resolution_y=1000; scene.render.resolution_percentage=100
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
-    scene.world=world; world.color=(.018,.025,.04)
-    distance=max(extent*1.65,18.0)
+    scene.world=world; world.color=(.026,.034,.052)
+    distance=max(extent*1.35,16.0)
     camera_offset=Vector((distance*.68,-distance*.86,distance*.58))
     bpy.ops.object.camera_add(location=target+camera_offset)
     cam=bpy.context.object; cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler()
-    cam.data.lens=55; scene.camera=cam
+    cam.data.lens=58; scene.camera=cam
     light_specs=[
-      ("Key",target+Vector((extent*.20,-extent*.65,extent*.95)),4200,extent*.72,(.72,.84,1)),
-      ("Rim",target+Vector((-extent*.85,extent*.28,extent*.55)),5000,extent*.62,(.15,.36,1)),
-      ("Warm",target+Vector((extent*.78,extent*.58,extent*.28)),3200,extent*.52,(1,.30,.12)),
-      ("Front",target+Vector((0,-extent*.95,extent*.22)),1800,extent*.44,(.55,.72,1))]
+      ("Key",target+Vector((extent*.20,-extent*.65,extent*.95)),5200,extent*.72,(.72,.84,1)),
+      ("Rim",target+Vector((-extent*.85,extent*.28,extent*.55)),5800,extent*.62,(.15,.36,1)),
+      ("Warm",target+Vector((extent*.78,extent*.58,extent*.28)),3800,extent*.52,(1,.30,.12)),
+      ("Front",target+Vector((0,-extent*.95,extent*.22)),2600,extent*.44,(.55,.72,1))]
     for name,loc,power,size,color in light_specs:
         bpy.ops.object.light_add(type="AREA",location=loc); l=bpy.context.object
         l.name=name; l.data.energy=power; l.data.shape="DISK"; l.data.size=size; l.data.color=color
         l.rotation_euler=(target-l.location).to_track_quat("-Z","Y").to_euler()
-    floor=mat("Studio | matte charcoal",(.012,.018,.028),.2,.52)
+    floor=mat("Studio | matte charcoal",(.020,.028,.042),.2,.52)
     box("Studio floor",(target.x,target.y,target.z-extent*.28),(extent*8,extent*8,.2),floor,0)
     return cam
 
