@@ -47,6 +47,11 @@ func _build_menu() -> void:
 	start.custom_minimum_size = Vector2(390, 54)
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
+	var hangar := Button.new()
+	hangar.text = "  FLEET HANGAR"
+	hangar.custom_minimum_size = Vector2(390, 48)
+	hangar.pressed.connect(_open_hangar)
+	layout.add_child(hangar)
 	var save_manager := get_node_or_null("/root/GameSave")
 	var saved_game: Dictionary = save_manager.call("load_slot", "silent_relay") if save_manager != null else {"ok": false}
 	if saved_game.ok:
@@ -103,3 +108,9 @@ func _restore_saved_mission(payload: Dictionary) -> void:
 		return
 	if not director.call("restore_from_save", payload):
 		push_error("Continue failed: checkpoint data was rejected.")
+
+
+func _open_hangar() -> void:
+	var error := get_tree().change_scene_to_file("res://scenes/ui/fleet_hangar.tscn")
+	if error != OK:
+		push_error("Could not open fleet hangar: %s" % error)
