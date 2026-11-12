@@ -56,6 +56,10 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Validate all seven ship GLB assets
+        if: hashFiles('tests/assets/test_ship_assets.gd') != ''
+        run: godot --headless --path . --script res://tests/assets/test_ship_assets.gd
+
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
