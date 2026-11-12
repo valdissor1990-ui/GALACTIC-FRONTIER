@@ -90,8 +90,10 @@ jobs:
 
       - name: Stage generated assets for Godot import
         run: |
-          mkdir -p assets/models/ships assets/previews
+          mkdir -p art_source/ships assets/models/ships assets/previews
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
+            rm -f "assets/models/ships/${ship}.blend"
             cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
             cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
           done
@@ -111,15 +113,19 @@ jobs:
           git reset --hard
           git fetch origin "$BRANCH"
           git checkout -B fleet-publish "origin/$BRANCH"
+          mkdir -p art_source/ships assets/models/ships assets/previews
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            test -s "assets/models/ships/${ship}.glb"
-            test -s "assets/previews/${ship}_preview.png"
+            test -s "build/fleet/${ship}.blend"
+            test -s "build/fleet/${ship}.glb"
+            test -s "build/fleet/${ship}_preview.png"
+            cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
+            rm -f "assets/models/ships/${ship}.blend"
             cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
             cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
           done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/ships/*.blend assets/models/ships/*.glb assets/previews/*_preview.png
+          git add -A art_source/ships assets/models/ships assets/previews
           if git diff --cached --quiet; then
             echo "Generated fleet assets are already current."
           else
