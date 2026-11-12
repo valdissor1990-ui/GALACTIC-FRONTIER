@@ -139,8 +139,16 @@ jobs:
             echo "Generated fleet assets are already current."
           else
             git commit -m "Publish validated seven-class fleet assets"
-            git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
+            git push origin "HEAD:$BRANCH"
           fi
+          git fetch origin "$BRANCH"
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            git cat-file -e "origin/$BRANCH:art_source/ships/${ship}.blend"
+            if git cat-file -e "origin/$BRANCH:assets/models/ships/${ship}.blend" 2>/dev/null; then
+              echo "Blender source was incorrectly left inside Godot resources: ${ship}.blend"
+              exit 1
+            fi
+          done
 
       - name: Upload complete fleet build and validation report
         uses: actions/upload-artifact@v4
