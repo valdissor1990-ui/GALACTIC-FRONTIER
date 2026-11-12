@@ -5,5 +5,8 @@
 
 [node name="TenMinuteDemo" instance=ExtResource("1")]
 
+[node name="CombatEncounterController" parent="." index="6"]
+auto_start = false
+
 [node name="DemoMissionDirector" type="Node" parent="."]
 script = ExtResource("2")
