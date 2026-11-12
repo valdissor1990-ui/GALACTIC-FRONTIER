@@ -81,7 +81,9 @@ func _on_body_entered(body: Node3D) -> void:
 	if body == null or _is_source_or_child(body):
 		return
 
-	AudioManager.play_3d(AudioManager.impact_stream, global_position, -8.0, 30.0, 520.0)
+	var audio_manager := get_node_or_null("/root/AudioManager")
+	if audio_manager != null:
+		audio_manager.call("play_3d", audio_manager.get("impact_stream"), global_position, -8.0, 30.0, 520.0)
 	var damageable := _find_damageable(body)
 	if damageable != null:
 		damageable.call("take_damage", damage)
