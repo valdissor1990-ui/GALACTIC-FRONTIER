@@ -59,8 +59,14 @@ jobs:
           count="$(find build/screenshots -maxdepth 1 -type f -name '*.png' | wc -l)"
           test "$count" -eq 8
           grep -q "SHOWCASE_READY" build/gameplay-showcase.log
+          grep -Eq "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          grep -Eq "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -q "SHOWCASE_TARGET_ACQUIRED=true" build/gameplay-showcase.log
           grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log
+          if grep -Eq "No loader found for resource|Parse Error:" build/gameplay-showcase.log; then
+            echo "Godot failed to load a scene or GLB resource."
+            exit 1
+          fi
 
       - name: Build 960x1080 contact sheet
         run: |
