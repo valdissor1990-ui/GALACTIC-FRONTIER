@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://assets/models/ships/enemy_fighter.glb" id="2"]
 [ext_resource type="Script" path="res://scripts/visual/ship_visual_fallback.gd" id="3"]
 
 [node name="EnemyFighterVisual" instance=ExtResource("1")]
@@ -9,9 +8,9 @@
 [node name="Visual" parent="." index="1"]
 script = ExtResource("3")
 imported_model_name = &"RaiderInterceptorModel"
+imported_model_path = "res://assets/models/ships/enemy_fighter.glb"
+imported_model_scale = Vector3(0.3, 0.3, 0.3)
 fallback_mesh_names = [&"Hull", &"Wings", &"LeftEngine", &"RightEngine"]
 profile = 1
 
 
-[node name="RaiderInterceptorModel" parent="Visual" instance=ExtResource("2")]
-scale = Vector3(0.30, 0.30, 0.30)
