@@ -472,7 +472,7 @@ func _show_mission_result(success: bool) -> void:
 	if _result_shown:
 		return
 	_result_shown = true
-	if DisplayServer.get_name() == "headless" or get_tree().get_first_node_in_group("qa_demo_driver") != null:
+	if get_tree().get_first_node_in_group("qa_demo_driver") != null:
 		print("MISSION_RESULT_QA_SUPPRESSED success=", success)
 		return
 	if is_instance_valid(player):
