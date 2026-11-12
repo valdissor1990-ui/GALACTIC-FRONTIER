@@ -65,6 +65,18 @@ func _run_tests() -> void:
 	_assert_true(is_equal_approx(float(director.get("mission_seconds")), 123.5), "F9 restores mission timer")
 	_assert_true(int(director.get("stage")) == 0, "F9 restores mission stage")
 
+	# A saved defense checkpoint must recreate the current wave, not duplicate it.
+	director.set("stage", 2)
+	director.set("wave_index", 1)
+	director.call("_save_quick_slot")
+	director.set("stage", 0)
+	director.set("wave_index", 0)
+	director.call("_load_quick_slot")
+	_assert_true(int(director.get("stage")) == 2, "defense checkpoint restores its mission stage")
+	_assert_true(int(director.get("wave_index")) == 1, "defense checkpoint restores the wave index")
+	_assert_true(int(director.get("enemies_remaining")) == 2, "defense checkpoint recreates the active wave")
+	_assert_true(get_tree().get_nodes_in_group("hostile_fighters").size() == 2, "restored wave contains exactly two hostiles")
+
 	_finish()
 
 
