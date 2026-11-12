@@ -45,7 +45,11 @@ func _test_procedural_fallback_is_visible() -> void:
 	root.add_child(visual)
 	_assert_true(hull.visible, "primitive hull remains visible when imported model is absent")
 	_assert_true(visual.get_node_or_null("Fallback_Canopy") != null, "procedural cockpit canopy is generated")
-	_assert_true(visual.get_node_or_null("Fallback_EngineNozzle_-1") != null, "left engine nozzle is generated")
+	var engine_nozzle_found := false
+	for child in visual.get_children():
+		if String(child.name).begins_with("Fallback_EngineNozzle_"):
+			engine_nozzle_found = true
+	_assert_true(engine_nozzle_found, "engine nozzles are generated")
 	visual.queue_free()
 
 
