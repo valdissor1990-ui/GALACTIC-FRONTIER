@@ -169,7 +169,7 @@ void fragment() {
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
 	planet.name = "Aurelia"
-	planet.position = Vector3(0.0, 26.0, -285.0)
+	planet.position = Vector3(-160.0, 26.0, -285.0)
 	planet.scale = Vector3.ONE * 42.0
 
 	var sphere := SphereMesh.new()
@@ -186,6 +186,7 @@ func _build_planet() -> void:
 	sphere.material = planet_material
 	planet.mesh = sphere
 	add_child(planet)
+	_build_planet_collision(planet.position)
 
 	var atmosphere := MeshInstance3D.new()
 	atmosphere.name = "AureliaAtmosphere"
@@ -206,6 +207,22 @@ func _build_planet() -> void:
 	atmosphere_mesh.material = atmosphere_material
 	atmosphere.mesh = atmosphere_mesh
 	add_child(atmosphere)
+
+
+
+func _build_planet_collision(position: Vector3) -> void:
+	var body := StaticBody3D.new()
+	body.name = "AureliaCollision"
+	body.position = position
+	body.collision_layer = 1
+	body.collision_mask = 1
+	body.add_to_group("space_obstacles")
+	var collision := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = 42.0
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
 
 
 func _create_planet_texture() -> Texture2D:
@@ -284,11 +301,7 @@ void fragment() {
 
 	var field := _make_multimesh("AsteroidField", asteroid_mesh, asteroid_count)
 	for index in range(asteroid_count):
-		var position := Vector3(
-			_rng.randf_range(-155.0, 155.0),
-			_rng.randf_range(-88.0, 88.0),
-			_rng.randf_range(-250.0, 80.0)
-		)
+		var position := _random_asteroid_position()
 		var size := _rng.randf_range(0.8, 3.8)
 		var rotation := Vector3(
 			_rng.randf_range(0.0, TAU),
@@ -301,7 +314,45 @@ void fragment() {
 			size * _rng.randf_range(0.72, 1.25)
 		))
 		field.multimesh.set_instance_transform(index, Transform3D(basis, position))
+		_add_asteroid_collision(index, position, size)
 	add_child(field)
+
+
+
+func _random_asteroid_position() -> Vector3:
+	var position := Vector3.ZERO
+	for attempt in range(80):
+		position = Vector3(
+			_rng.randf_range(-155.0, 155.0),
+			_rng.randf_range(-88.0, 88.0),
+			_rng.randf_range(-250.0, 80.0)
+		)
+		if _distance_to_route(position) > 22.0:
+			return position
+	return Vector3(45.0, _rng.randf_range(-88.0, 88.0), _rng.randf_range(-250.0, 80.0))
+
+
+func _distance_to_route(point: Vector3) -> float:
+	var route_start := Vector3.ZERO
+	var route_end := Vector3(0.0, 18.0, -720.0)
+	var route := route_end - route_start
+	var t := clampf((point - route_start).dot(route) / route.length_squared(), 0.0, 1.0)
+	return point.distance_to(route_start + route * t)
+
+
+func _add_asteroid_collision(index: int, position: Vector3, size: float) -> void:
+	var body := StaticBody3D.new()
+	body.name = "AsteroidCollision_%03d" % index
+	body.position = position
+	body.collision_layer = 1
+	body.collision_mask = 1
+	body.add_to_group("space_obstacles")
+	var collision := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = size * 0.9
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
 
 
 func _make_multimesh(node_name: String, mesh: Mesh, count: int) -> MultiMeshInstance3D:
