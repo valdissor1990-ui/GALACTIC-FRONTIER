@@ -145,6 +145,7 @@ func _spawn_wave() -> void:
 
 func _on_enemy_destroyed(enemy: Node3D) -> void:
 	if is_instance_valid(enemy):
+		CombatEffects.spawn_burst(world, enemy.global_position, Color(1.0, 0.18, 0.055), 2.1)
 		enemy.queue_free()
 	enemies_remaining = maxi(0, enemies_remaining - 1)
 	if enemies_remaining > 0:
