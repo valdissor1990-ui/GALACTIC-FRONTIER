@@ -117,7 +117,9 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.COMPLETE
 				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
 				print("MISSION_COMPLETE seconds=", mission_seconds)
-				GameSave.delete_slot("silent_relay")
+				var save_manager := _get_save_manager()
+				if save_manager != null:
+					save_manager.call("delete_slot", "silent_relay")
 				_show_mission_result(true)
 
 
@@ -206,7 +208,11 @@ func _save_checkpoint(reason: String = "manual") -> bool:
 		"player_hull": damageable.current_hull if damageable != null else 100.0,
 		"player_shield": damageable.current_shield if damageable != null else 100.0
 	}
-	var result: Dictionary = GameSave.save_slot("silent_relay", payload)
+	var save_manager := _get_save_manager()
+	if save_manager == null:
+		push_error("Checkpoint save manager is unavailable.")
+		return false
+	var result: Dictionary = save_manager.call("save_slot", "silent_relay", payload)
 	if result.ok:
 		print("CHECKPOINT_SAVED reason=", reason, " stage=", stage, " wave=", wave_index)
 		if is_instance_valid(_radio_label) and reason == "manual":
@@ -217,7 +223,10 @@ func _save_checkpoint(reason: String = "manual") -> bool:
 
 
 func _load_checkpoint() -> bool:
-	var result: Dictionary = GameSave.load_slot("silent_relay")
+	var save_manager := _get_save_manager()
+	if save_manager == null:
+		return false
+	var result: Dictionary = save_manager.call("load_slot", "silent_relay")
 	if not result.ok:
 		_set_radio("SAVE SYSTEM", "No valid local checkpoint is available.")
 		return false
@@ -261,6 +270,10 @@ func restore_from_save(payload: Dictionary) -> bool:
 		_spawn_wave()
 	_update_hud()
 	return true
+
+
+func _get_save_manager() -> Node:
+	return get_node_or_null("/root/GameSave")
 
 
 func _vector_from_payload(value: Variant, fallback: Vector3) -> Vector3:
