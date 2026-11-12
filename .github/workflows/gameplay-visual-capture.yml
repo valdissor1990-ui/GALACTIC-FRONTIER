@@ -1,0 +1,79 @@
+name: Gameplay visual quality capture
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - chatgpt/ten-minute-vertical-slice
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gameplay-visual-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Render and inspect real gameplay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Install Vulkan software renderer and capture tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xvfb ffmpeg mesa-vulkan-drivers libvulkan1 vulkan-tools
+          godot --version
+          ffmpeg -version | head -n 1
+
+      - name: Import project and validate scripts
+        run: godot --headless --editor --path . --quit
+
+      - name: Capture a 30-second gameplay sequence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xvfb-run -a -s "-screen 0 1600x900x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1600x900 --rendering-driver vulkan res://scenes/demo/gameplay_showcase.tscn --quit-after 2400 > build/gameplay-showcase.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 80); do
+              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
+            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 30 -video_size 1600x900 -i "$DISPLAY" -t 30.0 -an -c:v libx264 -preset veryfast -crf 19 -pix_fmt yuv420p build/GALACTIC-FRONTIER-gameplay-30s.mp4
+            wait "$game_pid" || { cat build/gameplay-showcase.log; exit 1; }
+          '
+
+      - name: Verify video and gameplay sequence
+        run: |
+          test -s build/GALACTIC-FRONTIER-gameplay-30s.mp4
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-30s.mp4 | tee build/video-duration.txt
+          awk '{ if ($1 < 29.9 || $1 > 30.1) exit 1 }' build/video-duration.txt
+          grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
+
+      - name: Upload gameplay capture and diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-gameplay-visual-qa
+          path: |
+            build/GALACTIC-FRONTIER-gameplay-30s.mp4
+            build/video-duration.txt
+            build/gameplay-showcase.log
+          if-no-files-found: error
+          retention-days: 30
