@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - phase-1/flight-prototype
+      - chatgpt/phase2-combat-integration
       - chatgpt/visual-overhaul
   pull_request:
     branches:
