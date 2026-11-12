@@ -95,7 +95,18 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $game = Start-Process -FilePath ".\\build\\GALACTIC-FRONTIER.exe" -ArgumentList @("--headless", "--quit-after", "10") -Wait -PassThru
+          $exe = Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe"
+          & $exe --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "Windows executable failed its engine-version startup with code $LASTEXITCODE"
+          }
+          $stdout = Join-Path $PWD "build\\windows-smoke.stdout.log"
+          $stderr = Join-Path $PWD "build\\windows-smoke.stderr.log"
+          $game = Start-Process -FilePath $exe -ArgumentList @("--headless", "--verbose", "--quit-after", "10") -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           if ($game.ExitCode -ne 0) {
+            Write-Host "----- Windows stdout -----"
+            if (Test-Path $stdout) { Get-Content $stdout }
+            Write-Host "----- Windows stderr -----"
+            if (Test-Path $stderr) { Get-Content $stderr }
             throw "Windows executable exited with code $($game.ExitCode)"
           }
