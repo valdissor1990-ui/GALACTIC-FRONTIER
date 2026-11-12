@@ -18,6 +18,7 @@ const STAGE_COMPLETE := 7
 
 
 func _ready() -> void:
+	add_to_group("qa_demo_driver")
 	print("SHOWCASE_PLAYER_MODEL_MESHES=", _count_meshes(player))
 	print("SHOWCASE_READY")
 	call_deferred("_run_showcase")
