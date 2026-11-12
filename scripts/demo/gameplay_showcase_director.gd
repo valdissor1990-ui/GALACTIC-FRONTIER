@@ -26,6 +26,9 @@ func _ready() -> void:
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var original_chase_fov := camera_rig.chase_camera.fov
+	var original_chase_position := camera_rig.chase_camera.position
+	camera_rig.chase_camera.position = Vector3(0.0, 3.6, 11.5)
+	camera_rig.chase_camera.fov = 58.0
 	await _capture_screenshot("gameplay-01.png")
 
 	# Move into the relay scan radius. The actual mission director performs
@@ -95,6 +98,7 @@ func _run_showcase() -> void:
 	Input.action_release("move_forward")
 	Input.action_release("boost")
 	camera_rig.chase_camera.fov = original_chase_fov
+	camera_rig.chase_camera.position = original_chase_position
 	await get_tree().create_timer(0.25).timeout
 	await _capture_screenshot("gameplay-08.png")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
@@ -120,8 +124,8 @@ func _place_nearest_target_for_camera() -> Node3D:
 			nearest_distance = distance
 			nearest = target
 	if nearest != null:
-		nearest.global_position = player.global_position + (-player.global_basis.z * 34.0) + Vector3.UP * 8.0
-		camera_rig.chase_camera.fov = 52.0
+		nearest.global_position = player.global_position + (-player.global_basis.z * 24.0) + Vector3.UP * 5.0
+		camera_rig.chase_camera.fov = 54.0
 		targeting.set_target(nearest)
 	return nearest
 
