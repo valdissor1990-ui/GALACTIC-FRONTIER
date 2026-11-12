@@ -2,7 +2,9 @@ extends AudioStreamPlayer3D
 ## Speed-responsive engine bed attached to the player ship.
 
 func _ready() -> void:
-	stream = AudioManager.engine_stream
+	var audio_manager := get_node_or_null("/root/AudioManager")
+	if audio_manager != null:
+		stream = audio_manager.get("engine_stream")
 	volume_db = -22.0
 	unit_size = 34.0
 	max_distance = 1200.0
