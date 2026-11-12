@@ -66,6 +66,19 @@ jobs:
           PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/validate_fleet_assets.py -- --output-dir build/fleet --report build/fleet/validation.json
           cat build/fleet/validation.json
 
+      - name: Upload generated fleet for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gf-seven-ship-fleet-review-${{ github.run_number }}
+          path: |
+            build/fleet/*.blend
+            build/fleet/*.glb
+            build/fleet/*_preview.png
+            build/fleet/validation.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Install Godot 4.7.2 and import the seven GLBs
         uses: chickensoft-games/setup-godot@v2
         with:
