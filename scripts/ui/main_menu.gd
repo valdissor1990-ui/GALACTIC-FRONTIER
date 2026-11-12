@@ -47,8 +47,15 @@ func _build_menu() -> void:
 	start.custom_minimum_size = Vector2(390, 54)
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
+	var saved_game := GameSave.load_slot("silent_relay")
+	if saved_game.ok:
+		var continue_button := Button.new()
+		continue_button.text = "  CONTINUE FLIGHT"
+		continue_button.custom_minimum_size = Vector2(390, 48)
+		continue_button.pressed.connect(_continue_game)
+		layout.add_child(continue_button)
 	var controls := Label.new()
-	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     ESC — PAUSE"
+	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F5 — SAVE     F9 — LOAD"
 	controls.add_theme_font_size_override("font_size", 12)
 	controls.add_theme_color_override("font_color", Color("#7294a8"))
 	layout.add_child(controls)
@@ -59,6 +66,33 @@ func _build_menu() -> void:
 	layout.add_child(quit)
 
 func _start_game() -> void:
+	GameSave.delete_slot("silent_relay")
 	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
 	if error != OK:
 		push_error("Could not load Silent Relay mission: %s" % error)
+
+
+func _continue_game() -> void:
+	var saved := GameSave.load_slot("silent_relay")
+	if not saved.ok:
+		push_error("Could not load the local mission checkpoint: %s" % saved.get("error", "unknown"))
+		return
+	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
+	if error != OK:
+		push_error("Could not load Silent Relay mission: %s" % error)
+		return
+	_restore_saved_mission.call_deferred(saved.payload)
+
+
+func _restore_saved_mission(payload: Dictionary) -> void:
+	await get_tree().process_frame
+	var current := get_tree().current_scene
+	if current == null:
+		push_error("Continue failed: mission scene is not active.")
+		return
+	var director := current.get_node_or_null("DemoMissionDirector")
+	if director == null or not director.has_method("restore_from_save"):
+		push_error("Continue failed: mission director is unavailable.")
+		return
+	if not director.call("restore_from_save", payload):
+		push_error("Continue failed: checkpoint data was rejected.")
