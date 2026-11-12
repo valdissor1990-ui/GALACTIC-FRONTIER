@@ -121,11 +121,84 @@ def build(m):
         if o!=root and o.type in {"MESH","EMPTY"}:o.parent=root
     return root
 
+
+def add_micro_detail(root, mats):
+    """Second-pass aerospace detailing: seams, fasteners, actuators and service hardware."""
+    hull, armor, dark, red, glass, glow = mats
+    for s in (-1, 1):
+        # Layered shoulder armor and exposed wing-root actuator housings.
+        for idx, y in enumerate((-2.15, -0.85, 0.55, 1.85)):
+            x = s * (0.72 + idx * 0.035)
+            box("Raider shoulder armor tile %s %s" % (s, idx),
+                (x, y, 0.43), (0.22, 0.76, 0.075), armor, .035,
+                (0, 0, s * -.035))
+            for k in range(4):
+                bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8,
+                    radius=.026, location=(x+s*.115, y-.27+k*.18, .475))
+                finish(bpy.context.object, dark, 0)
+        # Wing segmented access plates and visible service fasteners.
+        for idx, y in enumerate((-1.7, -.35, .95, 1.8)):
+            span = 2.25 + idx * .72
+            box("Raider wing service panel %s %s" % (s, idx),
+                (s*span, y, .165), (.58, .72, .045), armor, .028,
+                (0, 0, s*-.13))
+            for k in range(4):
+                bpy.ops.mesh.primitive_uv_sphere_add(segments=10, ring_count=6,
+                    radius=.022, location=(s*(span-.22+(k%2)*.44), y-.25+(k//2)*.5, .195))
+                finish(bpy.context.object, dark, 0)
+        # Raised panel rails, thermal louvers and actuator details along each boom.
+        for idx in range(6):
+            y = 2.25 + idx*.36
+            box("Raider boom heat-exchanger louver %s %s" % (s, idx),
+                (s*1.15, y, -.255), (.48, .075, .11), dark, .018)
+        beam("Raider exposed wing hinge %s" % s,
+             (s*.78, .55, -.24), (s*1.65, 1.28, -.24), .085, armor, .055)
+        # Wing-tip navigation housings and illuminated markers.
+        box("Raider wingtip beacon housing %s" % s,
+            (s*5.78, 1.75, .13), (.34, .58, .18), dark, .07)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12,
+            radius=.13, location=(s*5.86, 1.75, .20))
+        finish(bpy.context.object, red if s > 0 else glow, 0)
+        # Twin stabilizer edge reinforcement.
+        box("Raider fin edge reinforcement %s" % s,
+            (s*1.38, 4.75, .91), (.075, 1.15, .055), red, .018)
+        # Small antenna arrays and sensor receivers.
+        beam("Raider dorsal antenna base %s" % s,
+             (s*.30, 2.0, .48), (s*.30, 2.0, .68), .065, dark, .045)
+        beam("Raider dorsal antenna whip %s" % s,
+             (s*.30, 2.0, .68), (s*.38, 2.0, 1.08), .018, armor, .012)
+        # Engine-side cooling packs with repeated metal fins.
+        for k in range(5):
+            box("Raider engine cooling fin %s %s" % (s, k),
+                (s*1.55, 4.45+k*.19, -.38), (.32, .075, .15), armor, .018)
+    # Nose sensor bezel, armored lower access panels and centerline antenna.
+    box("Raider nose sensor bezel", (0, -7.30, .015), (.34, .18, .24), armor, .055)
+    box("Raider belly access hatch", (0, .35, -.535), (.42, 1.0, .055), armor, .035)
+    for k in range(5):
+        box("Raider belly cooling slot %s" % k,
+            (-.22+k*.11, 1.05, -.57), (.045, .48, .025), dark, .008)
+    beam("Raider dorsal comms mast", (0, 1.8, .43), (0, 1.8, 1.20), .045, dark, .025)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12,
+        radius=.10, location=(0, 1.8, 1.22))
+    finish(bpy.context.object, red, 0)
+    # Landing/maintenance skids: functional silhouette details visible from below.
+    for s in (-1, 1):
+        beam("Raider retractable landing strut %s" % s,
+             (s*.72, 1.0, -.38), (s*.82, 1.25, -.92), .095, dark, .07)
+        box("Raider landing skid %s" % s,
+            (s*.82, 1.28, -.94), (.48, 1.0, .10), armor, .06)
+    # Parent the added meshes to the same ship root so the model exports as one asset.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
+
 def main():
     dest=outdir();os.makedirs(dest,exist_ok=True)
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
     mats=(mat("Raider | obsidian ceramic",(0.035,.052,.075),.82,.26),mat("Raider | titanium armor",(.22,.27,.31),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
+    add_micro_detail(root, mats)
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)
     target=Vector((0,0,0));bpy.ops.object.camera_add(location=(16,-19,13));cam=bpy.context.object;cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler();cam.data.lens=58;scene.camera=cam
