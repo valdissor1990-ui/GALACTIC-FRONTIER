@@ -7,10 +7,12 @@ on:
       - chatgpt/phase2-combat-integration
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
   pull_request:
     branches:
       - main
       - phase-1/flight-prototype
+      - chatgpt/ten-minute-vertical-slice
   workflow_dispatch:
 
 permissions:
