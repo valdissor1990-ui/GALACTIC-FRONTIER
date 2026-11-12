@@ -18,10 +18,14 @@ func _apply_hostile_materials() -> void:
 		if mesh_instance.mesh == null:
 			continue
 		for surface in range(mesh_instance.mesh.get_surface_count()):
-			var source := mesh_instance.get_active_material(surface)
+			var source: Material = mesh_instance.get_surface_override_material(surface)
+			if source == null:
+				source = mesh_instance.mesh.surface_get_material(surface)
 			if not (source is StandardMaterial3D):
 				continue
 			var material := (source as StandardMaterial3D).duplicate() as StandardMaterial3D
+			if material == null:
+				continue
 			if material.resource_name.to_lower().contains("glass"):
 				continue
 			var original := material.albedo_color
