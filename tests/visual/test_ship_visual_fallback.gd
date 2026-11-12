@@ -9,6 +9,10 @@ var _failed: int = 0
 
 func _initialize() -> void:
 	print("=== GALACTIC FRONTIER — Ship visual fallback tests ===")
+	call_deferred("_run_tests")
+
+
+func _run_tests() -> void:
 	_test_procedural_fallback_is_visible()
 	_test_imported_model_hides_fallback()
 	print("")
