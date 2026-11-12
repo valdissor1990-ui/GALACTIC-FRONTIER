@@ -70,6 +70,7 @@ func _build_menu() -> void:
 	var saved_game: Dictionary = save_manager.call("load_slot", "silent_relay") if save_manager != null else {"ok": false}
 	if _is_valid_checkpoint(saved_game):
 		var continue_button := Button.new()
+		continue_button.name = "ContinueButton"
 		continue_button.text = "  CONTINUE FLIGHT"
 		continue_button.custom_minimum_size = Vector2(390, 48)
 		continue_button.pressed.connect(_continue_game)
