@@ -24,7 +24,7 @@ func _run_test() -> void:
 	_check(director.stage == 0, "Mission must start at outbound navigation")
 	_check(get_nodes_in_group("combat_targets").is_empty(), "Demo must not start the legacy automatic encounter")
 
-	player.global_position = Vector3(0.0, 18.0, -720.0)
+	player.global_position = director._objective_position
 	await process_frame
 	_check(director.stage == 1, "Entering relay range must activate the scan objective")
 	director._complete_relay_scan()
@@ -32,7 +32,7 @@ func _run_test() -> void:
 	await _clear_three_waves(director)
 
 	_check(director.stage == 3, "Three relay waves must unlock wreck investigation")
-	player.global_position = Vector3(210.0, -28.0, -1420.0)
+	player.global_position = director._objective_position
 	await process_frame
 	_check(director.stage == 4, "Entering wreck range must activate the data scan")
 	director._complete_wreck_scan()
@@ -40,7 +40,7 @@ func _run_test() -> void:
 	await _clear_three_waves(director)
 
 	_check(director.stage == 6, "Six waves must unlock return to carrier")
-	player.global_position = Vector3(0.0, 0.0, 90.0)
+	player.global_position = director._objective_position
 	await process_frame
 	_check(director.stage == 7, "Returning to carrier must complete the mission")
 	print("DEMO_MISSION_TEST_PASS")
