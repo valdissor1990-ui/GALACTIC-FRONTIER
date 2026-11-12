@@ -7,10 +7,13 @@ on:
       - chatgpt/phase2-combat-integration
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+      - chatgpt/ship-visual-fallback
   pull_request:
     branches:
       - main
       - phase-1/flight-prototype
+      - chatgpt/ship-art-production
   workflow_dispatch:
 
 permissions:
@@ -53,6 +56,10 @@ jobs:
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
       - name: Run ship visual fallback tests
+        run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
+
+      - name: Run ship visual fallback regression tests
+        if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
         run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
 
       - name: Run full demo mission progression test
