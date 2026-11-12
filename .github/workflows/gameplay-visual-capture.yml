@@ -6,6 +6,7 @@ on:
     branches:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/fullhd-showcase-qa
     paths:
       - "scenes/**"
       - "scripts/**"
@@ -41,27 +42,23 @@ jobs:
           sudo apt-get install --yes xvfb python3-pil
           godot --version
 
-      - name: Verify both original ship GLBs are present
+      - name: Verify all seven original ship GLBs are present
         run: |
-          test -s assets/models/ships/player_fighter.glb
-          test -s assets/models/ships/enemy_fighter.glb
-          test -s assets/models/ships/heavy_fighter.glb
-          test -s assets/models/ships/bomber.glb
-          test -s assets/models/ships/cargo_hauler.glb
-          test -s assets/models/ships/frigate.glb
-          test -s assets/models/ships/cruiser.glb
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            test -s "assets/models/ships/${ship}.glb"
+          done
 
       - name: Import project and validate scripts and GLB resources
         run: godot --headless --editor --path . --import --quit
 
-      - name: Capture eight deterministic gameplay screenshots
+      - name: Capture eight deterministic Full HD gameplay screenshots
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build/screenshots
-          xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
+            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
@@ -96,9 +93,8 @@ jobs:
           thumbs = []
           for path in files:
               image = Image.open(path).convert("RGB")
-              if image.size != (1280, 720):
+              if image.size != (1920, 1080):
                   raise SystemExit(f"Unexpected screenshot size: {path} {image.size}")
-              # Reject blank/near-blank captures, such as an empty black window.
               extrema = image.convert("L").getextrema()
               if extrema[1] - extrema[0] < 12:
                   raise SystemExit(f"Screenshot has almost no visual detail: {path}")
@@ -110,7 +106,7 @@ jobs:
           sheet.save("build/screenshots/contact-sheet.png")
           PY
 
-      - name: Verify screenshots and gameplay sequence
+      - name: Verify full mission sequence and screenshot evidence
         run: |
           cat build/gameplay-showcase.log
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
@@ -119,17 +115,20 @@ jobs:
           grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 8
-          grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
+          for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
+            grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
+          done
+          grep -E "SHOWCASE_SEQUENCE_COMPLETE stage=7" build/gameplay-showcase.log
           if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
             echo "Gameplay visual capture contains broken GLB resources or scene overrides."
             exit 1
           fi
 
-      - name: Upload gameplay screenshots and diagnostics
+      - name: Upload Full HD gameplay screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: GALACTIC-FRONTIER-gameplay-visual-qa
+          name: GALACTIC-FRONTIER-gameplay-visual-qa-fullhd
           path: |
             build/screenshots/*.png
             build/gameplay-showcase.log
