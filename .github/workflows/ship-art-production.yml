@@ -1,0 +1,107 @@
+name: Ship art production — seven-class fleet
+
+on:
+  push:
+    branches:
+      - chatgpt/ship-art-production
+    paths:
+      - "scripts/blender/**"
+      - "tests/assets/**"
+      - ".github/workflows/ship-art-production.yml"
+  pull_request:
+    branches:
+      - chatgpt/ten-minute-vertical-slice
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ship-art-production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-validate-import:
+    name: Build, validate and import seven original ships
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Install Blender 4.5.16
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xz-utils file libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
+          curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+          sudo mkdir -p /opt/blender
+          sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
+          sudo ln -sf /opt/blender/blender /usr/local/bin/blender
+          blender --version
+
+      - name: Generate Player Fighter Mk.I
+        run: |
+          mkdir -p build/fleet
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_player_fighter.py -- --output-dir build/fleet
+
+      - name: Generate Raider Interceptor Mk.I
+        run: |
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_enemy_interceptor.py -- --output-dir build/fleet
+
+      - name: Generate Aegis, Bastion, Mule, Vanguard and Leviathan
+        run: |
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_fleet_expansion.py -- --output-dir build/fleet
+
+      - name: Validate all Blender files, GLBs and studio renders
+        run: |
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/validate_fleet_assets.py -- --output-dir build/fleet --report build/fleet/validation.json
+          cat build/fleet/validation.json
+
+      - name: Install Godot 4.7.2 and import the seven GLBs
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Stage generated assets for Godot import
+        run: |
+          mkdir -p assets/models/ships assets/previews
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
+            cp "build/fleet/${ship}.blend" "assets/models/ships/${ship}.blend"
+            cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
+          done
+
+      - name: Godot asset import and parser validation
+        run: |
+          godot --version
+          godot --headless --editor --path . --quit
+          godot --headless --path . --script res://tests/assets/test_ship_assets.gd
+
+      - name: Publish source models, GLBs and previews to the branch
+        if: ${{ github.actor != 'github-actions[bot]' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/ships assets/previews
+          if git diff --cached --quiet; then
+            echo "Generated ship assets are unchanged."
+          else
+            git commit -m "Build and publish validated seven-class ship fleet"
+            git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
+          fi
+
+      - name: Upload complete fleet build and validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-seven-ship-fleet
+          path: |
+            build/fleet/*.blend
+            build/fleet/*.glb
+            build/fleet/*_preview.png
+            build/fleet/validation.json
+          if-no-files-found: error
+          retention-days: 30
