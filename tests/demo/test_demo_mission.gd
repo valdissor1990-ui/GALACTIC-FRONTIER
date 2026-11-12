@@ -1,10 +1,19 @@
 extends SceneTree
 
 const DEMO_SCENE: PackedScene = preload("res://scenes/demo/ten_minute_demo.tscn")
+var _finished := false
 
 
 func _initialize() -> void:
+	call_deferred("_watchdog")
 	call_deferred("_run_test")
+
+
+func _watchdog() -> void:
+	await create_timer(120.0).timeout
+	if not _finished:
+		push_error("DEMO_MISSION_TEST_TIMEOUT: progression did not finish within 120 seconds")
+		quit(1)
 
 
 func _run_test() -> void:
@@ -44,6 +53,7 @@ func _run_test() -> void:
 	player.global_position = director._objective_position
 	await process_frame
 	_check(director.stage == 7, "Returning to carrier must complete the mission")
+	_finished = true
 	print("DEMO_MISSION_TEST_PASS")
 	quit(0)
 
@@ -65,6 +75,7 @@ func _clear_three_waves(director: Node) -> void:
 func _check(condition: bool, message: String) -> void:
 	if condition:
 		return
+	_finished = true
 	push_error("DEMO_MISSION_TEST_FAIL: " + message)
 	quit(1)
 

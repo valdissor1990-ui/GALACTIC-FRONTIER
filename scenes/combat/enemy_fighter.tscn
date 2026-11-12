@@ -1,11 +1,14 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/enemy_combat_ai.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/damageable.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/combat/projectile.tscn" id="3"]
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_body"]
-radius = 2.4
+[sub_resource type="BoxShape3D" id="BoxShape3D_enemy_fuselage"]
+size = Vector3(1.4, 0.82, 4.29)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_enemy_wings"]
+size = Vector3(3.79, 0.32, 1.25)
 
 [sub_resource type="BoxMesh" id="BoxMesh_hull"]
 size = Vector3(1.0, 0.4, 2.6)
@@ -34,7 +37,11 @@ script = ExtResource("1")
 projectile_scene = ExtResource("3")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("SphereShape3D_body")
+shape = SubResource("BoxShape3D_enemy_fuselage")
+
+[node name="WingHitbox" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.05, 0.15)
+shape = SubResource("BoxShape3D_enemy_wings")
 
 [node name="Visual" type="Node3D" parent="."]
 

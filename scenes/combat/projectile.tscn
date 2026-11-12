@@ -3,17 +3,17 @@
 [ext_resource type="Script" path="res://scripts/combat/projectile.gd" id="1"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_projectile"]
-radius = 0.16
+radius = 0.12
 
 [sub_resource type="SphereMesh" id="SphereMesh_core"]
-radius = 0.19
-height = 0.38
+radius = 0.14
+height = 0.28
 radial_segments = 16
 rings = 8
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_beam"]
-radius = 0.065
-height = 1.25
+radius = 0.045
+height = 0.72
 radial_segments = 12
 rings = 6
 

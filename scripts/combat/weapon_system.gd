@@ -41,5 +41,8 @@ func fire_primary() -> bool:
 	projectile.configure(forward, _ship, projectile_speed, projectile_damage)
 	projectile.global_transform = _muzzle.global_transform
 	get_tree().current_scene.add_child(projectile)
+	var audio_manager := get_node_or_null("/root/AudioManager")
+	if audio_manager != null:
+		audio_manager.call("play_3d", audio_manager.get("weapon_stream"), _muzzle.global_position, -9.0, 24.0, 420.0)
 	_cooldown = 1.0 / maxf(shots_per_second, 0.1)
 	return true

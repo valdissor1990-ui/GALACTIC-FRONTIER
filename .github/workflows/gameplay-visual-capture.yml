@@ -13,6 +13,19 @@ on:
       - "assets/**"
       - ".github/workflows/gameplay-visual-capture.yml"
 
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+      - chatgpt/audit-fixes-pr24
+      - chatgpt/mission-save-integration
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
+
 permissions:
   contents: read
 
