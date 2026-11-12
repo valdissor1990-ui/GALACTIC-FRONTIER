@@ -264,8 +264,8 @@ func _build_navigation_beacon(position: Vector3, tint: Color) -> void:
 	world.add_child(_beacon)
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
-	torus.inner_radius = 7.0
-	torus.outer_radius = 8.2
+	torus.inner_radius = 2.8
+	torus.outer_radius = 3.35
 	torus.rings = 48
 	torus.ring_segments = 12
 	ring.mesh = torus
@@ -279,15 +279,15 @@ func _build_navigation_beacon(position: Vector3, tint: Color) -> void:
 	_beacon.add_child(ring)
 	var core := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
-	sphere.radius = 1.8
-	sphere.height = 3.6
+	sphere.radius = 0.82
+	sphere.height = 1.64
 	core.mesh = sphere
 	core.material_override = material
 	_beacon.add_child(core)
 	var light := OmniLight3D.new()
 	light.light_color = tint
-	light.light_energy = 2.0
-	light.omni_range = 42.0
+	light.light_energy = 1.15
+	light.omni_range = 18.0
 	_beacon.add_child(light)
 
 
