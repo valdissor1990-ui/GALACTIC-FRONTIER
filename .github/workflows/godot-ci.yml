@@ -7,6 +7,7 @@ on:
       - chatgpt/phase2-combat-integration
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/game-loop-completion
       - chatgpt/ship-art-production
       - chatgpt/save-system-foundation
   pull_request:
