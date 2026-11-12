@@ -24,7 +24,12 @@ func _run() -> void:
 
 	save_manager.set("save_directory", PROFILE_TEST_DIRECTORY)
 	save_manager.call("delete_slot", "pilot_profile")
-	_check(bool(profile.call("select_ship", "player_fighter")), "starter fighter selection can be saved")
+	profile.set("selected_ship_id", "player_fighter")
+	profile.set("credits", 2500)
+	profile.set("unlocked_ship_ids", ["player_fighter"])
+	profile.set("completed_mission_ids", [])
+	_check(bool(profile.call("_save_profile")), "starter pilot profile is initialized with 2500 credits")
+	_check(int(profile.call("get_credits")) == 2500, "starting credit balance is available")
 
 	var hangar := (load(HANGAR_SCENE) as PackedScene).instantiate()
 	root.add_child(hangar)
@@ -38,12 +43,22 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	hangar.call("_select_current_ship")
-	_check(str(profile.call("get_selected_ship_id")) == "raider_interceptor", "selected interceptor is persisted")
+	_check(str(profile.call("get_selected_ship_id")) == "raider_interceptor", "buying the interceptor also selects it")
+	_check(int(profile.call("get_credits")) == 0, "interceptor purchase deducts its 2500-credit price")
+	var mission_reward := int(profile.call("complete_mission", "silent_relay", 5000))
+	_check(mission_reward == 5000 and int(profile.call("get_credits")) == 5000, "mission completion grants 5000 credits")
+	_check(int(profile.call("complete_mission", "silent_relay", 5000)) == 0, "mission reward cannot be claimed twice")
 	hangar.call("show_next_ship")
 	await process_frame
 	await process_frame
 	hangar.call("_select_current_ship")
-	_check(str(profile.call("get_selected_ship_id")) == "aegis_heavy_fighter", "selected heavy fighter is persisted")
+	_check(str(profile.call("get_selected_ship_id")) == "aegis_heavy_fighter", "purchased heavy fighter becomes the active ship")
+	_check(int(profile.call("get_credits")) == 0, "heavy fighter purchase deducts its 5000-credit price")
+	hangar.call("show_next_ship")
+	await process_frame
+	await process_frame
+	var locked_bomber_button := hangar.get_node_or_null("HangarOverlay/SelectShipButton") as Button
+	_check(locked_bomber_button != null and locked_bomber_button.disabled, "bomber purchase is disabled without sufficient credits")
 
 	hangar.queue_free()
 	await process_frame
@@ -60,7 +75,11 @@ func _run() -> void:
 
 	flight.queue_free()
 	await process_frame
-	profile.call("select_ship", "player_fighter")
+	profile.set("selected_ship_id", "player_fighter")
+	profile.set("credits", 2500)
+	profile.set("unlocked_ship_ids", ["player_fighter"])
+	profile.set("completed_mission_ids", [])
+	profile.call("_save_profile")
 	save_manager.call("delete_slot", "pilot_profile")
 	save_manager.set("save_directory", "user://saves")
 	if _failed == 0:
