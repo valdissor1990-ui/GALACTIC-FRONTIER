@@ -96,9 +96,9 @@ func _build_showroom() -> void:
 	cylinder.radial_segments = 96
 	platform.mesh = cylinder
 	var platform_material := StandardMaterial3D.new()
-	platform_material.albedo_color = Color(0.035, 0.065, 0.105)
-	platform_material.metallic = 0.82
-	platform_material.roughness = 0.3
+	platform_material.albedo_color = Color(0.075, 0.11, 0.17)
+	platform_material.metallic = 0.48
+	platform_material.roughness = 0.48
 	platform.material_override = platform_material
 	world.add_child(platform)
 
@@ -121,7 +121,7 @@ func _build_showroom() -> void:
 
 	_model_mount = Node3D.new()
 	_model_mount.name = "ShipDisplayMount"
-	_model_mount.position.y = -1.2
+	_model_mount.position.y = -2.0
 	world.add_child(_model_mount)
 
 	var camera := Camera3D.new()
