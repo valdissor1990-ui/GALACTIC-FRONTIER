@@ -53,6 +53,7 @@ func _run_showcase() -> void:
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
+		get_tree().quit(1)
 		return
 	await _engage_for(4.0)
 	await _capture_screenshot("04-combat-targeting.png")
@@ -77,6 +78,7 @@ func _run_showcase() -> void:
 
 func _capture_screenshot(file_name: String) -> void:
 	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
 	var directory := ProjectSettings.globalize_path("user://screenshots")
 	var make_dir_error := DirAccess.make_dir_recursive_absolute(directory)
 	if make_dir_error != OK and make_dir_error != ERR_ALREADY_EXISTS:
