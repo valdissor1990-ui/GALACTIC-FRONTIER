@@ -56,6 +56,10 @@ jobs:
             exit 1
           fi
 
+      - name: Validate all seven ship GLBs through Godot's runtime glTF parser
+        if: hashFiles('tests/assets/test_ship_assets.gd') != ''
+        run: godot --headless --path . --script res://tests/assets/test_ship_assets.gd
+
       - name: Validate every scene and its external dependencies
         run: |
           mkdir -p build
