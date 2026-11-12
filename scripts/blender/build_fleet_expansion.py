@@ -264,25 +264,28 @@ def clear():
         for b in list(blocks):
             if b.users==0: blocks.remove(b)
 
-def render_setup(target):
+def render_setup(target, extent):
     scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE_NEXT"
     scene.render.resolution_x=1500; scene.render.resolution_y=1000; scene.render.resolution_percentage=100
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.color=(.018,.025,.04)
-    bpy.ops.object.camera_add(location=(target.x+target.length*.55,target.y-target.length*.72,target.z+target.length*.50))
+    distance=max(extent*1.15,18.0)
+    camera_offset=Vector((distance*.68,-distance*.86,distance*.58))
+    bpy.ops.object.camera_add(location=target+camera_offset)
     cam=bpy.context.object; cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler()
     cam.data.lens=55; scene.camera=cam
-    for name,loc,power,size,color in [
-      ("Key",(4,-15,22),4200,14,(.72,.84,1)),
-      ("Rim",(-16,7,12),5000,12,(.15,.36,1)),
-      ("Warm",(15,12,7),3200,10,(1,.30,.12)),
-      ("Front",(0,-22,6),1800,9,(.55,.72,1))]:
+    light_specs=[
+      ("Key",target+Vector((extent*.20,-extent*.65,extent*.95)),4200,extent*.72,(.72,.84,1)),
+      ("Rim",target+Vector((-extent*.85,extent*.28,extent*.55)),5000,extent*.62,(.15,.36,1)),
+      ("Warm",target+Vector((extent*.78,extent*.58,extent*.28)),3200,extent*.52,(1,.30,.12)),
+      ("Front",target+Vector((0,-extent*.95,extent*.22)),1800,extent*.44,(.55,.72,1))]
+    for name,loc,power,size,color in light_specs:
         bpy.ops.object.light_add(type="AREA",location=loc); l=bpy.context.object
         l.name=name; l.data.energy=power; l.data.shape="DISK"; l.data.size=size; l.data.color=color
         l.rotation_euler=(target-l.location).to_track_quat("-Z","Y").to_euler()
     floor=mat("Studio | matte charcoal",(.012,.018,.028),.2,.52)
-    box("Studio floor",(0,0,-4),(300,300,.2),floor,0)
+    box("Studio floor",(target.x,target.y,target.z-extent*.28),(extent*8,extent*8,.2),floor,0)
     return cam
 
 def main():
@@ -308,7 +311,7 @@ def main():
         bpy.ops.wm.save_as_mainfile(filepath=base+".blend")
         bpy.ops.export_scene.gltf(filepath=base+".glb",export_format="GLB",use_selection=True,
             export_apply=True,export_materials="EXPORT",export_cameras=False,export_lights=False)
-        cam=render_setup(center)
+        cam=render_setup(center,extent)
         bpy.context.scene.camera=cam
         bpy.context.scene.render.filepath=base+"_preview.png"
         bpy.ops.render.render(write_still=True)
