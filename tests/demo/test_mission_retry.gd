@@ -9,6 +9,10 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	if root.get_node_or_null("GameSave") == null:
+		var save_manager := SaveManager.new()
+		save_manager.name = "GameSave"
+		root.add_child(save_manager)
 	call_deferred("_watchdog")
 	var err := change_scene_to_packed(DEMO_SCENE)
 	if not _check(err == OK, "initial mission scene must load"):
