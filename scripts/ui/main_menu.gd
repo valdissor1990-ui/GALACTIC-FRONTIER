@@ -212,6 +212,7 @@ func _continue_game() -> void:
 func _open_flight_scene() -> void:
 	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
 	if error != OK:
+		SaveSlots.pending_quick_load = false
 		push_error("Could not load Silent Relay mission. Error code: %s" % error)
 
 
