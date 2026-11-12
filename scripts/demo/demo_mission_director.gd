@@ -313,7 +313,7 @@ func _update_hud() -> void:
 		completed_waves = 3 + wave_index - 1
 	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
 		completed_waves = 6
-	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  F5 SAVE  •  F9 LOAD  •  C CAMERA" % [completed_waves, total_waves]
+	_progress_label.text = "SILENT RELAY  •  %d / %d WAVES  •  WASD/MOUSE  •  LMB FIRE  •  T/Y TARGET  •  F SCAN  •  F5 SAVE  •  F9 LOAD  •  C CAM" % [completed_waves, total_waves]
 
 
 func _build_mission_hud() -> void:
