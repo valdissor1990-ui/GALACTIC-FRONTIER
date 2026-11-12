@@ -44,6 +44,25 @@ jobs:
           DEEPSEEK_MODEL: ${{ inputs.model }}
           DEEPSEEK_TASK_FILE: ${{ inputs.task_file }}
         run: python scripts/ai/deepseek_agent.py
+      - name: Install Blender 4.5.16
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xz-utils file libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
+          curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+          sudo mkdir -p /opt/blender
+          sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
+          sudo ln -sf /opt/blender/blender /usr/local/bin/blender
+          blender --version
+      - name: Run all available fleet generators
+        run: |
+          set -euo pipefail
+          mkdir -p build/deepseek-blender
+          for script in scripts/blender/build_player_fighter.py scripts/blender/build_enemy_interceptor.py scripts/blender/build_fleet_expansion.py; do
+            if [ -f "$script" ]; then PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python "$script" -- --output-dir build/deepseek-blender; fi
+          done
+          find build/deepseek-blender -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort
+          test "$(find build/deepseek-blender -name '*.glb' | wc -l)" -ge 2
+          test "$(find build/deepseek-blender -name '*preview.png' | wc -l)" -ge 2
       - name: Install Godot 4.7.2 and export templates
         uses: chickensoft-games/setup-godot@v2
         with:
