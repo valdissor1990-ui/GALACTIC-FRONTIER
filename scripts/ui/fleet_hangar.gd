@@ -128,8 +128,8 @@ func _build_showroom() -> void:
 	camera.position = Vector3(0.0, 3.2, 17.0)
 	camera.fov = 42.0
 	camera.current = true
-	camera.look_at(Vector3(0.0, -0.35, 0.0), Vector3.UP)
 	world.add_child(camera)
+	camera.look_at(Vector3(0.0, -0.35, 0.0), Vector3.UP)
 
 	var overlay := Control.new()
 	overlay.name = "HangarOverlay"
@@ -243,7 +243,7 @@ func show_next_ship() -> void:
 
 
 func show_previous_ship() -> void:
-	_show_ship(posmod(_ship_index - 1, SHIPS.size()))
+	_show_ship((_ship_index - 1 + SHIPS.size()) % SHIPS.size())
 
 
 func _show_ship(index: int) -> void:
