@@ -134,6 +134,7 @@ func _test_targeting_selects_forward_target() -> void:
 	var target: Node3D = scene["target"]
 	var selected := targeting.acquire_target()
 	_assert_true(selected == target, "target in camera forward cone is selected")
+	target.remove_from_group("combat_targets")
 	scene["ship"].queue_free()
 	scene["camera"].queue_free()
 	target.queue_free()
@@ -147,6 +148,7 @@ func _test_targeting_ignores_out_of_cone_target() -> void:
 	target.position = Vector3(100.0, 0.0, -20.0)
 	var selected := targeting.acquire_target()
 	_assert_true(selected == null, "target outside acquisition cone is rejected")
+	target.remove_from_group("combat_targets")
 	scene["ship"].queue_free()
 	scene["camera"].queue_free()
 	target.queue_free()
