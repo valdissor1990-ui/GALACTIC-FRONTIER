@@ -63,7 +63,7 @@ func _build_world_environment() -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.22, 0.31, 0.52)
-	environment.ambient_light_energy = 0.62
+	environment.ambient_light_energy = 0.78
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.55
@@ -108,7 +108,7 @@ func _build_starfield() -> void:
 	for index in range(star_count):
 		var direction := _random_unit_vector()
 		var distance := _rng.randf_range(760.0, 1120.0)
-		var size := _rng.randf_range(0.55, 2.1)
+		var size := _rng.randf_range(0.8, 2.4)
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
