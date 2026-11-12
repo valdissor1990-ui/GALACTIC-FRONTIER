@@ -39,7 +39,7 @@ model_scale = Vector3(0.30, 0.30, 0.30)
 
 [node name="ChaseCamera" parent="PlayerShip/CameraRig"]
 position = Vector3(0, 2.35, 6.6)
-rotation_degrees = Vector3(11, 0, 0)
+rotation_degrees = Vector3(-18, 0, 0)
 fov = 66.0
 
 [node name="CockpitCamera" parent="PlayerShip/CameraRig"]
