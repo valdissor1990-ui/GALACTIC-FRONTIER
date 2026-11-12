@@ -81,7 +81,7 @@ func load_slot(slot_id: String) -> Dictionary:
 		backup["recovered_from_backup"] = true
 		return backup
 
-	return _failure("Save and backup are unavailable or invalid.")
+	return _failure("Save and backup are unavailable or invalid. Primary: %s Backup: %s" % [str(primary.get("error", "unknown")), str(backup.get("error", "unknown"))])
 
 
 func delete_slot(slot_id: String) -> Dictionary:
