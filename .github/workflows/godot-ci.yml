@@ -61,6 +61,10 @@ jobs:
         if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
         run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
 
+      - name: Run main menu UI regression tests
+        if: hashFiles('tests/ui/main_menu_test_runner.tscn') != ''
+        run: godot --headless --path . res://tests/ui/main_menu_test_runner.tscn
+
       - name: Run full demo mission progression test
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
 
