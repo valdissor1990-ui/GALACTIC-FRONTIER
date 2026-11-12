@@ -9,6 +9,7 @@ on:
       - "scripts/blender/**"
       - ".github/workflows/blender-fleet-assets.yml"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - chatgpt/ten-minute-vertical-slice
   workflow_dispatch:
