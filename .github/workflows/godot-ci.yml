@@ -8,6 +8,7 @@ on:
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/save-system-foundation
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -54,6 +55,9 @@ jobs:
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
+
+      - name: Run local save system regression tests
+        run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
       - name: Run full demo mission progression test
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
