@@ -418,7 +418,7 @@ func _show_mission_result(success: bool) -> void:
 	subtitle.add_theme_color_override("font_color", Color("#9eb8c8"))
 	column.add_child(subtitle)
 	var stats := Label.new()
-	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, 6 if success else mini(6, wave_index - (1 if enemies_remaining > 0 else 0))]
+	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, _get_waves_cleared(success)]
 	stats.add_theme_font_size_override("font_size", 16)
 	stats.add_theme_color_override("font_color", Color("#d5e8f2"))
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
