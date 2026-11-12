@@ -352,6 +352,74 @@ def create_ship(materials):
     return root
 
 
+
+def add_micro_detail(root, materials):
+    """Second-pass close-range detailing for the player fighter."""
+    armor, dark, accent, white, glow = (
+        materials["armor"], materials["dark"], materials["accent"],
+        materials["white"], materials["glow"]
+    )
+    for side in (-1, 1):
+        # Individual armored wing tiles with recessed fasteners.
+        for idx, y in enumerate((-1.85, -0.75, 0.40, 1.45, 2.10)):
+            x = side * (2.05 + idx * .48)
+            cube("Player wing armor tile %s %s" % (side, idx),
+                 (x, y, .205), (.66, .78, .055), armor, .035,
+                 (0, 0, side * -.11))
+            for k in range(4):
+                uv_sphere("Player wing captive bolt %s %s %s" % (side, idx, k),
+                          (side*(abs(x)-.23+(k%2)*.46), y-.27+(k//2)*.54, .24),
+                          (.026,.026,.014), dark)
+        # Recessed panel separation lines and maintenance rails.
+        for idx in range(6):
+            y = -1.55 + idx*.66
+            cube("Player wing panel seam %s %s" % (side, idx),
+                 (side*(2.15+idx*.40), y, .235), (.035,.48,.018), dark, .006,
+                 (0,0,side*-.10))
+        # Exposed hinge cylinders, hydraulic lines and actuator covers.
+        cylinder_between("Player wing pivot %s" % side,
+                         (side*.82,-.10,-.22),(side*1.85,.55,-.22),.10,dark,.07)
+        cube("Player actuator cover %s" % side,
+             (side*1.42,.42,-.17),(.34,.62,.12),armor,.055,(0,0,side*-.25))
+        # Engine heat exchanger stacks and ceramic nozzle collars.
+        for k in range(6):
+            y = 3.45 + k*.24
+            cube("Player engine heat sink %s %s" % (side,k),
+                 (side*1.34,y,-.43),(.52,.075,.13),dark,.022)
+        cylinder_between("Player engine ceramic collar %s" % side,
+                         (side*.92,6.05,-.02),(side*.92,6.35,-.02),.39,armor,.34)
+        # Small optical/navigation modules on wing tips.
+        cube("Player wingtip nav pod %s" % side,
+             (side*4.98,2.28,.24),(.30,.50,.16),dark,.065)
+        uv_sphere("Player wingtip nav lens %s" % side,
+                  (side*5.00,2.30,.29),(.10,.14,.10),glow if side < 0 else accent)
+        # Antenna receivers and side-mounted sensor windows.
+        cylinder_between("Player dorsal antenna %s" % side,
+                         (side*.28,2.2,.54),(side*.28,2.2,1.05),.035,dark,.018)
+        uv_sphere("Player antenna cap %s" % side,
+                  (side*.28,2.2,1.07),(.075,.075,.075),accent)
+        cube("Player side sensor window %s" % side,
+             (side*.82,-3.75,.12),(.035,.38,.20),glow,.025)
+        # Landing strut joints and reinforced skid ends.
+        uv_sphere("Player landing joint %s" % side,
+                  (side*.72,1.1,-.63),(.16,.16,.16),armor)
+        cube("Player landing skid reinforcement %s" % side,
+             (side*.72,1.1,-.87),(.50,.18,.12),dark,.045)
+    # Fine centerline panel seams, nose sensor bezel and belly service hatches.
+    cube("Player nose sensor armored bezel",(0,-7.18,.08),(.34,.24,.22),armor,.055)
+    for idx in range(5):
+        cube("Player dorsal spine segment %s" % idx,
+             (0,-.65+idx*1.05,.615),(.42,.68,.045),dark,.035)
+    cube("Player belly maintenance hatch",(0,.15,-.505),(.40,.92,.045),armor,.035)
+    for idx in range(6):
+        cube("Player ventral cooling slot %s" % idx,
+             (-.20+idx*.08,1.0,-.535),(.035,.52,.018),dark,.006)
+    # Keep all added geometry attached to the exported ship root.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH","EMPTY"}:
+            obj.parent = root
+
+
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
     # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
@@ -410,7 +478,8 @@ def main():
         "white": make_material("Identification ceramic", (0.62, 0.72, 0.78), 0.48, 0.30),
     }
 
-    create_ship(materials)
+    root = create_ship(materials)
+    add_micro_detail(root, materials)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.
