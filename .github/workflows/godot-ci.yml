@@ -8,6 +8,7 @@ on:
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/mission-save-integration
+      - chatgpt/main-menu
       - chatgpt/ship-art-production
       - chatgpt/save-system-foundation
   pull_request:
@@ -16,6 +17,7 @@ on:
       - main
       - phase-1/flight-prototype
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/mission-save-integration
   workflow_dispatch:
 
 permissions:
@@ -62,6 +64,10 @@ jobs:
 
       - name: Run mission quick-save and restore tests
         run: godot --headless --path . res://tests/demo/mission_save_restore_runner.tscn
+
+      - name: Run main menu UI regression tests
+        if: hashFiles('tests/ui/main_menu_test_runner.tscn') != ''
+        run: godot --headless --path . res://tests/ui/main_menu_test_runner.tscn
 
       - name: Run full demo mission progression test
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
