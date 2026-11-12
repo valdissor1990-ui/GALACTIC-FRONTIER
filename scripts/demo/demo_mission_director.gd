@@ -70,12 +70,128 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
 	var key_event := event as InputEventKey
-	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_F:
+	if not key_event.pressed or key_event.echo:
 		return
-	if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
-		_complete_relay_scan()
-	elif stage == MissionStage.SCAN_WRECK and _distance_to_objective() <= 95.0:
-		_complete_wreck_scan()
+	match key_event.keycode:
+		KEY_F5:
+			_save_quick_slot()
+			get_viewport().set_input_as_handled()
+		KEY_F9:
+			_load_quick_slot()
+			get_viewport().set_input_as_handled()
+		KEY_F:
+			if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
+				_complete_relay_scan()
+			elif stage == MissionStage.SCAN_WRECK and _distance_to_objective() <= 95.0:
+				_complete_wreck_scan()
+			get_viewport().set_input_as_handled()
+
+
+func _save_quick_slot() -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	var payload := {
+		"game_id": "galactic_frontier_silent_relay",
+		"player": {
+			"position": _vector_to_array(player.global_position),
+			"rotation": _vector_to_array(player.global_rotation),
+			"velocity": _vector_to_array(player.velocity),
+			"boost": player.boost_amount,
+			"hull": damageable.current_hull if damageable != null else 100.0,
+			"shield": damageable.current_shield if damageable != null else 60.0
+		},
+		"mission": {
+			"stage": int(stage),
+			"wave_index": wave_index,
+			"mission_seconds": mission_seconds,
+			"objective_position": _vector_to_array(_objective_position)
+		}
+	}
+	var result: Dictionary = SaveSlots.save_slot("quick", payload)
+	if result.ok:
+		_set_radio("LOCAL SYSTEM", "Quick save stored. Press F9 to restore this checkpoint.")
+	else:
+		_set_radio("LOCAL SYSTEM", "Save failed: %s" % str(result.get("error", "unknown error")))
+
+
+func _load_quick_slot() -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var result: Dictionary = SaveSlots.load_slot("quick")
+	if not result.ok:
+		_set_radio("LOCAL SYSTEM", "No usable quick save: %s" % str(result.get("error", "unknown error")))
+		return
+	var payload: Variant = result.get("payload", {})
+	if not payload is Dictionary or payload.get("game_id", "") != "galactic_frontier_silent_relay":
+		_set_radio("LOCAL SYSTEM", "Quick save belongs to an unsupported game state.")
+		return
+	var player_data: Variant = payload.get("player", {})
+	var mission_data: Variant = payload.get("mission", {})
+	if not player_data is Dictionary or not mission_data is Dictionary:
+		_set_radio("LOCAL SYSTEM", "Quick save data is incomplete.")
+		return
+
+	player.global_position = _array_to_vector(player_data.get("position"), player.global_position)
+	player.global_rotation = _array_to_vector(player_data.get("rotation"), player.global_rotation)
+	player.velocity = _array_to_vector(player_data.get("velocity"), Vector3.ZERO)
+	player.boost_amount = clampf(float(player_data.get("boost", player.boost_amount)), 0.0, player.flight_config.boost_capacity if player.flight_config != null else 10.0)
+
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	if damageable != null:
+		damageable.current_hull = clampf(float(player_data.get("hull", damageable.max_hull)), 1.0, damageable.max_hull)
+		damageable.current_shield = clampf(float(player_data.get("shield", damageable.max_shield)), 0.0, damageable.max_shield)
+		damageable._is_destroyed = false
+		damageable._time_since_damage = 0.0
+		damageable.hull_changed.emit(damageable.current_hull, damageable.max_hull)
+		damageable.shield_changed.emit(damageable.current_shield, damageable.max_shield)
+
+	stage = clampi(int(mission_data.get("stage", MissionStage.OUTBOUND)), MissionStage.OUTBOUND, MissionStage.FAILED) as MissionStage
+	wave_index = clampi(int(mission_data.get("wave_index", 0)), 0, 3)
+	mission_seconds = maxf(0.0, float(mission_data.get("mission_seconds", 0.0)))
+	_objective_position = _array_to_vector(mission_data.get("objective_position"), RELAY_POSITION)
+	_next_wave_timer = -1.0
+	_clear_hostile_wave()
+
+	var beacon_tint := Color(0.08, 0.78, 1.0)
+	if stage == MissionStage.INVESTIGATE_WRECK or stage == MissionStage.SCAN_WRECK or stage == MissionStage.DEFEND_WRECK:
+		beacon_tint = Color(1.0, 0.62, 0.18)
+	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
+		beacon_tint = Color(0.18, 1.0, 0.62)
+	_move_beacon(_objective_position, beacon_tint)
+
+	if stage == MissionStage.DEFEND_RELAY or stage == MissionStage.DEFEND_WRECK:
+		var restored_wave := maxi(1, wave_index)
+		wave_index = restored_wave - 1
+		_spawn_wave()
+	else:
+		enemies_remaining = 0
+	_update_hud()
+	_set_radio("LOCAL SYSTEM", "Quick save restored. Mission checkpoint loaded.")
+
+
+func _clear_hostile_wave() -> void:
+	for hostile in get_tree().get_nodes_in_group("hostile_fighters"):
+		if is_instance_valid(hostile):
+			hostile.get_parent().remove_child(hostile)
+			hostile.queue_free()
+	enemies_remaining = 0
+
+
+func _vector_to_array(value: Vector3) -> Array:
+	return [value.x, value.y, value.z]
+
+
+func _array_to_vector(value: Variant, fallback: Vector3) -> Vector3:
+	if not value is Array or value.size() != 3:
+		return fallback
+	var components: Array[float] = []
+	for item in value:
+		var component := float(item)
+		if not is_finite(component):
+			return fallback
+		components.append(component)
+	return Vector3(components[0], components[1], components[2])
 
 
 func _update_mission(delta: float) -> void:
@@ -197,7 +313,7 @@ func _update_hud() -> void:
 		completed_waves = 3 + wave_index - 1
 	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
 		completed_waves = 6
-	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [completed_waves, total_waves]
+	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  F5 SAVE  •  F9 LOAD  •  C CAMERA" % [completed_waves, total_waves]
 
 
 func _build_mission_hud() -> void:
