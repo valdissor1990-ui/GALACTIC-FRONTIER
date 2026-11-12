@@ -18,7 +18,7 @@ func _run() -> void:
 		return
 	var sphere := planet.mesh as SphereMesh
 	var planet_center := planet.global_position
-	var planet_radius := sphere.radius * maxf(planet.global_basis.get_scale().x, planet.global_basis.get_scale().y, planet.global_basis.get_scale().z)
+	var planet_radius := sphere.radius * maxf(maxf(planet.global_basis.get_scale().x, planet.global_basis.get_scale().y), planet.global_basis.get_scale().z)
 	var clearance := _route_clearance(planet_center, planet_radius)
 	if clearance <= REQUIRED_CLEARANCE:
 		_fail("actual planet clearance is only %.2f m" % clearance)
