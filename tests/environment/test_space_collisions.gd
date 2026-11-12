@@ -46,7 +46,7 @@ func _ray(from: Vector3, to: Vector3) -> Dictionary:
 	var query := PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = 1
 	query.collide_with_bodies = true
-	return get_world_3d().direct_space_state.intersect_ray(query)
+	return root.get_world_3d().direct_space_state.intersect_ray(query)
 
 func _check(condition: bool, message: String) -> void:
 	if condition:
