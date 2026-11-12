@@ -7,13 +7,16 @@ extends Node3D
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
+var _compatibility_renderer: bool = false
 
 
 func _ready() -> void:
 	_rng.seed = 741_2026
+	_compatibility_renderer = RenderingServer.get_current_rendering_method() == "gl_compatibility"
 	_build_world_environment()
 	_build_starfield()
-	_build_nebulae()
+	if not _compatibility_renderer:
+		_build_nebulae()
 	_build_planet()
 	_build_asteroid_field()
 
@@ -49,12 +52,13 @@ func _build_world_environment() -> void:
 	environment.ssao_enabled = true
 	environment.ssao_radius = 2.0
 	environment.ssao_intensity = 1.15
-	environment.ssil_enabled = true
-	environment.ssil_radius = 5.0
-	environment.ssil_intensity = 0.65
-	environment.sdfgi_enabled = true
-	environment.sdfgi_cascades = 4
-	environment.sdfgi_min_cell_size = 0.2
+	if not _compatibility_renderer:
+		environment.ssil_enabled = true
+		environment.ssil_radius = 5.0
+		environment.ssil_intensity = 0.65
+		environment.sdfgi_enabled = true
+		environment.sdfgi_cascades = 4
+		environment.sdfgi_min_cell_size = 0.2
 	world.environment = environment
 	add_child(world)
 
