@@ -60,6 +60,7 @@ func _run_showcase() -> void:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		return
 	await _engage_for(4.0)
+	Input.action_release("fire_primary")
 
 	camera_rig.toggle_camera()
 	await get_tree().create_timer(2.0).timeout
