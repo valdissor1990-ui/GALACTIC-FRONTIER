@@ -112,6 +112,7 @@ def detail_panels(prefix, xspan, ylist, z, mats, count=5):
                 box(prefix+" recessed vent %s %s %s"%(side,i,k),
                     (x+side*xspan*.04,y-.20+k*.20,z+.058),(.045,.10,.025),dark,.008)
 
+# Palette contract: hull, armor, graphite, IFF, canopy glass, engine plasma.
 def make_materials(prefix, palette):
     h=mat(prefix+" | hull",palette[0],.78,.28)
     a=mat(prefix+" | titanium armor",palette[1],.84,.24)
