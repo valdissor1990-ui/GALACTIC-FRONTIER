@@ -65,7 +65,8 @@ func _test_round_trip() -> void:
 	_assert_true(saved.ok, "valid payload saves")
 	_assert_true(loaded.ok, "saved slot loads" + ("" if loaded.ok else ": " + str(loaded.get("error", "unknown"))))
 	if loaded.ok:
-		_assert_true(loaded.payload == payload, "loaded payload matches original data")
+		var json_normalized: Dictionary = JSON.parse_string(JSON.stringify(payload))
+		_assert_true(loaded.payload == json_normalized, "loaded payload matches JSON-normalized original data")
 	if loaded.ok:
 		_assert_true(not loaded.recovered_from_backup, "normal load does not use backup")
 
