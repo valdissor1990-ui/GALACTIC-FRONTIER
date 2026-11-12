@@ -77,7 +77,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
 	var key_event := event as InputEventKey
-	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_F:
+	if not event.is_action_pressed("scan") or key_event.echo:
 		return
 	if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
 		_complete_relay_scan()
@@ -424,6 +424,7 @@ func _show_mission_result(success: bool) -> void:
 	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(stats)
 	var retry := Button.new()
+	retry.name = "RetryButton"
 	retry.text = "PLAY AGAIN"
 	retry.custom_minimum_size.y = 48
 	retry.pressed.connect(func() -> void:
@@ -432,6 +433,7 @@ func _show_mission_result(success: bool) -> void:
 	)
 	column.add_child(retry)
 	var menu := Button.new()
+	menu.name = "MenuButton"
 	menu.text = "MAIN MENU"
 	menu.custom_minimum_size.y = 42
 	menu.pressed.connect(func() -> void:
@@ -439,4 +441,21 @@ func _show_mission_result(success: bool) -> void:
 		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 	)
 	column.add_child(menu)
+	get_tree().paused = true
 	print("MISSION_RESULT_SHOWN success=", success, " kills=", enemies_destroyed, " seconds=", mission_seconds)
+
+
+func _get_waves_cleared(success: bool) -> int:
+	if success:
+		return 6
+	match stage:
+		MissionStage.DEFEND_RELAY:
+			return maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
+		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK:
+			return 3
+		MissionStage.DEFEND_WRECK:
+			return 3 + maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
+		MissionStage.RETURN_HOME:
+			return 6
+		_:
+			return 0
