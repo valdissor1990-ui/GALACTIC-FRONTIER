@@ -3,9 +3,21 @@ extends Control
 const FLIGHT_SCENE := "res://scenes/demo/ten_minute_demo.tscn"
 const BACKDROP_SCRIPT := preload("res://scripts/ui/menu_backdrop.gd")
 
+var _update_button: Button
+var _update_status: Label
+var _rollback_button: Button
+var _update_ready := false
+
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_build_menu()
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater != null:
+		updater.status_changed.connect(_on_update_status)
+		updater.update_available.connect(_on_update_available)
+		updater.check_for_updates()
+
 
 func _build_menu() -> void:
 	var background := ColorRect.new()
@@ -21,9 +33,9 @@ func _build_menu() -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "MainMenuLayout"
 	layout.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	layout.position = Vector2(90, -190)
-	layout.custom_minimum_size = Vector2(520, 390)
-	layout.add_theme_constant_override("separation", 16)
+	layout.position = Vector2(90, -210)
+	layout.custom_minimum_size = Vector2(520, 450)
+	layout.add_theme_constant_override("separation", 14)
 	add_child(layout)
 	var eyebrow := Label.new()
 	eyebrow.text = "FRONTIER COMMAND  /  SINGLE-PILOT ACCESS"
@@ -62,6 +74,28 @@ func _build_menu() -> void:
 		continue_button.custom_minimum_size = Vector2(390, 48)
 		continue_button.pressed.connect(_continue_game)
 		layout.add_child(continue_button)
+	_update_button = Button.new()
+	_update_button.name = "CheckUpdatesButton"
+	_update_button.text = "  CHECK FOR UPDATES"
+	_update_button.custom_minimum_size = Vector2(390, 42)
+	_update_button.pressed.connect(_on_update_button_pressed)
+	layout.add_child(_update_button)
+	_update_status = Label.new()
+	_update_status.name = "UpdateStatus"
+	_update_status.text = "Версия " + str(ProjectSettings.get_setting("application/config/version", "0.1.0"))
+	_update_status.add_theme_font_size_override("font_size", 11)
+	_update_status.add_theme_color_override("font_color", Color("#7294a8"))
+	_update_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_update_status.custom_minimum_size = Vector2(390, 24)
+	layout.add_child(_update_status)
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater != null and updater.has_method("has_rollback_backup") and updater.has_rollback_backup():
+		_rollback_button = Button.new()
+		_rollback_button.name = "RollbackUpdateButton"
+		_rollback_button.text = "  ROLL BACK LAST VERSION"
+		_rollback_button.custom_minimum_size = Vector2(390, 40)
+		_rollback_button.pressed.connect(_confirm_rollback)
+		layout.add_child(_rollback_button)
 	var controls := Label.new()
 	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F5 — SAVE     F9 — LOAD"
 	controls.add_theme_font_size_override("font_size", 12)
@@ -72,6 +106,45 @@ func _build_menu() -> void:
 	quit.custom_minimum_size = Vector2(390, 42)
 	quit.pressed.connect(func() -> void: get_tree().quit())
 	layout.add_child(quit)
+
+
+func _confirm_rollback() -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Restore previous version?"
+	dialog.dialog_text = "The current game files will be replaced with the previous version. Your save files will remain unchanged."
+	add_child(dialog)
+	dialog.confirmed.connect(_perform_rollback)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.popup_centered()
+
+
+func _perform_rollback() -> void:
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater != null:
+		updater.rollback_last_update()
+
+
+func _on_update_button_pressed() -> void:
+	var updater := get_node_or_null("/root/UpdateManager")
+	if updater == null:
+		_on_update_status("Проверка обновлений недоступна.")
+	elif _update_ready:
+		updater.download_and_install_update()
+	else:
+		updater.check_for_updates()
+
+
+func _on_update_status(message: String) -> void:
+	if is_instance_valid(_update_status):
+		_update_status.text = message
+
+
+func _on_update_available(version: String, _notes: String) -> void:
+	_update_ready = true
+	if is_instance_valid(_update_button):
+		_update_button.text = "  DOWNLOAD UPDATE " + version
+
 
 func _start_game() -> void:
 	var save_manager := get_node_or_null("/root/GameSave")
