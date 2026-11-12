@@ -1,4 +1,4 @@
-extends SceneTree
+extends Node
 
 const DEMO_SCENE: PackedScene = preload("res://scenes/demo/ten_minute_demo.tscn")
 
@@ -10,7 +10,7 @@ func _initialize() -> void:
 func _run_test() -> void:
 	var demo := DEMO_SCENE.instantiate()
 	root.add_child(demo)
-	await process_frame
+	await get_tree().process_frame
 	await process_frame
 	var director: Node = demo.get_node("DemoMissionDirector")
 	var player: Node3D = demo.get_node("PlayerShip")
@@ -44,7 +44,7 @@ func _run_test() -> void:
 	await process_frame
 	_check(director.stage == 7, "Returning to carrier must complete the mission")
 	print("DEMO_MISSION_TEST_PASS")
-	quit(0)
+	get_tree().quit(0)
 
 
 func _clear_three_waves(director: Node) -> void:
@@ -65,4 +65,4 @@ func _check(condition: bool, message: String) -> void:
 	if condition:
 		return
 	push_error("DEMO_MISSION_TEST_FAIL: " + message)
-	quit(1)
+	get_tree().quit(1)
