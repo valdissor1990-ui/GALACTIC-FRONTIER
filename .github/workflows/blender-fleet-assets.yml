@@ -14,10 +14,11 @@ permissions:
 
 concurrency:
   group: blender-fleet-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-fleet:
+    timeout-minutes: 20
     name: Build and publish player and Raider ships
     runs-on: ubuntu-24.04
     steps:
