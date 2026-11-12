@@ -92,7 +92,7 @@ jobs:
                               if not FileAccess.file_exists(dependency):
                                   push_error("MISSING_SCENE_DEPENDENCY: " + path + " -> " + dependency)
                                   failures += 1
-                          var packed := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+                          var packed := ResourceLoader.load(path) as PackedScene
                           if packed == null:
                               push_error("SCENE_LOAD_FAIL: " + path)
                               failures += 1
