@@ -10,6 +10,8 @@ const CURRENT_SCHEMA_VERSION: int = 1
 const MAX_SAVE_BYTES: int = 2 * 1024 * 1024
 const MAX_SLOT_ID_LENGTH: int = 24
 
+var pending_quick_load: bool = false
+
 @export_dir var save_directory: String = "user://saves"
 
 
