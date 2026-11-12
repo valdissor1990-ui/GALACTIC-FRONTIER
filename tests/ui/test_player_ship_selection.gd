@@ -73,6 +73,16 @@ func _run() -> void:
 		var model := model_loader.get_node_or_null("Model")
 		_check(model != null and _count_meshes(model) > 0, "selected heavy fighter model is rendered in flight")
 
+	var player_ship := flight.get_node_or_null("PlayerShip") as ShipController
+	_check(player_ship != null and is_equal_approx(player_ship.flight_config.max_speed, 80.0), "heavy fighter loads its slower flight profile")
+	if player_ship != null:
+		var damageable := player_ship.get_node("Damageable") as Damageable
+		var weapon := player_ship.get_node("WeaponSystem") as WeaponSystem
+		_check(is_equal_approx(damageable.max_hull, 165.0), "heavy fighter receives its higher hull rating")
+		_check(is_equal_approx(damageable.max_shield, 125.0), "heavy fighter receives its stronger shields")
+		_check(is_equal_approx(weapon.projectile_damage, 25.0), "heavy fighter receives its heavier weapon damage")
+		_check(is_equal_approx(weapon.shots_per_second, 2.8), "heavy fighter receives its slower weapon cadence")
+
 	flight.queue_free()
 	await process_frame
 	profile.set("selected_ship_id", "player_fighter")
