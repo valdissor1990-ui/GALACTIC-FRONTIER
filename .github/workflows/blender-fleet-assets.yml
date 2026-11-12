@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
     paths:
       - "scripts/blender/**"
       - ".github/workflows/blender-fleet-assets.yml"
