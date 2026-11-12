@@ -9,6 +9,7 @@ on:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
       - phase-1/flight-prototype
