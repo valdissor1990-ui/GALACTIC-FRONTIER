@@ -47,7 +47,18 @@ def finite(value):
 
 
 def mesh_metrics():
-    meshes = [obj for obj in bpy.data.objects if obj.type == "MESH"]
+    # Measure only the exported ship hierarchy. Player/Raider .blend files
+    # also contain studio floors, cameras and lights that are not in the GLB.
+    roots = [
+        obj for obj in bpy.data.objects
+        if obj.type == "EMPTY" and obj.name.startswith("GF_")
+    ]
+    root = roots[0] if len(roots) == 1 else None
+    meshes = (
+        [obj for obj in root.children_recursive if obj.type == "MESH"]
+        if root is not None
+        else [obj for obj in bpy.data.objects if obj.type == "MESH"]
+    )
     polygons = 0
     triangles = 0
     materials = set()
@@ -78,10 +89,7 @@ def mesh_metrics():
         minimum = Vector(tuple(min(p[i] for p in points) for i in range(3)))
         maximum = Vector(tuple(max(p[i] for p in points) for i in range(3)))
         dimensions = [maximum[i] - minimum[i] for i in range(3)]
-    roots = [
-        obj.name for obj in bpy.data.objects
-        if obj.type == "EMPTY" and obj.name.startswith("GF_")
-    ]
+    root_names = [obj.name for obj in roots]
     return {
         "mesh_objects": len(meshes),
         "polygons": polygons,
@@ -89,7 +97,7 @@ def mesh_metrics():
         "materials": sorted(materials),
         "material_count": len(materials),
         "dimensions": dimensions,
-        "root_nodes": roots,
+        "root_nodes": root_names,
         "bad_geometry_objects": sorted(set(bad_vertices)),
     }
 
