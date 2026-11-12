@@ -8,7 +8,6 @@ on:
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
-      - chatgpt/ship-visual-fallback
   pull_request:
     branches:
       - main
