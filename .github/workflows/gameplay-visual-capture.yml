@@ -86,6 +86,10 @@ jobs:
               image = Image.open(path).convert("RGB")
               if image.size != (1280, 720):
                   raise SystemExit(f"Unexpected screenshot size: {path} {image.size}")
+              # Reject blank/near-blank captures, such as an empty black window.
+              extrema = image.convert("L").getextrema()
+              if extrema[1] - extrema[0] < 12:
+                  raise SystemExit(f"Screenshot has almost no visual detail: {path}")
               thumbs.append(image.resize((480, 270)))
 
           sheet = Image.new("RGB", (960, 1080), "#10151d")
