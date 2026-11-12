@@ -66,7 +66,8 @@ func _test_round_trip() -> void:
 	_assert_true(loaded.ok, "saved slot loads" + ("" if loaded.ok else ": " + str(loaded.get("error", "unknown"))))
 	if loaded.ok:
 		_assert_true(loaded.payload == payload, "loaded payload matches original data")
-	_assert_true(not loaded.recovered_from_backup, "normal load does not use backup")
+	if loaded.ok:
+		_assert_true(not loaded.recovered_from_backup, "normal load does not use backup")
 
 
 func _test_rejects_invalid_slot() -> void:
