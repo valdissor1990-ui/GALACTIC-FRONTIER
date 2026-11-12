@@ -4,7 +4,7 @@ extends Node
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/combat/enemy_fighter_visual.tscn")
 const RELAY_POSITION := Vector3(0.0, 18.0, -13500.0)
-const WRECK_POSITION := Vector3(520.0, -28.0, -28000.0)
+const WRECK_POSITION := Vector3(520.0, -28.0, -33000.0)
 const HOME_POSITION := Vector3(0.0, 0.0, 90.0)
 
 enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED }
@@ -158,7 +158,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
 		_set_radio("ORBITAL CONTROL", "Relay secured. A debris trail leads to a second signal source. Investigate.")
 	elif stage == MissionStage.DEFEND_WRECK and wave_index < 3:
-		_next_wave_timer = 5.0
+		_next_wave_timer = 18.0
 	elif stage == MissionStage.DEFEND_WRECK:
 		stage = MissionStage.RETURN_HOME
 		_objective_position = HOME_POSITION

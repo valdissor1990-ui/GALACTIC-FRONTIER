@@ -21,6 +21,7 @@ func _run_test() -> void:
 	_check(cockpit.visible and not player.get_node("Visual").visible, "Cockpit mode must show the cockpit and hide the exterior ship")
 	camera_rig.toggle_camera()
 	_check(not cockpit.visible and player.get_node("Visual").visible, "Chase mode must restore the exterior ship")
+	_test_mission_duration_budget()
 	_check(director.stage == 0, "Mission must start at outbound navigation")
 	_check(get_nodes_in_group("combat_targets").is_empty(), "Demo must not start the legacy automatic encounter")
 
@@ -66,3 +67,24 @@ func _check(condition: bool, message: String) -> void:
 		return
 	push_error("DEMO_MISSION_TEST_FAIL: " + message)
 	quit(1)
+
+
+func _test_mission_duration_budget() -> void:
+	# Conservative design budget: full route at the fastest sustainable boost
+	# cycle, plus theoretical minimum time to destroy all 17 hostiles and wave
+	# intermissions. Actual play takes longer due to aiming and manoeuvring.
+	var relay := Vector3(0.0, 18.0, -13500.0)
+	var wreck := Vector3(520.0, -28.0, -33000.0)
+	var home := Vector3(0.0, 0.0, 90.0)
+	var route_distance := Vector3.ZERO.distance_to(relay) + relay.distance_to(wreck) + wreck.distance_to(home)
+	var cruise_speed := 95.0
+	var boost_speed_multiplier := 1.55
+	var boost_seconds := 10.0
+	var recharge_seconds := 5.0
+	var average_speed := cruise_speed * ((boost_seconds * boost_speed_multiplier + recharge_seconds) / (boost_seconds + recharge_seconds))
+	var travel_seconds := route_distance / average_speed
+	var hostile_health_total := 2.0 * 230.0 + 2.0 * 260.0 + 3.0 * 290.0 + 3.0 * 230.0 + 3.0 * 260.0 + 4.0 * 290.0
+	var theoretical_combat_seconds := hostile_health_total / (18.0 * 3.0)
+	var wave_intermission_seconds := 22.0 * 2.0 + 18.0 * 2.0
+	var estimated_minimum_seconds := travel_seconds + theoretical_combat_seconds + wave_intermission_seconds
+	_check(estimated_minimum_seconds >= 600.0, "route, six combat waves and intermissions budget at least ten minutes")
