@@ -61,7 +61,7 @@ jobs:
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
       - name: Run mission quick-save and restore tests
-        run: godot --headless --path . --script res://tests/demo/test_mission_save_restore.gd
+        run: godot --headless --path . res://tests/demo/mission_save_restore_runner.tscn
 
       - name: Run full demo mission progression test
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
