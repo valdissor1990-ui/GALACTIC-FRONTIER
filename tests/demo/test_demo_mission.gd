@@ -18,6 +18,7 @@ func _watchdog() -> void:
 
 func _run_test() -> void:
 	var demo := DEMO_SCENE.instantiate()
+	demo.add_to_group("qa_demo_driver")
 	root.add_child(demo)
 	await process_frame
 	await process_frame
