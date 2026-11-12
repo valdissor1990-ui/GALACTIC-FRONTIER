@@ -74,6 +74,10 @@ jobs:
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
+      - name: Run mission checkpoint resume integration test
+        run: godot --headless --path . --script res://tests/save/test_mission_resume.gd -- --test-mode
+
+
       - name: Run full demo mission progression test
         run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
       - name: Run mission failure and wave-statistics regression test
