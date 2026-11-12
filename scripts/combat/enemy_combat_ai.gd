@@ -30,6 +30,7 @@ var _strafe_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group("combat_targets")
+	add_to_group("hostile_fighters")
 	_damageable = get_node_or_null("Damageable") as Damageable
 	_muzzle = get_node_or_null("Muzzle") as Marker3D
 	if _damageable != null:
