@@ -1,41 +1,26 @@
 extends Node
-## Applies a restrained hostile red treatment while preserving the fighter's material detail.
+## Applies a subtle translucent hostile-red overlay without replacing imported PBR materials.
 
 @export var model_path: NodePath = NodePath("../Visual/EnemyFighterModel")
 
 
 func _ready() -> void:
-	call_deferred("_apply_hostile_materials")
+	call_deferred("_apply_hostile_overlay")
 
 
-func _apply_hostile_materials() -> void:
+func _apply_hostile_overlay() -> void:
 	var model := get_node_or_null(model_path)
 	if model == null:
 		push_warning("Enemy visual treatment: fighter model was not found.")
 		return
+	var overlay := StandardMaterial3D.new()
+	overlay.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	overlay.albedo_color = Color(0.82, 0.035, 0.018, 0.16)
+	overlay.emission_enabled = true
+	overlay.emission = Color(0.32, 0.012, 0.004)
+	overlay.emission_energy_multiplier = 0.22
+	overlay.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	for item in model.find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := item as MeshInstance3D
-		if mesh_instance.mesh == null:
-			continue
-		for surface in range(mesh_instance.mesh.get_surface_count()):
-			var source: Material = mesh_instance.get_surface_override_material(surface)
-			if source == null:
-				source = mesh_instance.mesh.surface_get_material(surface)
-			if not (source is StandardMaterial3D):
-				continue
-			var material := (source as StandardMaterial3D).duplicate() as StandardMaterial3D
-			if material == null:
-				continue
-			if material.resource_name.to_lower().contains("glass"):
-				continue
-			var original := material.albedo_color
-			material.albedo_color = Color(
-				clampf(original.r * 1.25 + 0.12, 0.0, 1.0),
-				original.g * 0.30,
-				original.b * 0.24,
-				original.a
-			)
-			if material.emission_enabled:
-				material.emission = Color(0.62, 0.035, 0.012)
-				material.emission_energy_multiplier = maxf(material.emission_energy_multiplier, 1.25)
-			mesh_instance.set_surface_override_material(surface, material)
+		if mesh_instance.mesh != null:
+			mesh_instance.material_overlay = overlay
