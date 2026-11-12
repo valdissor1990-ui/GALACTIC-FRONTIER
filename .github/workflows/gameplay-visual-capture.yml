@@ -63,6 +63,7 @@ jobs:
               sleep 0.2
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
+            sleep 2
             ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 1 -video_size 1280x720 -i "$DISPLAY" -frames:v 20 build/raw_frames/frame-%02d.png
             sleep 1
             kill -TERM "$game_pid" 2>/dev/null || true
@@ -100,6 +101,10 @@ jobs:
           set -euo pipefail
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
           test -s build/gameplay-contact-sheet.png
+          if grep -E "ERROR:.*(Failed loading resource|No loader found|Parse Error|referenced non-existent resource|Unable to open file)" build/gameplay-showcase.log; then
+            echo "Gameplay scene contains missing or invalid resources."
+            exit 1
+          fi
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
 
       - name: Upload gameplay screenshots and diagnostics
