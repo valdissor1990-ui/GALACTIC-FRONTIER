@@ -91,7 +91,6 @@ jobs:
           mkdir -p assets/models/ships assets/previews
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
             cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
-            cp "build/fleet/${ship}.blend" "assets/models/ships/${ship}.blend"
             cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
           done
 
@@ -101,18 +100,13 @@ jobs:
           godot --headless --editor --path . --quit
           godot --headless --path . --script res://tests/assets/test_ship_assets.gd
 
-      - name: Publish source models, GLBs and previews to the branch
-        if: ${{ github.actor != 'github-actions[bot]' }}
+      - name: Verify generated assets without racing a branch push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/ships assets/previews
-          if git diff --cached --quiet; then
-            echo "Generated ship assets are unchanged."
-          else
-            git commit -m "Build and publish validated seven-class ship fleet"
-            git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
-          fi
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            test -s "assets/models/ships/${ship}.glb"
+            test -s "assets/previews/${ship}_preview.png"
+          done
+          echo "All seven committed GLBs and previews are present; Blender authoring files remain in the build artifact only."
 
       - name: Upload complete fleet build and validation report
         uses: actions/upload-artifact@v4
