@@ -73,7 +73,7 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageOps, ImageDraw
           raw = Path("build/raw_frames")
-          frames = sorted(raw.glob("frame-*.png"))
+          frames = sorted(raw.glob("frame-*.png"))[1:]  # skip the engine startup splash frame
           if len(frames) < 8:
               raise SystemExit(f"Expected at least 8 real gameplay frames, got {len(frames)}")
           picks = [round(i * (len(frames) - 1) / 7) for i in range(8)]
