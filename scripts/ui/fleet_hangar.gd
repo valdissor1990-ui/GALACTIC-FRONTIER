@@ -4,13 +4,13 @@ extends Control
 const FLIGHT_SCENE := "res://scenes/demo/ten_minute_demo.tscn"
 const RUNTIME_GLTF_SCRIPT: Script = preload("res://scripts/visual/runtime_gltf_model.gd")
 const SHIPS := [
-	{"name": "PLAYER FIGHTER MK.I", "role": "MULTIROLE / PLAYER CRAFT", "path": "res://assets/models/ships/player_fighter.glb", "scale": 0.30, "description": "A compact, agile frontline fighter built for independent patrols and precision engagements.", "specs": "CLASS  LIGHT FIGHTER     DRIVE  TWIN ION"},
+	{"name": "PLAYER FIGHTER MK.I", "role": "MULTIROLE / PLAYER CRAFT", "path": "res://assets/models/ships/player_fighter.glb", "scale": 0.42, "description": "A compact, agile frontline fighter built for independent patrols and precision engagements.", "specs": "CLASS  LIGHT FIGHTER     DRIVE  TWIN ION"},
 	{"name": "RAIDER INTERCEPTOR", "role": "HOSTILE / INTERCEPTOR", "path": "res://assets/models/ships/enemy_fighter.glb", "scale": 0.30, "description": "A fast attack craft with a narrow armored spine, split-delta wings and a triple engine cluster.", "specs": "CLASS  INTERCEPTOR       ROLE  PURSUIT"},
-	{"name": "AEGIS HEAVY FIGHTER", "role": "HEAVY / SPACE SUPERIORITY", "path": "res://assets/models/ships/heavy_fighter.glb", "scale": 0.23, "description": "A heavily armored superiority fighter with reinforced wing roots, turret coverage and high-output drives.", "specs": "CLASS  HEAVY FIGHTER     ARMOR  HEAVY"},
-	{"name": "BASTION BOMBER", "role": "STRIKE / ORDNANCE", "path": "res://assets/models/ships/bomber.glb", "scale": 0.19, "description": "A broad strike platform carrying internal payload bays and remote defensive turrets.", "specs": "CLASS  BOMBER            PAYLOAD  INTERNAL"},
-	{"name": "MULE CARGO HAULER", "role": "CIVILIAN / LOGISTICS", "path": "res://assets/models/ships/cargo_hauler.glb", "scale": 0.20, "description": "A modular industrial hauler with exposed container racks, docking interfaces and multiple drive nacelles.", "specs": "CLASS  HAULER            CARGO  MODULAR"},
-	{"name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "path": "res://assets/models/ships/frigate.glb", "scale": 0.13, "description": "A long-range escort warship designed to protect convoys and maintain a defensive perimeter.", "specs": "CLASS  FRIGATE           ROLE  ESCORT"},
-	{"name": "LEVIATHAN CRUISER", "role": "CAPITAL / COMMAND", "path": "res://assets/models/ships/cruiser.glb", "scale": 0.085, "description": "A capital command vessel with a broad armored hull, layered batteries and long-duration fleet support systems.", "specs": "CLASS  CRUISER           ROLE  CAPITAL"}
+	{"name": "AEGIS HEAVY FIGHTER", "role": "HEAVY / SPACE SUPERIORITY", "path": "res://assets/models/ships/heavy_fighter.glb", "scale": 0.32, "description": "A heavily armored superiority fighter with reinforced wing roots, turret coverage and high-output drives.", "specs": "CLASS  HEAVY FIGHTER     ARMOR  HEAVY"},
+	{"name": "BASTION BOMBER", "role": "STRIKE / ORDNANCE", "path": "res://assets/models/ships/bomber.glb", "scale": 0.28, "description": "A broad strike platform carrying internal payload bays and remote defensive turrets.", "specs": "CLASS  BOMBER            PAYLOAD  INTERNAL"},
+	{"name": "MULE CARGO HAULER", "role": "CIVILIAN / LOGISTICS", "path": "res://assets/models/ships/cargo_hauler.glb", "scale": 0.28, "description": "A modular industrial hauler with exposed container racks, docking interfaces and multiple drive nacelles.", "specs": "CLASS  HAULER            CARGO  MODULAR"},
+	{"name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "path": "res://assets/models/ships/frigate.glb", "scale": 0.22, "description": "A long-range escort warship designed to protect convoys and maintain a defensive perimeter.", "specs": "CLASS  FRIGATE           ROLE  ESCORT"},
+	{"name": "LEVIATHAN CRUISER", "role": "CAPITAL / COMMAND", "path": "res://assets/models/ships/cruiser.glb", "scale": 0.16, "description": "A capital command vessel with a broad armored hull, layered batteries and long-duration fleet support systems.", "specs": "CLASS  CRUISER           ROLE  CAPITAL"}
 ]
 
 var _ship_index: int = 0
@@ -90,8 +90,8 @@ func _build_showroom() -> void:
 	platform.name = "DisplayPlinth"
 	platform.position.y = -2.8
 	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 5.2
-	cylinder.bottom_radius = 5.8
+	cylinder.top_radius = 4.2
+	cylinder.bottom_radius = 4.6
 	cylinder.height = 0.34
 	cylinder.radial_segments = 96
 	platform.mesh = cylinder
@@ -105,8 +105,8 @@ func _build_showroom() -> void:
 	var platform_ring := MeshInstance3D.new()
 	platform_ring.position.y = -2.59
 	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 5.35
-	ring_mesh.outer_radius = 5.43
+	ring_mesh.inner_radius = 4.28
+	ring_mesh.outer_radius = 4.36
 	ring_mesh.rings = 96
 	ring_mesh.ring_segments = 12
 	platform_ring.mesh = ring_mesh
@@ -121,15 +121,15 @@ func _build_showroom() -> void:
 
 	_model_mount = Node3D.new()
 	_model_mount.name = "ShipDisplayMount"
-	_model_mount.position.y = -0.2
+	_model_mount.position.y = -1.2
 	world.add_child(_model_mount)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 3.2, 17.0)
-	camera.fov = 42.0
+	camera.position = Vector3(0.0, 2.6, 12.5)
+	camera.fov = 40.0
 	camera.current = true
 	world.add_child(camera)
-	camera.look_at(Vector3(0.0, -0.35, 0.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, -1.0, 0.0), Vector3.UP)
 
 	var overlay := Control.new()
 	overlay.name = "HangarOverlay"
