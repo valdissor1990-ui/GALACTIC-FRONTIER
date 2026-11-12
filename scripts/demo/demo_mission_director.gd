@@ -45,6 +45,9 @@ func _initialize_mission() -> void:
 	_build_mission_hud()
 	_set_radio("ORBITAL CONTROL", "Pilot, the relay stopped transmitting. Approach the beacon and scan its core.")
 	print("MISSION_READY: THE SILENT RELAY")
+	if SaveSlots.pending_quick_load:
+		SaveSlots.pending_quick_load = false
+		call_deferred("_load_quick_slot")
 
 
 func _process(delta: float) -> void:
