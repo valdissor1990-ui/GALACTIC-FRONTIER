@@ -3,6 +3,7 @@ extends Node
 ## Uses the real player flight controller, combat projectiles, enemy AI and damage model.
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/combat/enemy_fighter_visual.tscn")
+const TARGET_MARKER_SCRIPT: Script = preload("res://scripts/ui/target_marker.gd")
 const RELAY_POSITION := Vector3(0.0, 18.0, -720.0)
 const WRECK_POSITION := Vector3(210.0, -28.0, -1420.0)
 const HOME_POSITION := Vector3(0.0, 0.0, 90.0)
@@ -28,6 +29,7 @@ var _radio_label: Label
 var _distance_label: Label
 var _timer_label: Label
 var _progress_label: Label
+var _target_marker: Control
 var _rng := RandomNumberGenerator.new()
 var enemies_destroyed: int = 0
 var _result_shown: bool = false
@@ -214,6 +216,11 @@ func _build_mission_hud() -> void:
 	layer.name = "MissionHUD"
 	layer.layer = 8
 	world.add_child(layer)
+	_target_marker = Control.new()
+	_target_marker.name = "ObjectiveMarker"
+	_target_marker.set_script(TARGET_MARKER_SCRIPT)
+	layer.add_child(_target_marker)
+	_target_marker.call("set_target", _beacon)
 	var panel := PanelContainer.new()
 	panel.position = Vector2(28, 210)
 	panel.custom_minimum_size = Vector2(560, 156)
@@ -305,6 +312,8 @@ func _move_beacon(position: Vector3, tint: Color) -> void:
 	if is_instance_valid(_beacon):
 		_beacon.queue_free()
 	_build_navigation_beacon(position, tint)
+	if is_instance_valid(_target_marker):
+		_target_marker.call("set_target", _beacon)
 
 
 func _build_station() -> void:
