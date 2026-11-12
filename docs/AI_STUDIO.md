@@ -23,6 +23,9 @@ Audit performed against upstream `main` on 2026-11-12:
 
 Reason: this project is Godot-only; hooks can execute commands with side effects and should not be enabled without reviewing each one; and the existing repository already has its own CI, architecture, and workflow.
 
+## Codex concurrency
+`.codex/config.toml` enables project agents and sets `max_concurrent_threads_per_session = 6`. This is an upper limit for simultaneous subagent threads, not an instruction to keep six agents running continuously. Codex starts only the agents needed for a delegated task; the Active/Done views show which threads are actually running or finished.
+
 ## Important runtime limitation
 These files are repository instructions and Codex agent definitions. They do not start 6 independent model instances by themselves. A compatible Codex harness must load `.codex/agents/*.toml` and support subagents. In this ChatGPT conversation, I can use GitHub tools and perform specialist reviews sequentially, but cannot claim that the 6 roles are running as parallel agents.
 
