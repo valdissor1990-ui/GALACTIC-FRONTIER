@@ -7,7 +7,6 @@ on:
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
-      - ".github/workflows/ship-art-production.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
