@@ -73,7 +73,7 @@ jobs:
           from pathlib import Path
           from PIL import Image, ImageOps, ImageDraw
           raw = Path("build/raw_frames")
-          frames = sorted(raw.glob("frame-*.png"))[1:]  # skip the engine startup splash frame
+          frames = sorted(raw.glob("frame-*.png"))[5:]  # wait out the variable-length Godot startup splash
           if len(frames) < 8:
               raise SystemExit(f"Expected at least 8 real gameplay frames, got {len(frames)}")
           picks = [round(i * (len(frames) - 1) / 7) for i in range(8)]
@@ -82,6 +82,9 @@ jobs:
               image = Image.open(frames[source_index]).convert("RGB")
               if image.size != (1280, 720):
                   raise SystemExit(f"Unexpected screenshot size: {image.size}")
+              mean_luminance = sum(image.convert("L").getdata()) / (1280 * 720)
+              if mean_luminance > 22.0:
+                  raise SystemExit(f"Frame {frames[source_index].name} still looks like a startup splash (mean luminance {mean_luminance:.1f})")
               target = Path(f"build/screenshots/gameplay-{index:02d}.png")
               image.save(target, optimize=True)
               thumb = image.resize((480, 270), Image.Resampling.LANCZOS)
