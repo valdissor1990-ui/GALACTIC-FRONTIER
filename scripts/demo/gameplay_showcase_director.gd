@@ -49,15 +49,21 @@ func _run_showcase() -> void:
 			nearest_distance = distance
 			acquired = target
 	if acquired != null:
+		# Bring the first hostile into a cinematic but still playable engagement range
+		# so the automated QA captures can verify silhouettes and weapon effects.
+		var engagement_direction := -player.global_transform.basis.z
+		acquired.global_position = player.global_position + engagement_direction * 38.0 + player.global_transform.basis.x * 7.0
+		acquired.look_at(player.global_position, Vector3.UP)
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		return
 	await _engage_for(4.0)
+	Input.action_release("fire_primary")
 
 	camera_rig.toggle_camera()
-	await get_tree().create_timer(2.0).timeout
+	await get_tree().create_timer(4.5).timeout
 	camera_rig.toggle_camera()
 	await _engage_for(2.0)
 
