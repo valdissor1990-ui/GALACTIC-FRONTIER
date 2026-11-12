@@ -7,7 +7,7 @@ on:
       - chatgpt/ship-art-production
     paths:
       - "scripts/blender/**"
-      - ".github/workflows/blender-fleet-assets.yml"
+      - "tests/assets/**"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
