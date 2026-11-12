@@ -6,6 +6,7 @@ on:
     branches:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/ship-visual-fallback
     paths:
       - "scenes/**"
       - "scripts/**"
