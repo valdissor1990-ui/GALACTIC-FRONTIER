@@ -286,7 +286,7 @@ def add_integrated_raider_detail(root, mats):
 def main():
     dest=outdir();os.makedirs(dest,exist_ok=True)
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
-    mats=(mat("Raider | obsidian ceramic",(0.035,.052,.075),.82,.26),mat("Raider | titanium armor",(.22,.27,.31),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
+    mats=(mat("Raider | obsidian ceramic",(0.065,.09,.13),.82,.26),mat("Raider | titanium armor",(.30,.36,.42),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
     add_integrated_raider_detail(root,mats)
     # Retain the clean silhouette; new details are integrated into the existing wing and hull surfaces.

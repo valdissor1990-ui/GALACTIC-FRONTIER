@@ -160,14 +160,16 @@ def build_bomber(m):
         for j in range(4):
             x=s*(3.0+j*1.35)
             y=-.1+j*.72
-            box("Bastion wing bomb pylon %s %s"%(s,j),(x,y,-.43),(.34,.9,.25),d,.06)
-            # Each ordnance unit is visibly hard-mounted beneath its own pylon.
-            beam("Bastion ordnance suspension %s %s"%(s,j),(x,y,-.54),(x,y,-.68),.085,a,.07)
-            beam("Bastion smart bomb casing %s %s"%(s,j),(x,y+.62,-.78),(x,y-.62,-.78),.205,ac,.16)
-            sphere("Bastion bomb nose %s %s"%(s,j),(x,y-.62,-.78),(.16,.16,.16),a)
+            box("Bastion wing bomb pylon %s %s"%(s,j),(x,y,-.34),(.34,.9,.25),d,.06)
+            # Twin suspension struts bridge the wing pylon to each bomb casing.
+            for mount_side in (-1,1):
+                beam("Bastion ordnance suspension %s %s %s"%(s,j,mount_side),
+                    (x+mount_side*.12,y,-.48),(x+mount_side*.12,y,-.98),.055,a,.045)
+            beam("Bastion smart bomb casing %s %s"%(s,j),(x,y+.62,-1.15),(x,y-.62,-1.15),.205,ac,.16)
+            sphere("Bastion bomb nose %s %s"%(s,j),(x,y-.62,-1.15),(.16,.16,.16),a)
             for fin_side in (-1,1):
                 box("Bastion bomb stabilizer %s %s %s"%(s,j,fin_side),
-                    (x+fin_side*.13,y+.42,-.78),(.26,.24,.045),d,.025)
+                    (x+fin_side*.13,y+.42,-1.15),(.26,.24,.045),d,.025)
     # Two recessed internal payload bays remain closed until the release animation.
     for s in (-1,1):
         box("Bastion bomb bay rim "+str(s),(s*.56,1.0,-.78),(.72,4.4,.16),d,.10)
@@ -267,8 +269,8 @@ BUILDERS=[
  ("heavy_fighter","Aegis Heavy Fighter",build_heavy_fighter,((.075,.13,.19),(.32,.43,.49),(.04,.68,.78),(.02,.32,.95))),
  ("bomber","Bastion Bomber",build_bomber,((.13,.105,.075),(.42,.34,.22),(.88,.38,.08),(.95,.20,.035))),
  ("cargo_hauler","Mule Cargo Hauler",build_cargo,((.12,.16,.12),(.38,.46,.34),(.72,.66,.24),(.16,.65,.32))),
- ("frigate","Vanguard Frigate",build_frigate,((.10,.13,.18),(.34,.40,.48),(.18,.52,.78),(.02,.28,.9))),
- ("cruiser","Leviathan Cruiser",build_cruiser,((.09,.11,.16),(.34,.39,.46),(.72,.26,.12),(.02,.24,.85))),
+ ("frigate","Vanguard Frigate",build_frigate,((.14,.18,.24),(.42,.49,.56),(.18,.52,.78),(.02,.28,.9))),
+ ("cruiser","Leviathan Cruiser",build_cruiser,((.14,.17,.24),(.43,.48,.56),(.72,.26,.12),(.02,.24,.85))),
 ]
 
 def clear():
@@ -289,10 +291,10 @@ def render_setup(target, extent):
     cam=bpy.context.object; cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler()
     cam.data.lens=58; scene.camera=cam
     light_specs=[
-      ("Key",target+Vector((extent*.20,-extent*.65,extent*.95)),5200,extent*.72,(.72,.84,1)),
+      ("Key",target+Vector((extent*.20,-extent*.65,extent*.95)),6000,extent*.72,(.72,.84,1)),
       ("Rim",target+Vector((-extent*.85,extent*.28,extent*.55)),5800,extent*.62,(.15,.36,1)),
       ("Warm",target+Vector((extent*.78,extent*.58,extent*.28)),3800,extent*.52,(1,.30,.12)),
-      ("Front",target+Vector((0,-extent*.95,extent*.22)),2600,extent*.44,(.55,.72,1))]
+      ("Front",target+Vector((0,-extent*.95,extent*.22)),3600,extent*.44,(.55,.72,1))]
     for name,loc,power,size,color in light_specs:
         bpy.ops.object.light_add(type="AREA",location=loc); l=bpy.context.object
         l.name=name; l.data.energy=power; l.data.shape="DISK"; l.data.size=size; l.data.color=color
