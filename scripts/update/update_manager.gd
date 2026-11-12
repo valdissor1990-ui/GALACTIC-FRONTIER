@@ -36,7 +36,12 @@ func check_for_updates() -> void:
 	status_changed.emit("Проверяем наличие обновлений…")
 	var release_result: Dictionary = await _request_json(RELEASE_API)
 	if not release_result.ok:
-		_fail(str(release_result.error))
+		var reason := str(release_result.error)
+		if reason.contains("HTTP 404"):
+			_busy = false
+			status_changed.emit("Пока нет опубликованных обновлений.")
+			return
+		_fail(reason)
 		return
 	var release: Dictionary = release_result.data
 	if bool(release.get("draft", false)) or bool(release.get("prerelease", false)):
