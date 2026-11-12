@@ -9,6 +9,8 @@ on:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
       - chatgpt/save-system-foundation
+      - chatgpt/mission-save-integration
+      - chatgpt/fullhd-showcase-qa
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -16,6 +18,8 @@ on:
       - phase-1/flight-prototype
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/audit-fixes-pr24
+      - chatgpt/ship-art-production
+      - chatgpt/mission-save-integration
   workflow_dispatch:
 
 permissions:
@@ -73,6 +77,10 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Run ship visual fallback regression tests
+        if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
+        run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
+
       - name: Run combat systems regression tests
         if: hashFiles('tests/combat/test_combat_systems.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_combat_systems.gd
@@ -87,8 +95,9 @@ jobs:
         run: godot --headless --path . --script res://tests/save/test_mission_resume.gd -- --test-mode
 
 
-      - name: Run full demo mission progression test
-        run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
+      - name: Run accelerated demo mission regression test
+        if: hashFiles('tests/demo/test_demo_mission.gd') != ''
+        run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
       - name: Run mission failure and wave-statistics regression test
         run: godot --headless --path . res://tests/demo/test_mission_failure.tscn
 

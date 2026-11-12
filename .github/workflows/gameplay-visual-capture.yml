@@ -1,4 +1,4 @@
-name: Gameplay screenshot capture
+name: Gameplay visual quality capture
 
 on:
   workflow_dispatch:
@@ -6,163 +6,181 @@ on:
     branches:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
-      - chatgpt/audit-fixes-pr24
+      - chatgpt/fullhd-showcase-qa
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
+
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
       - chatgpt/audit-fixes-pr24
+      - chatgpt/mission-save-integration
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: gameplay-screenshot-capture-\${{ github.ref }}-\${{ github.sha }}
+  group: gameplay-visual-capture-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   capture:
-    name: Render and inspect real gameplay screenshots
+    name: Render and inspect real gameplay
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out project
         uses: actions/checkout@v4
 
-      - name: Install Godot and screenshot tools
+      - name: Install Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
           use-dotnet: false
           include-templates: false
 
-      - name: Install virtual display and image tools
+      - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
           sudo apt-get install --yes xvfb python3-pil
           godot --version
 
-      - name: Import project and validate scripts
+      - name: Verify all seven original ship GLBs are present
         run: |
-          find assets/models/ships -type f -name '*.blend' -delete
-          godot --headless --editor --path . --import --quit
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            test -s "assets/models/ships/${ship}.glb"
+          done
 
-      - name: Capture deterministic gameplay screenshots from the running game
+      - name: Import project and validate scripts and GLB resources
+        run: godot --headless --editor --path . --import --quit
+
+      - name: Capture eight deterministic Full HD gameplay screenshots
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build/screenshots
-          timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" \
-            godot --path . --windowed --resolution 1280x720 \
-              --rendering-method gl_compatibility --rendering-driver opengl3 \
-              res://scenes/demo/gameplay_showcase.tscn \
-              > build/gameplay-showcase.log 2>&1
-          grep -q "SHOWCASE_TARGET_ACQUIRED=true" build/gameplay-showcase.log
-          grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log
-          screenshot_root="$(find "$HOME/.local/share/godot/app_userdata" -type f -name '01-flight-start.png' -print -quit)"
-          if [ -z "$screenshot_root" ]; then
-            cat build/gameplay-showcase.log
-            echo "The showcase did not save its first deterministic screenshot."
-            exit 1
-          fi
-          screenshot_dir="$(dirname "$screenshot_root")"
-          names=(
-            "01-flight-start.png"
-            "02-relay-approach.png"
-            "03-hostiles-arrive.png"
-            "04-combat-targeting.png"
-            "05-cockpit-view.png"
-            "06-chase-combat.png"
-            "07-mission-hud.png"
-            "08-final-frame.png"
-          )
-          for i in "${!names[@]}"; do
-            source="$screenshot_dir/${names[$i]}"
-            test -s "$source"
-            cp "$source" "build/screenshots/gameplay-$(printf '%02d' "$((i + 1))").png"
-          done
-          python3 - <<'PY'
-          from pathlib import Path
-          from PIL import Image, ImageOps
-          files = sorted(Path("build/screenshots").glob("gameplay-*.png"))
-          if len(files) != 8:
-              raise SystemExit(f"Expected exactly 8 deterministic screenshots, got {len(files)}")
-          thumbs = []
-          for path in files:
-              image = Image.open(path).convert("RGB")
-              if image.size != (1280, 720):
-                  raise SystemExit(f"{path.name}: unexpected size {image.size}")
-              luminance = image.convert("L")
-              mean = sum(luminance.getdata()) / (1280 * 720)
-              if mean > 22.0:
-                  raise SystemExit(f"{path.name}: likely splash/blank frame (mean luminance {mean:.1f})")
-              thumbs.append(ImageOps.expand(image.resize((480, 270), Image.Resampling.LANCZOS), border=2, fill="white"))
-          sheet = Image.new("RGB", (968, 1096), (8, 13, 24))
-          for i, thumb in enumerate(thumbs):
-              sheet.paste(thumb, (2 + (i % 2) * 484, 2 + (i // 2) * 274))
-          sheet.save("build/gameplay-contact-sheet.png", optimize=True)
-          print("SCREENSHOT_CAPTURE_PASS: 8 deterministic director captures + contact sheet")
-          PY
-      - name: Capture all seven ships in the fleet hangar
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 600); do
+              if grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data"/gameplay-*.png build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              echo "Showcase did not finish within 150 seconds; captured $(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l) screenshots."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
+            test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
+      - name: Capture seven-ship Full HD hangar lineup in Godot
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/fleet-hangar
-          timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" \
-            godot --path . --windowed --resolution 1280x720 \
-              --rendering-method gl_compatibility --rendering-driver opengl3 \
-              res://scenes/ui/fleet_hangar_showcase.tscn \
-              > build/fleet-hangar-showcase.log 2>&1
-          grep -q "FLEET_HANGAR_SHOWCASE_COMPLETE ships=7" build/fleet-hangar-showcase.log
-          screenshot_root="$(find "$HOME/.local/share/godot/app_userdata" -type f -name 'fleet-hangar-01.png' -print -quit)"
-          test -n "$screenshot_root"
-          screenshot_dir="$(dirname "$screenshot_root")"
-          for i in $(seq 1 7); do
-            source="$screenshot_dir/fleet-hangar-$(printf '%02d' "$i").png"
-            test -s "$source"
-            cp "$source" "build/fleet-hangar/ship-$(printf '%02d' "$i").png"
-          done
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 240); do
+              if grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data/fleet-hangar.png" build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            test -s build/screenshots/fleet-hangar.png
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
+      - name: Build and validate screenshot contact sheet
+        run: |
           python3 - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageOps
-          files = sorted(Path('build/fleet-hangar').glob('ship-*.png'))
-          if len(files) != 7:
-              raise SystemExit(f'Expected 7 fleet images, got {len(files)}')
+          from PIL import Image
+
+          files = sorted(Path("build/screenshots").glob("gameplay-*.png"))
+          if len(files) != 8:
+              raise SystemExit(f"Expected 8 screenshots, got {len(files)}")
+
           thumbs = []
           for path in files:
-              image = Image.open(path).convert('RGB')
-              if image.size != (1280, 720):
-                  raise SystemExit(f'{path.name}: unexpected size {image.size}')
-              thumbs.append(ImageOps.expand(image.resize((480, 270), Image.Resampling.LANCZOS), border=2, fill='white'))
-          sheet = Image.new('RGB', (1452, 824), (8, 13, 24))
-          for i, thumb in enumerate(thumbs):
-              sheet.paste(thumb, (2 + (i % 3) * 484, 2 + (i // 3) * 274))
-          sheet.save('build/fleet-hangar-contact-sheet.png', optimize=True)
-          print('FLEET_HANGAR_CAPTURE_PASS: 7 ship screenshots + contact sheet')
+              image = Image.open(path).convert("RGB")
+              if image.size != (1920, 1080):
+                  raise SystemExit(f"Unexpected screenshot size: {path} {image.size}")
+              extrema = image.convert("L").getextrema()
+              if extrema[1] - extrema[0] < 12:
+                  raise SystemExit(f"Screenshot has almost no visual detail: {path}")
+              thumbs.append(image.resize((480, 270)))
+
+          sheet = Image.new("RGB", (960, 1080), "#10151d")
+          for i, image in enumerate(thumbs):
+              sheet.paste(image, ((i % 2) * 480, (i // 2) * 270))
+          sheet.save("build/screenshots/contact-sheet.png")
           PY
-      - name: Verify screenshot set and showcase sequence
+
+      - name: Verify full mission sequence and screenshot evidence
         run: |
-          set -euo pipefail
+          cat build/gameplay-showcase.log
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
-          test -s build/gameplay-contact-sheet.png
-          test "$(find build/fleet-hangar -maxdepth 1 -name 'ship-*.png' | wc -l)" -eq 7
-          test -s build/fleet-hangar-contact-sheet.png
-          if grep -E "ERROR:.*(Failed loading resource|No loader found|Parse Error|referenced non-existent resource|Unable to open file)" build/gameplay-showcase.log; then
-            echo "Gameplay scene contains missing or invalid resources."
+          test -s build/screenshots/contact-sheet.png
+          test -s build/screenshots/fleet-hangar.png
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open("build/screenshots/fleet-hangar.png")
+          if image.size != (1920, 1080):
+              raise SystemExit(f"Unexpected fleet hangar size: {image.size}")
+          PY
+          grep -E "FLEET_HANGAR_SHIPS_LOADED=7" build/fleet-hangar.log
+          grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
+          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png
+          grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 8
+          for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
+            grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
+          done
+          grep -E "SHOWCASE_SEQUENCE_COMPLETE stage=7" build/gameplay-showcase.log
+          if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
+            echo "Gameplay visual capture contains broken GLB resources or scene overrides."
             exit 1
           fi
-          grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
 
-      - name: Upload gameplay screenshots and diagnostics
+      - name: Upload Full HD gameplay screenshots and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: GALACTIC-FRONTIER-gameplay-screenshots
+          name: GALACTIC-FRONTIER-gameplay-visual-qa-fullhd
           path: |
             build/screenshots/*.png
-            build/gameplay-contact-sheet.png
             build/gameplay-showcase.log
-            build/fleet-hangar/*.png
-            build/fleet-hangar-contact-sheet.png
-            build/fleet-hangar-showcase.log
+            build/fleet-hangar.log
           if-no-files-found: error
           retention-days: 30

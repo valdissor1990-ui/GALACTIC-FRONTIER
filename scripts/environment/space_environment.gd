@@ -2,7 +2,7 @@ extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses generated geometry and textures only; no network or third-party assets.
 
-@export_range(300, 3000, 100) var star_count: int = 1800
+@export_range(300, 2400, 100) var star_count: int = 1800
 @export_range(40, 220, 10) var asteroid_count: int = 120
 
 var _rng := RandomNumberGenerator.new()
@@ -22,8 +22,20 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(_starfield):
 		return
 	var camera := get_viewport().get_camera_3d()
-	if camera != null:
-		_starfield.global_position = camera.global_position
+	if camera == null:
+		return
+
+	# Keep the distant sky landmarks around the active ship. The mission spans
+	# tens of kilometres; static backdrop geometry would otherwise be left
+	# behind at the starting carrier and leave later combat shots almost black.
+	_starfield.global_position = camera.global_position
+	var camera_transform := camera.global_transform
+	var azure := get_node_or_null("AzureNebula") as Node3D
+	if azure != null:
+		azure.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
+	var violet := get_node_or_null("VioletNebula") as Node3D
+	if violet != null:
+		violet.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
 
 
 func _build_world_environment() -> void:
@@ -40,19 +52,19 @@ func _build_world_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.30, 0.39, 0.62)
-	environment.ambient_light_energy = 0.68
+	environment.ambient_light_color = Color(0.22, 0.31, 0.52)
+	environment.ambient_light_energy = 0.78
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.72
+	environment.glow_intensity = 0.55
 	environment.glow_strength = 0.8
 	environment.ssao_enabled = true
-	environment.ssao_radius = 2.0
-	environment.ssao_intensity = 1.15
-	environment.ssil_enabled = true
+	environment.ssao_radius = 1.35
+	environment.ssao_intensity = 0.62
+	environment.ssil_enabled = false
 	environment.ssil_radius = 5.0
 	environment.ssil_intensity = 0.65
-	environment.sdfgi_enabled = true
+	environment.sdfgi_enabled = false
 	environment.sdfgi_cascades = 4
 	environment.sdfgi_min_cell_size = 0.2
 	world.environment = environment
@@ -62,15 +74,15 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = Color(0.72, 0.82, 1.0)
-	key_light.light_energy = 1.75
+	key_light.light_energy = 1.65
 	key_light.shadow_enabled = true
 	add_child(key_light)
 
 
 func _build_starfield() -> void:
 	var star_mesh := SphereMesh.new()
-	star_mesh.radius = 0.38
-	star_mesh.height = 0.76
+	star_mesh.radius = 0.32
+	star_mesh.height = 0.64
 	star_mesh.radial_segments = 6
 	star_mesh.rings = 4
 
@@ -78,15 +90,15 @@ func _build_starfield() -> void:
 	star_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	star_material.albedo_color = Color(0.72, 0.84, 1.0)
 	star_material.emission_enabled = true
-	star_material.emission = Color(0.48, 0.68, 1.0)
-	star_material.emission_energy_multiplier = 1.6
+	star_material.emission = Color(0.56, 0.76, 1.0)
+	star_material.emission_energy_multiplier = 2.1
 	star_mesh.material = star_material
 
 	_starfield = _make_multimesh("Starfield", star_mesh, star_count)
 	for index in range(star_count):
 		var direction := _random_unit_vector()
-		var distance := _rng.randf_range(520.0, 940.0)
-		var size := _rng.randf_range(0.85, 2.7)
+		var distance := _rng.randf_range(520.0, 980.0)
+		var size := _rng.randf_range(1.0, 2.8)
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
@@ -95,23 +107,16 @@ func _build_starfield() -> void:
 func _build_nebulae() -> void:
 	_add_nebula(
 		"AzureNebula",
-		Vector3(-420.0, 120.0, -600.0),
-		Vector2(280.0, 160.0),
-		Color(0.12, 0.24, 0.62, 0.34),
+		Vector3(-138.0, 54.0, -465.0),
+		Vector2(310.0, 178.0),
+		Color(0.16, 0.40, 1.0, 0.38),
 		1138
 	)
 	_add_nebula(
-		"CentralAzureNebula",
-		Vector3(0.0, 105.0, -680.0),
-		Vector2(760.0, 430.0),
-		Color(0.10, 0.20, 0.48, 0.34),
-		4197
-	)
-	_add_nebula(
 		"VioletNebula",
-		Vector3(420.0, -100.0, -820.0),
-		Vector2(240.0, 138.0),
-		Color(0.35, 0.12, 0.58, 0.30),
+		Vector3(158.0, -42.0, -520.0),
+		Vector2(270.0, 152.0),
+		Color(0.52, 0.20, 0.94, 0.32),
 		8821
 	)
 
@@ -136,7 +141,7 @@ func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 
 uniform sampler2D nebula_noise : repeat_enable, filter_linear_mipmap;
 uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.2);
@@ -148,11 +153,13 @@ void fragment() {
 	float broad = texture(nebula_noise, uv_a).r;
 	float detail = texture(nebula_noise, uv_b).r;
 	float cloud = broad * 0.72 + detail * 0.28;
-	float filaments = smoothstep(0.43, 0.79, cloud);
-	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
-	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.30, 0.0, 0.085);
+	float filaments = smoothstep(0.36, 0.74, cloud);
+	float wisps = smoothstep(0.49, 0.82, detail) * 0.22;
+	vec2 centered = UV * 2.0 - 1.0;
+	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
+	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.36);
 	ALBEDO = nebula_tint.rgb;
-	EMISSION = nebula_tint.rgb * (0.02 + filaments * 0.055);
+	EMISSION = nebula_tint.rgb * (0.45 + filaments * 1.8);
 	ALPHA = alpha;
 }
 """
@@ -214,22 +221,6 @@ func _build_planet() -> void:
 	atmosphere_mesh.material = atmosphere_material
 	atmosphere.mesh = atmosphere_mesh
 	add_child(atmosphere)
-
-
-
-func _build_planet_collision(position: Vector3) -> void:
-	var body := StaticBody3D.new()
-	body.name = "AureliaCollision"
-	body.position = position
-	body.collision_layer = 1
-	body.collision_mask = 1
-	body.add_to_group("space_obstacles")
-	var collision := CollisionShape3D.new()
-	var shape := SphereShape3D.new()
-	shape.radius = 42.0
-	collision.shape = shape
-	body.add_child(collision)
-	add_child(body)
 
 
 func _create_planet_texture() -> Texture2D:
@@ -325,26 +316,34 @@ void fragment() {
 	add_child(field)
 
 
-
 func _random_asteroid_position() -> Vector3:
 	var position := Vector3.ZERO
-	for attempt in range(80):
+	for attempt in range(100):
 		position = Vector3(
 			_rng.randf_range(-155.0, 155.0),
 			_rng.randf_range(-88.0, 88.0),
 			_rng.randf_range(-250.0, 80.0)
 		)
-		if _distance_to_route(position) > 22.0:
+		if _distance_to_route(position) > 26.0:
 			return position
-	return Vector3(45.0, _rng.randf_range(-88.0, 88.0), _rng.randf_range(-250.0, 80.0))
+	return Vector3(70.0, -88.0, -100.0)
 
 
 func _distance_to_route(point: Vector3) -> float:
-	var route_start := Vector3.ZERO
-	var route_end := Vector3(0.0, 18.0, -720.0)
-	var route := route_end - route_start
-	var t := clampf((point - route_start).dot(route) / route.length_squared(), 0.0, 1.0)
-	return point.distance_to(route_start + route * t)
+	var route_points: Array[Vector3] = [
+		Vector3(0.0, 18.0, 0.0),
+		Vector3(0.0, 18.0, -13500.0),
+		Vector3(520.0, -28.0, -33000.0),
+		Vector3(0.0, 0.0, 90.0)
+	]
+	var minimum_distance := INF
+	for index in range(route_points.size() - 1):
+		var start := route_points[index]
+		var end := route_points[index + 1]
+		var route := end - start
+		var t := clampf((point - start).dot(route) / route.length_squared(), 0.0, 1.0)
+		minimum_distance = minf(minimum_distance, point.distance_to(start + route * t))
+	return minimum_distance
 
 
 func _add_asteroid_collision(index: int, position: Vector3, size: float) -> void:
@@ -357,6 +356,21 @@ func _add_asteroid_collision(index: int, position: Vector3, size: float) -> void
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
 	shape.radius = size * 0.9
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
+
+
+func _build_planet_collision(position: Vector3) -> void:
+	var body := StaticBody3D.new()
+	body.name = "AureliaCollision"
+	body.position = position
+	body.collision_layer = 1
+	body.collision_mask = 1
+	body.add_to_group("space_obstacles")
+	var collision := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = 42.0
 	collision.shape = shape
 	body.add_child(collision)
 	add_child(body)
