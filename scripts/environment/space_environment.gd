@@ -95,16 +95,16 @@ func _build_starfield() -> void:
 func _build_nebulae() -> void:
 	_add_nebula(
 		"AzureNebula",
-		Vector3(-138.0, 54.0, -465.0),
-		Vector2(310.0, 178.0),
-		Color(0.12, 0.34, 1.0, 0.24),
+		Vector3(-420.0, 120.0, -600.0),
+		Vector2(280.0, 160.0),
+		Color(0.12, 0.24, 0.62, 0.14),
 		1138
 	)
 	_add_nebula(
 		"VioletNebula",
-		Vector3(158.0, -42.0, -520.0),
-		Vector2(270.0, 152.0),
-		Color(0.48, 0.16, 0.92, 0.18),
+		Vector3(420.0, -100.0, -820.0),
+		Vector2(240.0, 138.0),
+		Color(0.35, 0.12, 0.58, 0.12),
 		8821
 	)
 
@@ -143,9 +143,9 @@ void fragment() {
 	float cloud = broad * 0.72 + detail * 0.28;
 	float filaments = smoothstep(0.43, 0.79, cloud);
 	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
-	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.22, 0.0, 0.055);
+	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.18, 0.0, 0.025);
 	ALBEDO = nebula_tint.rgb;
-	EMISSION = nebula_tint.rgb * (0.035 + filaments * 0.11);
+	EMISSION = nebula_tint.rgb * (0.02 + filaments * 0.055);
 	ALPHA = alpha;
 }
 """
