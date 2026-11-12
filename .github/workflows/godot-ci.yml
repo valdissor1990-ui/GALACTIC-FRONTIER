@@ -15,6 +15,7 @@ on:
       - main
       - phase-1/flight-prototype
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/audit-fixes-pr24
   workflow_dispatch:
 
 permissions:
@@ -46,21 +47,47 @@ jobs:
           godot --version | grep -E '^4\.7\.2\.stable'
 
       - name: Import project and parse scripts
-        run: godot --headless --editor --path . --quit
+        run: |
+          mkdir -p build
+          set -o pipefail
+          godot --headless --editor --path . --import --quit 2>&1 | tee build/godot-import.log
+          if grep -E 'ERROR:.*(Failed loading resource|No loader found|Parse Error|Unable to open file)' build/godot-import.log; then
+            echo 'Godot import reported a missing or invalid resource.'
+            exit 1
+          fi
 
       - name: Run FlightModel unit tests
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
+      - name: Run space obstacle and compound hitbox physics tests
+        run: godot --headless --path . --script res://tests/environment/test_space_collisions.gd -- --test-mode
+
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Run combat systems regression tests
+        if: hashFiles('tests/combat/test_combat_systems.gd') != ''
+        run: godot --headless --path . --script res://tests/combat/test_combat_systems.gd
+
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
+      - name: Run mission checkpoint resume integration test
+        run: godot --headless --path . --script res://tests/save/test_mission_resume.gd -- --test-mode
+
+
       - name: Run full demo mission progression test
         run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
+      - name: Run mission failure and wave-statistics regression test
+        run: godot --headless --path . res://tests/demo/test_mission_failure.tscn
+
+      - name: Run mission retry and main-menu navigation test
+        run: godot --headless --path . --script res://tests/demo/test_mission_retry.gd -- --test-mode
+
+      - name: Headless main menu smoke test
+        run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
 
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
@@ -73,6 +100,57 @@ jobs:
 
       - name: Headless ten-minute demo scene smoke test
         run: godot --headless --path . res://scenes/demo/ten_minute_demo.tscn --quit-after 12
+
+      - name: Validate every scene and its external dependencies
+        run: |
+          mkdir -p build
+          cat > build/check_scenes.gd <<'EOF'
+          extends SceneTree
+          func _initialize() -> void:
+              call_deferred("_run")
+          func _run() -> void:
+              var directories: Array[String] = ["res://scenes", "res://tests"]
+              var failures := 0
+              var resource_pattern := RegEx.new()
+              resource_pattern.compile('path="(res://[^"]+)"')
+              while not directories.is_empty():
+                  var directory: String = directories.pop_back()
+                  var access := DirAccess.open(directory)
+                  if access == null:
+                      push_error("SCENE_SCAN_DIR_FAIL: " + directory)
+                      failures += 1
+                      continue
+                  access.list_dir_begin()
+                  while true:
+                      var entry := access.get_next()
+                      if entry.is_empty():
+                          break
+                      if entry.begins_with("."):
+                          continue
+                      var path := directory.path_join(entry)
+                      if access.current_is_dir():
+                          directories.append(path)
+                      elif entry.ends_with(".tscn"):
+                          var source := FileAccess.get_file_as_string(path)
+                          for match_result in resource_pattern.search_all(source):
+                              var dependency: String = match_result.get_string(1)
+                              if not FileAccess.file_exists(dependency):
+                                  push_error("MISSING_SCENE_DEPENDENCY: " + path + " -> " + dependency)
+                                  failures += 1
+                          var packed := ResourceLoader.load(path) as PackedScene
+                          if packed == null:
+                              push_error("SCENE_LOAD_FAIL: " + path)
+                              failures += 1
+              print("SCENE_DEPENDENCY_VALIDATION failures=", failures)
+              quit(1 if failures > 0 else 0)
+          EOF
+          godot --headless --path . --script build/check_scenes.gd
+
+
+      - name: Validate all seven ship GLBs through Godot's runtime glTF parser
+        if: hashFiles('tests/assets/test_ship_assets.gd') != ''
+        run: godot --headless --path . --script res://tests/assets/test_ship_assets.gd
+
 
       - name: Export Windows Desktop build
         run: |

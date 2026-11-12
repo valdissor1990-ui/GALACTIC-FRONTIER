@@ -1,4 +1,4 @@
-name: Gameplay visual quality capture
+name: Gameplay screenshot capture
 
 on:
   workflow_dispatch:
@@ -6,81 +6,117 @@ on:
     branches:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/audit-fixes-pr24
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/audit-fixes-pr24
 
 permissions:
   contents: read
 
 concurrency:
-  group: gameplay-visual-capture-${{ github.ref }}-${{ github.sha }}
+  group: gameplay-screenshot-capture-\${{ github.ref }}-\${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
   capture:
-    name: Render and inspect real gameplay
+    name: Render and inspect real gameplay screenshots
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out project
         uses: actions/checkout@v4
 
-      - name: Install Godot 4.7.2
+      - name: Install Godot and screenshot tools
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
           use-dotnet: false
           include-templates: false
 
-      - name: Install virtual display and video capture tools
+      - name: Install virtual display and image tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg
+          sudo apt-get install --yes xvfb ffmpeg python3-pil
           godot --version
           ffmpeg -version | head -n 1
 
       - name: Import project and validate scripts
-        run: godot --headless --editor --path . --quit
+        run: godot --headless --editor --path . --import --quit
 
-      - name: Capture a 20-second gameplay sequence
+      - name: Capture real gameplay frames as PNG
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build
+          mkdir -p build/raw_frames build/screenshots
           xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
             set -euo pipefail
             godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
-            for attempt in $(seq 1 80); do
+            for attempt in $(seq 1 100); do
               if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
               if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
-              sleep 0.25
+              sleep 0.2
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 30 -video_size 1280x720 -i "$DISPLAY" -t 20.0 -an -c:v libx264 -preset veryfast -crf 19 -pix_fmt yuv420p build/GALACTIC-FRONTIER-gameplay-20s.mp4
+            sleep 2
+            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 1 -video_size 1280x720 -i "$DISPLAY" -frames:v 20 build/raw_frames/frame-%02d.png
             sleep 1
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
           '
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageOps, ImageDraw
+          raw = Path("build/raw_frames")
+          frames = sorted(raw.glob("frame-*.png"))[5:]  # wait out the variable-length Godot startup splash
+          if len(frames) < 8:
+              raise SystemExit(f"Expected at least 8 real gameplay frames, got {len(frames)}")
+          picks = [round(i * (len(frames) - 1) / 7) for i in range(8)]
+          thumbs = []
+          for index, source_index in enumerate(picks, 1):
+              image = Image.open(frames[source_index]).convert("RGB")
+              if image.size != (1280, 720):
+                  raise SystemExit(f"Unexpected screenshot size: {image.size}")
+              mean_luminance = sum(image.convert("L").getdata()) / (1280 * 720)
+              if mean_luminance > 22.0:
+                  raise SystemExit(f"Frame {frames[source_index].name} still looks like a startup splash (mean luminance {mean_luminance:.1f})")
+              target = Path(f"build/screenshots/gameplay-{index:02d}.png")
+              image.save(target, optimize=True)
+              thumb = image.resize((480, 270), Image.Resampling.LANCZOS)
+              thumb = ImageOps.expand(thumb, border=2, fill="white")
+              thumbs.append(thumb)
+          sheet = Image.new("RGB", (968, 1096), (8, 13, 24))
+          for i, thumb in enumerate(thumbs):
+              x = 2 + (i % 2) * 484
+              y = 2 + (i // 2) * 274
+              sheet.paste(thumb, (x, y))
+          sheet.save("build/gameplay-contact-sheet.png", optimize=True)
+          print("SCREENSHOT_CAPTURE_PASS: 8 PNG screenshots + contact sheet")
+          PY
 
-      - name: Verify video and gameplay sequence
+      - name: Verify screenshot set and showcase sequence
         run: |
-          test -s build/GALACTIC-FRONTIER-gameplay-20s.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-20s.mp4 | tee build/video-duration.txt
-          awk '{ if ($1 < 19.9 || $1 > 20.1) exit 1 }' build/video-duration.txt
+          set -euo pipefail
+          test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
+          test -s build/gameplay-contact-sheet.png
+          if grep -E "ERROR:.*(Failed loading resource|No loader found|Parse Error|referenced non-existent resource|Unable to open file)" build/gameplay-showcase.log; then
+            echo "Gameplay scene contains missing or invalid resources."
+            exit 1
+          fi
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
 
-      - name: Upload gameplay capture and diagnostics
+      - name: Upload gameplay screenshots and diagnostics
         uses: actions/upload-artifact@v4
         with:
-          name: GALACTIC-FRONTIER-gameplay-visual-qa
+          name: GALACTIC-FRONTIER-gameplay-screenshots
           path: |
-            build/GALACTIC-FRONTIER-gameplay-20s.mp4
-            build/video-duration.txt
+            build/screenshots/*.png
+            build/gameplay-contact-sheet.png
             build/gameplay-showcase.log
           if-no-files-found: error
           retention-days: 30

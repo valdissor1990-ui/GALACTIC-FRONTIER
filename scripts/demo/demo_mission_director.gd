@@ -29,6 +29,8 @@ var _distance_label: Label
 var _timer_label: Label
 var _progress_label: Label
 var _rng := RandomNumberGenerator.new()
+var enemies_destroyed: int = 0
+var _result_shown: bool = false
 
 
 func _ready() -> void:
@@ -45,6 +47,7 @@ func _initialize_mission() -> void:
 	_build_mission_hud()
 	_set_radio("ORBITAL CONTROL", "Pilot, the relay stopped transmitting. Approach the beacon and scan its core.")
 	print("MISSION_READY: THE SILENT RELAY")
+	_save_checkpoint("mission start")
 
 
 func _process(delta: float) -> void:
@@ -60,8 +63,13 @@ func _process(delta: float) -> void:
 		return
 	var player_damageable := player.get_node_or_null("Damageable") as Damageable
 	if player_damageable != null and player_damageable.is_destroyed():
-		stage = MissionStage.FAILED
-		_set_radio("MISSION CONTROL", "Your fighter is lost. Mission failed.")
+		if stage != MissionStage.FAILED:
+			stage = MissionStage.FAILED
+			_set_radio("MISSION CONTROL", "Your fighter is lost. Mission failed.")
+			CombatEffects.spawn_burst(world, player.global_position, Color(0.12, 0.72, 1.0), 3.2)
+			_show_mission_result(false)
+		_update_hud()
+		return
 	_update_mission(delta)
 	_update_hud()
 
@@ -70,7 +78,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
 	var key_event := event as InputEventKey
-	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_F:
+	if key_event.echo or not key_event.pressed:
+		return
+	if key_event.keycode == KEY_F5:
+		_save_checkpoint("manual")
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.keycode == KEY_F9:
+		_load_checkpoint()
+		get_viewport().set_input_as_handled()
+		return
+	if not event.is_action_pressed("scan"):
 		return
 	if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
 		_complete_relay_scan()
@@ -99,6 +117,10 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.COMPLETE
 				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
 				print("MISSION_COMPLETE seconds=", mission_seconds)
+				var save_manager := _get_save_manager()
+				if save_manager != null:
+					save_manager.call("delete_slot", "silent_relay")
+				_show_mission_result(true)
 
 
 func _complete_relay_scan() -> void:
@@ -141,9 +163,11 @@ func _spawn_wave() -> void:
 		if damageable != null:
 			damageable.destroyed.connect(_on_enemy_destroyed.bind(enemy), CONNECT_ONE_SHOT)
 	print("MISSION_WAVE_STARTED stage=", stage, " wave=", wave_index, " count=", count)
+	_save_checkpoint("wave %d" % wave_index)
 
 
 func _on_enemy_destroyed(enemy: Node3D) -> void:
+	enemies_destroyed += 1
 	if is_instance_valid(enemy):
 		CombatEffects.spawn_burst(world, enemy.global_position, Color(1.0, 0.18, 0.055), 2.1)
 		enemy.queue_free()
@@ -157,6 +181,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_objective_position = WRECK_POSITION
 		_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
 		_set_radio("ORBITAL CONTROL", "Relay secured. A debris trail leads to a second signal source. Investigate.")
+		_save_checkpoint("relay secured")
 	elif stage == MissionStage.DEFEND_WRECK and wave_index < 3:
 		_next_wave_timer = 5.0
 	elif stage == MissionStage.DEFEND_WRECK:
@@ -164,6 +189,97 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_objective_position = HOME_POSITION
 		_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
 		_set_radio("ORBITAL CONTROL", "All hostiles eliminated. Return to the carrier for debriefing.")
+		_save_checkpoint("wreck secured")
+
+
+func _save_checkpoint(reason: String = "manual") -> bool:
+	if not is_instance_valid(player):
+		return false
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	var payload := {
+		"mission_id": "silent_relay",
+		"stage": int(stage),
+		"wave_index": wave_index,
+		"mission_seconds": mission_seconds,
+		"enemies_destroyed": enemies_destroyed,
+		"player_position": [player.global_position.x, player.global_position.y, player.global_position.z],
+		"player_rotation": [player.global_rotation.x, player.global_rotation.y, player.global_rotation.z],
+		"player_velocity": [player.velocity.x, player.velocity.y, player.velocity.z],
+		"player_hull": damageable.current_hull if damageable != null else 100.0,
+		"player_shield": damageable.current_shield if damageable != null else 100.0
+	}
+	var save_manager := _get_save_manager()
+	if save_manager == null:
+		push_error("Checkpoint save manager is unavailable.")
+		return false
+	var result: Dictionary = save_manager.call("save_slot", "silent_relay", payload)
+	if result.ok:
+		print("CHECKPOINT_SAVED reason=", reason, " stage=", stage, " wave=", wave_index)
+		if is_instance_valid(_radio_label) and reason == "manual":
+			_set_radio("SAVE SYSTEM", "Checkpoint saved locally. Press F9 to restore it.")
+		return true
+	push_error("Checkpoint save failed: " + str(result.get("error", "unknown")))
+	return false
+
+
+func _load_checkpoint() -> bool:
+	var save_manager := _get_save_manager()
+	if save_manager == null:
+		return false
+	var result: Dictionary = save_manager.call("load_slot", "silent_relay")
+	if not result.ok:
+		_set_radio("SAVE SYSTEM", "No valid local checkpoint is available.")
+		return false
+	var restored := restore_from_save(result.payload)
+	if restored:
+		_set_radio("SAVE SYSTEM", "Checkpoint restored. Flight resumed.")
+	return restored
+
+
+func restore_from_save(payload: Dictionary) -> bool:
+	if str(payload.get("mission_id", "")) != "silent_relay":
+		return false
+	var saved_stage := int(payload.get("stage", -1))
+	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.RETURN_HOME:
+		return false
+	stage = saved_stage
+	wave_index = maxi(0, int(payload.get("wave_index", 0)))
+	mission_seconds = maxf(0.0, float(payload.get("mission_seconds", 0.0)))
+	enemies_destroyed = clampi(int(payload.get("enemies_destroyed", 0)), 0, 18)
+	player.global_position = _vector_from_payload(payload.get("player_position", []), player.global_position)
+	player.global_rotation = _vector_from_payload(payload.get("player_rotation", []), player.global_rotation)
+	player.velocity = _vector_from_payload(payload.get("player_velocity", []), Vector3.ZERO)
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	if damageable != null:
+		damageable.current_hull = clampf(float(payload.get("player_hull", damageable.max_hull)), 1.0, damageable.max_hull)
+		damageable.current_shield = clampf(float(payload.get("player_shield", damageable.max_shield)), 0.0, damageable.max_shield)
+	for enemy in get_tree().get_nodes_in_group("combat_targets"):
+		if enemy != player and is_instance_valid(enemy):
+			enemy.queue_free()
+	enemies_remaining = 0
+	_next_wave_timer = -1.0
+	match stage:
+		MissionStage.OUTBOUND, MissionStage.SCAN_RELAY, MissionStage.DEFEND_RELAY:
+			_move_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
+		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK, MissionStage.DEFEND_WRECK:
+			_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
+		MissionStage.RETURN_HOME:
+			_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
+	if stage == MissionStage.DEFEND_RELAY or stage == MissionStage.DEFEND_WRECK:
+		wave_index = maxi(0, wave_index - 1)
+		_spawn_wave()
+	_update_hud()
+	return true
+
+
+func _get_save_manager() -> Node:
+	return get_node_or_null("/root/GameSave")
+
+
+func _vector_from_payload(value: Variant, fallback: Vector3) -> Vector3:
+	if not value is Array or value.size() != 3:
+		return fallback
+	return Vector3(float(value[0]), float(value[1]), float(value[2]))
 
 
 func _distance_to_objective() -> float:
@@ -264,30 +380,32 @@ func _build_navigation_beacon(position: Vector3, tint: Color) -> void:
 	world.add_child(_beacon)
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
-	torus.inner_radius = 7.0
-	torus.outer_radius = 8.2
-	torus.rings = 48
+	# Keep the objective marker readable without filling the chase camera at close range.
+	torus.inner_radius = 0.34
+	torus.outer_radius = 0.42
+	torus.rings = 64
 	torus.ring_segments = 12
 	ring.mesh = torus
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = tint
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(tint.r, tint.g, tint.b, 0.58)
 	material.emission_enabled = true
-	material.emission = tint
-	material.emission_energy_multiplier = 2.5
+	material.emission = tint * 0.48
+	material.emission_energy_multiplier = 1.0
 	ring.material_override = material
 	_beacon.add_child(ring)
 	var core := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
-	sphere.radius = 1.8
-	sphere.height = 3.6
+	sphere.radius = 0.22
+	sphere.height = 0.44
 	core.mesh = sphere
 	core.material_override = material
 	_beacon.add_child(core)
 	var light := OmniLight3D.new()
 	light.light_color = tint
-	light.light_energy = 2.0
-	light.omni_range = 42.0
+	light.light_energy = 1.1
+	light.omni_range = 16.0
 	_beacon.add_child(light)
 
 
@@ -353,3 +471,100 @@ func _build_station() -> void:
 	station_light.light_energy = 3.5
 	station_light.omni_range = 90.0
 	_station.add_child(station_light)
+
+
+func _show_mission_result(success: bool) -> void:
+	if _result_shown:
+		return
+	_result_shown = true
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+		player.set_process_unhandled_input(false)
+		var weapon := player.get_node_or_null("WeaponSystem")
+		if weapon != null:
+			weapon.set_process(false)
+	if is_instance_valid(encounter):
+		encounter.set_process(false)
+		encounter.set_physics_process(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var layer := CanvasLayer.new()
+	layer.name = "MissionResult"
+	layer.layer = 30
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	world.add_child(layer)
+	var shade := ColorRect.new()
+	shade.color = Color(0.005, 0.012, 0.025, 0.82)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(520, 330)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.018, 0.045, 0.075, 0.98)
+	style.border_color = Color(0.12, 0.62, 0.82, 0.9) if success else Color(0.78, 0.24, 0.18, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 34
+	style.content_margin_right = 34
+	style.content_margin_top = 28
+	style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = "MISSION COMPLETE" if success else "MISSION FAILED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#67d9f3") if success else Color("#ff887d"))
+	column.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "THE SILENT RELAY  /  DEBRIEFING"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_color_override("font_color", Color("#9eb8c8"))
+	column.add_child(subtitle)
+	var stats := Label.new()
+	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, _get_waves_cleared(success)]
+	stats.add_theme_font_size_override("font_size", 16)
+	stats.add_theme_color_override("font_color", Color("#d5e8f2"))
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(stats)
+	var retry := Button.new()
+	retry.name = "RetryButton"
+	retry.text = "PLAY AGAIN"
+	retry.custom_minimum_size.y = 48
+	retry.pressed.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/demo/ten_minute_demo.tscn")
+	)
+	column.add_child(retry)
+	var menu := Button.new()
+	menu.name = "MenuButton"
+	menu.text = "MAIN MENU"
+	menu.custom_minimum_size.y = 42
+	menu.pressed.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	)
+	column.add_child(menu)
+	get_tree().paused = true
+	print("MISSION_RESULT_SHOWN success=", success, " kills=", enemies_destroyed, " seconds=", mission_seconds)
+
+
+func _get_waves_cleared(success: bool) -> int:
+	if success:
+		return 6
+	match stage:
+		MissionStage.DEFEND_RELAY:
+			return maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
+		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK:
+			return 3
+		MissionStage.DEFEND_WRECK:
+			return 3 + maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
+		MissionStage.RETURN_HOME:
+			return 6
+		_:
+			return 0

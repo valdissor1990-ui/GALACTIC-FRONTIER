@@ -36,8 +36,8 @@ func _create_trail() -> void:
 	var tint := Color(1.0, 0.16, 0.045) if hostile else Color(0.08, 0.66, 1.0)
 	var trail := GPUParticles3D.new()
 	trail.name = "EnergyTrail"
-	trail.amount = 26
-	trail.lifetime = 0.24
+	trail.amount = 14
+	trail.lifetime = 0.075
 	trail.explosiveness = 0.0
 	trail.randomness = 0.22
 	trail.local_coords = false
@@ -50,8 +50,8 @@ func _create_trail() -> void:
 	process.gravity = Vector3.ZERO
 	process.damping_min = 1.0
 	process.damping_max = 2.5
-	process.scale_min = 0.035
-	process.scale_max = 0.09
+	process.scale_min = 0.025
+	process.scale_max = 0.055
 	var gradient := Gradient.new()
 	gradient.set_color(0, Color(1.0, 1.0, 1.0, 0.95))
 	gradient.add_point(0.35, tint)

@@ -28,8 +28,23 @@ func _run_showcase() -> void:
 
 	if mission.stage == 1:
 		mission._complete_relay_scan()
-	var acquired := targeting.acquire_target()
-	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
+	var acquired := false
+	var targets := get_tree().get_nodes_in_group("combat_targets")
+	if not targets.is_empty() and targets[0] is Node3D:
+		var first_target := targets[0] as Node3D
+		player.look_at(first_target.global_position, Vector3.UP)
+		await get_tree().physics_frame
+		var active_camera := get_viewport().get_camera_3d()
+		if active_camera != null:
+			active_camera.look_at(first_target.global_position, Vector3.UP)
+			await get_tree().process_frame
+			var offset := first_target.global_position - active_camera.global_position
+			var alignment := (-active_camera.global_transform.basis.z.normalized()).dot(offset.normalized())
+			print("SHOWCASE_TARGET_DEBUG camera=", active_camera.name, " target=", first_target.name, " distance=", offset.length(), " alignment=", alignment, " threshold=", cos(deg_to_rad(targeting.acquisition_cone_degrees)))
+		else:
+			print("SHOWCASE_TARGET_DEBUG camera=null")
+		acquired = targeting.acquire_target() != null
+	print("SHOWCASE_TARGET_ACQUIRED=", acquired)
 	await _engage_for(4.0)
 
 	camera_rig.toggle_camera()

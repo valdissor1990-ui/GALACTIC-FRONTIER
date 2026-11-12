@@ -14,6 +14,7 @@ var _flight_model: FlightModel = FlightModel.new()
 var _angular_velocity: Vector3 = Vector3.ZERO
 var _mouse_delta: Vector2 = Vector2.ZERO
 var boost_amount: float = 10.0
+var _is_destroyed: bool = false
 
 
 func _ready() -> void:
@@ -22,6 +23,9 @@ func _ready() -> void:
 		return
 
 	boost_amount = flight_config.boost_capacity
+	var damageable := get_node_or_null("Damageable") as Damageable
+	if damageable != null:
+		damageable.destroyed.connect(_on_destroyed, CONNECT_ONE_SHOT)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -35,7 +39,7 @@ func _notification(what: int) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if get_tree().paused:
+	if get_tree().paused or _is_destroyed:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -50,6 +54,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _is_destroyed:
+		velocity = Vector3.ZERO
+		return
 	if flight_config == null:
 		_mouse_delta = Vector2.ZERO
 		return
@@ -119,6 +126,24 @@ func _update_rotation(delta: float) -> void:
 			Vector3.ZERO,
 			flight_config.rotation_stabilization * delta
 		)
+
+
+func _on_destroyed() -> void:
+	_is_destroyed = true
+	velocity = Vector3.ZERO
+	_angular_velocity = Vector3.ZERO
+	_mouse_delta = Vector2.ZERO
+	set_physics_process(false)
+	set_process_unhandled_input(false)
+	var weapon := get_node_or_null("WeaponSystem")
+	if weapon != null:
+		weapon.set_process(false)
+		weapon.set_physics_process(false)
+	print("PLAYER_SHIP_DESTROYED: flight controls and weapons disabled")
+
+
+func is_destroyed() -> bool:
+	return _is_destroyed
 
 
 func set_mouse_sensitivity(value: float) -> void:
