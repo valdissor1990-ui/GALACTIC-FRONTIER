@@ -106,6 +106,9 @@ jobs:
         if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
         run: |
           BRANCH="${{ github.ref_name }}"
+          # Restore the tracked source tree after the temporary GLB import.
+          # Keep build/fleet untouched: it contains the validated generated files.
+          git reset --hard
           git fetch origin "$BRANCH"
           git checkout -B fleet-publish "origin/$BRANCH"
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
