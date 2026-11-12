@@ -25,7 +25,7 @@ func save_slot(slot_id: String, payload: Dictionary) -> Dictionary:
 	var envelope := {
 		"schema_version": CURRENT_SCHEMA_VERSION,
 		"saved_at_unix": int(Time.get_unix_time_from_system()),
-		"payload_hash": hash(payload_json),
+		"payload_hash": _payload_checksum(payload),
 		"payload": payload
 	}
 	var serialized := JSON.stringify(envelope, "  ")
@@ -147,8 +147,8 @@ func _read_and_validate(path: String) -> Dictionary:
 		return _failure("Save payload is missing.")
 	if not _is_json_value(payload):
 		return _failure("Save payload contains invalid values.")
-	var expected_hash := int(envelope.get("payload_hash", -1))
-	if hash(JSON.stringify(payload)) != expected_hash:
+	var expected_hash := str(envelope.get("payload_hash", ""))
+	if _payload_checksum(payload) != expected_hash:
 		return _failure("Save checksum mismatch.")
 	return {
 		"ok": true,
@@ -156,6 +156,26 @@ func _read_and_validate(path: String) -> Dictionary:
 		"saved_at_unix": int(envelope.get("saved_at_unix", 0)),
 		"schema_version": version
 	}
+
+
+func _payload_checksum(payload: Dictionary) -> String:
+	return str(hash(JSON.stringify(_canonicalize_json(payload))))
+
+
+func _canonicalize_json(value: Variant) -> Variant:
+	if value is Dictionary:
+		var keys: Array = value.keys()
+		keys.sort()
+		var canonical: Dictionary = {}
+		for key in keys:
+			canonical[key] = _canonicalize_json(value[key])
+		return canonical
+	if value is Array:
+		var canonical_array: Array = []
+		for item in value:
+			canonical_array.append(_canonicalize_json(item))
+		return canonical_array
+	return value
 
 
 func _write_file(path: String, contents: String) -> Error:
