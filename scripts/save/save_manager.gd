@@ -1,7 +1,7 @@
 extends Node
 class_name SaveManager
 ## Versioned, local-only save slots with atomic replacement and backup recovery.
-## Add this node as an autoload named SaveManager when the game session is ready.
+## Registered as the persistent SaveSlots autoload.
 
 signal save_completed(slot_id: String)
 signal save_failed(slot_id: String, reason: String)
