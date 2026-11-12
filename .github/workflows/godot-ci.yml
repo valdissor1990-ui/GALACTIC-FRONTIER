@@ -97,7 +97,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           $exe = (Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe").Path
           & $exe --version
-          if ($LASTEXITCODE -ne 0) {
+          if ([int]$LASTEXITCODE -ne 0) {
             throw "Windows executable failed its engine-version startup with code $LASTEXITCODE"
           }
           $stdout = Join-Path $PWD "build\\windows-smoke.stdout.log"
