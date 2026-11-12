@@ -190,7 +190,8 @@ func _refresh_continue_state() -> void:
 	if _continue_button == null:
 		return
 	var saved := SaveSlots.load_slot("quick")
-	_continue_button.disabled = not saved.ok
+	var payload: Variant = saved.get("payload", {})
+	_continue_button.disabled = not saved.ok or not payload is Dictionary or payload.get("game_id", "") != "galactic_frontier_silent_relay"
 
 
 func _start_new_game() -> void:
@@ -200,7 +201,8 @@ func _start_new_game() -> void:
 
 func _continue_game() -> void:
 	var saved := SaveSlots.load_slot("quick")
-	if not saved.ok:
+	var payload: Variant = saved.get("payload", {})
+	if not saved.ok or not payload is Dictionary or payload.get("game_id", "") != "galactic_frontier_silent_relay":
 		_refresh_continue_state()
 		return
 	SaveSlots.pending_quick_load = true
