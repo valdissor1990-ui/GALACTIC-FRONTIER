@@ -1,7 +1,7 @@
 extends Node
 ## Minimal bootstrap. The flight scene is the only game scene in Phase 1.
 
-const FLIGHT_SCENE: String = "res://scenes/flight/test_flight.tscn"
+const FLIGHT_SCENE: String = "res://scenes/flight/visual_flight.tscn"
 
 
 func _ready() -> void:
