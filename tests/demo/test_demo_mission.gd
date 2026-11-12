@@ -14,6 +14,13 @@ func _run_test() -> void:
 	await process_frame
 	var director: Node = demo.get_node("DemoMissionDirector")
 	var player: Node3D = demo.get_node("PlayerShip")
+	var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
+	var cockpit: Node3D = player.get_node("CockpitInterior") as Node3D
+	_check(cockpit != null and not cockpit.visible, "Cockpit interior must start hidden in chase-camera mode")
+	camera_rig.toggle_camera()
+	_check(cockpit.visible and not player.get_node("Visual").visible, "Cockpit mode must show the cockpit and hide the exterior ship")
+	camera_rig.toggle_camera()
+	_check(not cockpit.visible and player.get_node("Visual").visible, "Chase mode must restore the exterior ship")
 	_check(director.stage == 0, "Mission must start at outbound navigation")
 	_check(get_nodes_in_group("combat_targets").is_empty(), "Demo must not start the legacy automatic encounter")
 
