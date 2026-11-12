@@ -59,10 +59,12 @@ jobs:
       - name: Create update archive and SHA-256 manifest
         shell: pwsh
         run: |
-          Compress-Archive -Path build/GALACTIC-FRONTIER.exe, build/GALACTIC-FRONTIER.pck -DestinationPath build/GALACTIC-FRONTIER-windows-update.zip -CompressionLevel Optimal
-          $hash = (Get-FileHash build/GALACTIC-FRONTIER-windows-update.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Push-Location build
+          Compress-Archive -Path GALACTIC-FRONTIER.exe, GALACTIC-FRONTIER.pck -DestinationPath GALACTIC-FRONTIER-windows-update.zip -CompressionLevel Optimal
+          $hash = (Get-FileHash GALACTIC-FRONTIER-windows-update.zip -Algorithm SHA256).Hash.ToLowerInvariant()
           $manifest = @{ version = "$env:RELEASE_VERSION"; sha256 = $hash } | ConvertTo-Json -Compress
-          Set-Content -Path build/update-manifest.json -Value $manifest -Encoding utf8
+          [System.IO.File]::WriteAllText((Join-Path $PWD "update-manifest.json"), $manifest, [System.Text.UTF8Encoding]::new($false))
+          Pop-Location
 
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
