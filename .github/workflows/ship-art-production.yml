@@ -79,7 +79,7 @@ jobs:
       - name: Godot asset import and parser validation
         run: |
           godot --version
-          godot --headless --editor --path . --import --quit
+          godot --headless --editor --path . --quit
           godot --headless --path . --script res://tests/assets/test_ship_assets.gd
 
       - name: Publish source models, GLBs and previews to the branch
