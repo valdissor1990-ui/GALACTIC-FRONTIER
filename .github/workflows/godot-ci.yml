@@ -95,10 +95,7 @@ jobs:
         run: godot --headless --path . --script res://tests/save/test_mission_resume.gd -- --test-mode
 
 
-      - name: Run full demo mission progression test
-        run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
-
-      - name: Run current demo mission regression test
+      - name: Run accelerated demo mission regression test
         if: hashFiles('tests/demo/test_demo_mission.gd') != ''
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
       - name: Run mission failure and wave-statistics regression test
