@@ -42,8 +42,18 @@ jobs:
           godot --version
           ffmpeg -version | head -n 1
 
-      - name: Import project and validate scripts
-        run: godot --headless --editor --path . --quit
+      - name: Verify both original ship GLBs are present
+        run: |
+          test -s assets/models/ships/player_fighter.glb
+          test -s assets/models/ships/enemy_fighter.glb
+          test -s assets/models/ships/heavy_fighter.glb
+          test -s assets/models/ships/bomber.glb
+          test -s assets/models/ships/cargo_hauler.glb
+          test -s assets/models/ships/frigate.glb
+          test -s assets/models/ships/cruiser.glb
+
+      - name: Import project and validate scripts and GLB resources
+        run: godot --headless --editor --path . --import --quit
 
       - name: Capture eight real gameplay screenshots
         shell: bash
@@ -103,7 +113,13 @@ jobs:
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
           test -s build/screenshots/contact-sheet.png
           file build/screenshots/gameplay-*.png
+          grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
+          if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
+            echo "Gameplay visual capture contains broken GLB resources or scene overrides."
+            exit 1
+          fi
 
       - name: Upload gameplay screenshots and diagnostics
         uses: actions/upload-artifact@v4
