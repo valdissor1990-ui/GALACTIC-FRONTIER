@@ -11,6 +11,7 @@ const MAX_SAVE_BYTES: int = 2 * 1024 * 1024
 const MAX_SLOT_ID_LENGTH: int = 24
 
 @export_dir var save_directory: String = "user://saves"
+var pending_mission_payload: Dictionary = {}
 
 
 func save_slot(slot_id: String, payload: Dictionary) -> Dictionary:
