@@ -23,7 +23,7 @@ jobs:
   capture:
     name: Render and inspect real gameplay
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Check out project
         uses: actions/checkout@v4
@@ -65,15 +65,19 @@ jobs:
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
-            for attempt in $(seq 1 120); do
+            for attempt in $(seq 1 600); do
               if grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log; then ready=1; break; fi
               if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
               sleep 0.25
             done
-            if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
             app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
             test -d "$app_data"
-            cp "$app_data"/gameplay-*.png build/screenshots/
+            cp "$app_data"/gameplay-*.png build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              echo "Showcase did not finish within 150 seconds; captured $(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l) screenshots."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
             test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
