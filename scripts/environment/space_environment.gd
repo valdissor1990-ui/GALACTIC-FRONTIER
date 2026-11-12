@@ -2,7 +2,7 @@ extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses generated geometry and textures only; no network or third-party assets.
 
-@export_range(300, 2400, 100) var star_count: int = 1200
+@export_range(300, 3000, 100) var star_count: int = 1800
 @export_range(40, 220, 10) var asteroid_count: int = 120
 
 var _rng := RandomNumberGenerator.new()
@@ -40,8 +40,8 @@ func _build_world_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.22, 0.31, 0.52)
-	environment.ambient_light_energy = 0.38
+	environment.ambient_light_color = Color(0.30, 0.39, 0.62)
+	environment.ambient_light_energy = 0.48
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.55
@@ -62,15 +62,15 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = Color(0.72, 0.82, 1.0)
-	key_light.light_energy = 1.35
+	key_light.light_energy = 1.5
 	key_light.shadow_enabled = true
 	add_child(key_light)
 
 
 func _build_starfield() -> void:
 	var star_mesh := SphereMesh.new()
-	star_mesh.radius = 0.22
-	star_mesh.height = 0.44
+	star_mesh.radius = 0.38
+	star_mesh.height = 0.76
 	star_mesh.radial_segments = 6
 	star_mesh.rings = 4
 
@@ -85,8 +85,8 @@ func _build_starfield() -> void:
 	_starfield = _make_multimesh("Starfield", star_mesh, star_count)
 	for index in range(star_count):
 		var direction := _random_unit_vector()
-		var distance := _rng.randf_range(760.0, 1120.0)
-		var size := _rng.randf_range(0.55, 2.1)
+		var distance := _rng.randf_range(520.0, 940.0)
+		var size := _rng.randf_range(0.85, 2.7)
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
@@ -97,14 +97,21 @@ func _build_nebulae() -> void:
 		"AzureNebula",
 		Vector3(-420.0, 120.0, -600.0),
 		Vector2(280.0, 160.0),
-		Color(0.12, 0.24, 0.62, 0.14),
+		Color(0.12, 0.24, 0.62, 0.34),
 		1138
+	)
+	_add_nebula(
+		"CentralAzureNebula",
+		Vector3(0.0, 105.0, -680.0),
+		Vector2(760.0, 430.0),
+		Color(0.10, 0.20, 0.48, 0.34),
+		4197
 	)
 	_add_nebula(
 		"VioletNebula",
 		Vector3(420.0, -100.0, -820.0),
 		Vector2(240.0, 138.0),
-		Color(0.35, 0.12, 0.58, 0.12),
+		Color(0.35, 0.12, 0.58, 0.30),
 		8821
 	)
 
@@ -143,7 +150,7 @@ void fragment() {
 	float cloud = broad * 0.72 + detail * 0.28;
 	float filaments = smoothstep(0.43, 0.79, cloud);
 	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
-	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.18, 0.0, 0.025);
+	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.30, 0.0, 0.085);
 	ALBEDO = nebula_tint.rgb;
 	EMISSION = nebula_tint.rgb * (0.02 + filaments * 0.055);
 	ALPHA = alpha;
