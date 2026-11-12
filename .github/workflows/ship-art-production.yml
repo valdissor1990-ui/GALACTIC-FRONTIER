@@ -106,3 +106,5 @@ jobs:
             build/fleet/validation.json
           if-no-files-found: error
           retention-days: 30
+
+# CI bootstrap: workflow entry point enabled from main; branch push intentionally runs fleet, Godot and visual QA.
