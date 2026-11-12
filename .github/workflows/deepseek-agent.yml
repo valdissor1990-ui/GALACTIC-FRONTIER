@@ -44,13 +44,17 @@ jobs:
           DEEPSEEK_MODEL: ${{ inputs.model }}
           DEEPSEEK_TASK_FILE: ${{ inputs.task_file }}
         run: python scripts/ai/deepseek_agent.py
+      - name: Install Godot 4.7.2 and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
       - name: Validate patch and import Godot project
         run: |
           set -euo pipefail
           test -n "$(git status --porcelain)"
           git diff --check
-          sudo apt-get update
-          sudo apt-get install -y godot
           godot --version
           godot --headless --editor --path . --quit
       - name: Commit changes
