@@ -18,4 +18,5 @@ visible = false
 visible = false
 
 [node name="RaiderInterceptorModel" parent="Visual" instance=ExtResource("2")]
+rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(0.30, 0.30, 0.30)
