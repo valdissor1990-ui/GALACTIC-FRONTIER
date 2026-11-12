@@ -380,23 +380,25 @@ func _build_navigation_beacon(position: Vector3, tint: Color) -> void:
 	world.add_child(_beacon)
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
-	torus.inner_radius = 7.0
-	torus.outer_radius = 8.2
-	torus.rings = 48
+	# Keep the objective marker readable without filling the chase camera at close range.
+	torus.inner_radius = 2.35
+	torus.outer_radius = 2.75
+	torus.rings = 64
 	torus.ring_segments = 12
 	ring.mesh = torus
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = tint
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(tint.r, tint.g, tint.b, 0.72)
 	material.emission_enabled = true
-	material.emission = tint
-	material.emission_energy_multiplier = 2.5
+	material.emission = tint * 0.72
+	material.emission_energy_multiplier = 1.35
 	ring.material_override = material
 	_beacon.add_child(ring)
 	var core := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
-	sphere.radius = 1.8
-	sphere.height = 3.6
+	sphere.radius = 0.72
+	sphere.height = 1.44
 	core.mesh = sphere
 	core.material_override = material
 	_beacon.add_child(core)
