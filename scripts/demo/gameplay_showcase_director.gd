@@ -9,6 +9,8 @@ extends Node
 
 
 func _ready() -> void:
+	var player_model := player.find_child("PlayerFighterModel", true, false)
+	print("SHOWCASE_PLAYER_MODEL_MESHES=", _count_meshes(player_model))
 	print("SHOWCASE_READY")
 	call_deferred("_run_showcase")
 
@@ -51,6 +53,9 @@ func _run_showcase() -> void:
 	if acquired != null:
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
+	if acquired != null:
+		var enemy_model := acquired.find_child("RaiderInterceptorModel", true, false)
+		print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(enemy_model))
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		return
@@ -65,6 +70,17 @@ func _run_showcase() -> void:
 	Input.action_release("move_forward")
 	Input.action_release("boost")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+
+
+func _count_meshes(root_node: Node) -> int:
+	if root_node == null:
+		return 0
+	var count := 0
+	if root_node is MeshInstance3D and (root_node as MeshInstance3D).mesh != null:
+		count += 1
+	for child in root_node.get_children():
+		count += _count_meshes(child)
+	return count
 
 
 func _engage_for(duration: float) -> void:
