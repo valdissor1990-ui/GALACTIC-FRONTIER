@@ -19,6 +19,7 @@ func _build_menu() -> void:
 	backdrop.set_script(BACKDROP_SCRIPT)
 	add_child(backdrop)
 	var layout := VBoxContainer.new()
+	layout.name = "MainMenuLayout"
 	layout.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	layout.position = Vector2(90, -190)
 	layout.custom_minimum_size = Vector2(520, 390)
@@ -48,6 +49,7 @@ func _build_menu() -> void:
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
 	var hangar := Button.new()
+	hangar.name = "FleetHangarButton"
 	hangar.text = "  FLEET HANGAR"
 	hangar.custom_minimum_size = Vector2(390, 48)
 	hangar.pressed.connect(_open_hangar)
