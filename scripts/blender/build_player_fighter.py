@@ -420,6 +420,100 @@ def add_micro_detail(root, materials):
             obj.parent = root
 
 
+
+def add_integrated_surface_detail(root, materials):
+    """Add close-range aerospace structure that follows the ship's existing silhouette."""
+    hull, armor, dark, accent, glow, white = (
+        materials["hull"], materials["armor"], materials["dark"],
+        materials["accent"], materials["glow"], materials["white"]
+    )
+    # Tapered armor islands follow the swept wing planform instead of floating rectangular tiles.
+    for side in (-1, 1):
+        outline = [(side*x, y) for x, y in [
+            (1.10, -1.75), (1.55, -1.20), (4.55, 1.30),
+            (4.82, 1.92), (3.90, 1.72), (1.55, 0.72)
+        ]]
+        extruded_wing("Integrated wing armor skin %s" % side, outline, 0.115, 0.205, armor, 0.045)
+        outer = [(side*x, y) for x, y in [
+            (3.15, 0.75), (3.55, 0.98), (5.12, 2.16),
+            (4.75, 2.28), (3.70, 1.70)
+        ]]
+        extruded_wing("Wingtip armored cap %s" % side, outer, 0.105, 0.235, dark, 0.035)
+        # Leading-edge reinforcement rails and trailing-edge control surfaces.
+        cylinder_between("Wing leading edge spar %s" % side,
+                         (side*1.05, -2.35, 0.13), (side*5.15, 2.42, 0.13),
+                         0.075, dark, radius_end=0.035)
+        control_outline = [(side*x, y) for x, y in [
+            (2.05, 0.65), (2.55, 0.98), (4.72, 2.00),
+            (4.35, 2.12), (2.45, 1.32)
+        ]]
+        extruded_wing("Articulated trailing control surface %s" % side,
+                      control_outline, -0.005, 0.075, hull, 0.025)
+        # Recessed-looking maintenance bays with nested lips and fasteners.
+        for idx, (x, y) in enumerate(((2.15, -0.15), (3.05, 0.62), (3.88, 1.28))):
+            x *= side
+            cube("Wing service bay rim %s %s" % (side, idx),
+                 (x, y, 0.225), (0.48, 0.66, 0.045), dark, 0.055,
+                 (0, 0, side*-0.12))
+            cube("Wing service bay inset %s %s" % (side, idx),
+                 (x, y, 0.251), (0.34, 0.49, 0.025), armor, 0.035,
+                 (0, 0, side*-0.12))
+            for k in range(4):
+                uv_sphere("Wing bay captive bolt %s %s %s" % (side, idx, k),
+                          (x + side*(-0.16 + (k%2)*0.32), y - 0.22 + (k//2)*0.44, 0.269),
+                          (0.018, 0.018, 0.010), white)
+        # Recessed radiator trenches and repeated heat-exchanger vanes.
+        cube("Wing radiator trench %s" % side,
+             (side*1.78, 1.05, 0.235), (0.28, 1.05, 0.045), dark, 0.045,
+             (0, 0, side*-0.10))
+        for k in range(7):
+            cube("Wing radiator vane %s %s" % (side, k),
+                 (side*1.78, 0.62 + k*0.145, 0.264), (0.22, 0.045, 0.025),
+                 white if k in (0,6) else armor, 0.012)
+        # Side armor cheek panels make the central fuselage less cylindrical.
+        for y in (-3.8, -2.3, -0.7, 1.0, 2.6):
+            cube("Fuselage lateral armor cheek %s %.1f" % (side, y),
+                 (side*0.72, y, 0.10), (0.13, 0.82, 0.34), armor, 0.075,
+                 (0, side*0.10, 0))
+        # Engine nacelle shoulder fairings and segmented thermal shielding.
+        cube("Engine shoulder fairing %s" % side,
+             (side*1.02, 3.65, 0.40), (0.92, 1.18, 0.18), hull, 0.16)
+        for k in range(5):
+            y = 4.55 + k*0.22
+            cube("Engine thermal louver %s %s" % (side, k),
+                 (side*1.34, y, -0.43), (0.48, 0.075, 0.12), dark, 0.025)
+        cylinder_between("Engine nozzle armored lip %s" % side,
+                         (side*0.92, 6.12, -0.02), (side*0.92, 6.43, -0.02),
+                         0.39, armor, radius_end=0.33)
+        cylinder_between("Engine inner nozzle throat %s" % side,
+                         (side*0.92, 6.22, -0.02), (side*0.92, 6.48, -0.02),
+                         0.245, dark, radius_end=0.19)
+        # Navigation beacons are embedded into the wingtip armor.
+        uv_sphere("Embedded wingtip beacon %s" % side,
+                  (side*4.98, 2.30, 0.27), (0.075, 0.12, 0.065),
+                  glow if side < 0 else accent)
+    # Cockpit glazing receives a layered brow, rear pressure bulkhead and side sills.
+    cube("Cockpit forward brow", (0, -3.65, 0.77), (1.02, 0.22, 0.16), armor, 0.09)
+    cube("Cockpit rear pressure bulkhead", (0, -1.52, 0.68), (1.18, 0.24, 0.20), dark, 0.08)
+    for side in (-1, 1):
+        cube("Cockpit lower sill %s" % side, (side*0.53, -2.58, 0.55),
+             (0.10, 1.72, 0.13), armor, 0.045, (math.radians(-10),0,side*math.radians(-4)))
+        cube("Canopy rear latch %s" % side, (side*0.42, -1.60, 0.77),
+             (0.12, 0.18, 0.12), accent, 0.035)
+    # A continuous dorsal spine cap and angular ventral armor complete the centerline.
+    extruded_wing("Dorsal spine crown",
+                  [(-0.30,-1.65),(-0.22,-2.15),(0.22,-2.15),(0.30,-1.65),
+                   (0.27,2.85),(0.0,3.35),(-0.27,2.85)],
+                  0.48, 0.64, armor, 0.055)
+    cube("Ventral reactor access armor", (0, 1.55, -0.51), (0.66, 1.18, 0.12), armor, 0.07)
+    for idx in range(6):
+        cube("Ventral heat vent %s" % idx, (-0.25 + idx*0.10, 1.60, -0.58),
+             (0.035, 0.66, 0.025), dark, 0.008)
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
+
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
     # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
@@ -479,7 +573,7 @@ def main():
     }
 
     root = create_ship(materials)
-    # Keep the primary armor layout clean; micro-detail pass is being redesigned to avoid floating plates.
+    add_integrated_surface_detail(root, materials)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.
