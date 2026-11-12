@@ -55,6 +55,28 @@ def make_material(name, color, metallic=0.0, roughness=0.4, emission=None, emiss
     if emission is not None:
         principled.inputs["Emission Color"].default_value = (emission[0], emission[1], emission[2], 1.0)
         principled.inputs["Emission Strength"].default_value = emission_strength
+    # Subtle, physically based micro-surface breakup for hard-surface materials.
+    if any(token in name.lower() for token in ("titanium", "armor", "gunmetal", "graphite", "ceramic")):
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        texcoord = nodes.new("ShaderNodeTexCoord")
+        noise = nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 58.0
+        noise.inputs["Detail"].default_value = 4.2
+        noise.inputs["Roughness"].default_value = 0.72
+        bump = nodes.new("ShaderNodeBump")
+        bump.inputs["Strength"].default_value = 0.16
+        bump.inputs["Distance"].default_value = 0.026
+        roughness_map = nodes.new("ShaderNodeMapRange")
+        roughness_map.inputs["From Min"].default_value = 0.0
+        roughness_map.inputs["From Max"].default_value = 1.0
+        roughness_map.inputs["To Min"].default_value = max(0.18, roughness - 0.09)
+        roughness_map.inputs["To Max"].default_value = min(0.72, roughness + 0.12)
+        links.new(texcoord.outputs["Generated"], noise.inputs["Vector"])
+        links.new(noise.outputs["Fac"], bump.inputs["Height"])
+        links.new(bump.outputs["Normal"], principled.inputs["Normal"])
+        links.new(noise.outputs["Fac"], roughness_map.inputs["Value"])
+        links.new(roughness_map.outputs["Result"], principled.inputs["Roughness"])
     if alpha < 1.0:
         # Blender 4.2+ uses surface_render_method; older releases use blend_method.
         if hasattr(material, "surface_render_method"):
@@ -277,6 +299,47 @@ def create_ship(materials):
     for side in (-1, 1):
         cube("Retractable landing strut %s" % side, (side * 0.72, 1.1, -0.58), (0.12, 0.72, 0.42), dark, 0.045)
         cube("Landing pad %s" % side, (side * 0.72, 1.1, -0.80), (0.46, 0.80, 0.10), armor, 0.06)
+
+    # High-frequency hard-surface detailing: segmented armor, fasteners and service markings.
+    for side in (-1, 1):
+        for index, y in enumerate((-2.0, -0.65, 0.75, 2.15)):
+            x = side * (0.82 + index * 0.035)
+            cube("Fuselage segmented armor %s %s" % (side, index),
+                 (x, y, 0.505), (0.19, 0.72, 0.045), armor, 0.025)
+            for bolt_y in (-0.28, 0.28):
+                uv_sphere("Armor micro fastener %s %s %s" % (side, index, bolt_y),
+                          (x + side * 0.075, y + bolt_y, 0.536), (0.026, 0.026, 0.012), white)
+        # Wing panel seams and raised maintenance rails.
+        for index, y in enumerate((-1.45, -0.55, 0.38, 1.32, 2.08)):
+            span_x = 2.05 + index * 0.42
+            cube("Wing raised panel rib %s %s" % (side, index),
+                 (side * span_x, y, 0.205), (0.055, 0.62, 0.035), armor, 0.018,
+                 (0.0, 0.0, side * -0.10))
+        # Exposed actuator housings and recessed heat exchanger fins.
+        for index in range(5):
+            y = 3.25 + index * 0.24
+            cube("Engine heat exchanger fin %s %s" % (side, index),
+                 (side * 1.34, y, -0.43), (0.54, 0.075, 0.12), dark, 0.025)
+        cube("Wing service access hatch %s" % side,
+             (side * 2.72, 1.75, 0.19), (0.46, 0.58, 0.035), white, 0.025,
+             (0.0, 0.0, side * -0.12))
+        for bolt_index in range(4):
+            bx = side * (2.55 + (bolt_index % 2) * 0.30)
+            by = 1.55 + (bolt_index // 2) * 0.38
+            uv_sphere("Wing hatch fastener %s %s" % (side, bolt_index),
+                      (bx, by, 0.218), (0.022, 0.022, 0.012), dark)
+
+    # Sensor mast, dorsal antennae and additional silhouette details.
+    cylinder_between("Dorsal sensor mast", (0.0, 1.0, 0.48), (0.0, 1.0, 1.18), 0.055, dark)
+    uv_sphere("Dorsal sensor beacon", (0.0, 1.0, 1.20), (0.12, 0.12, 0.12), glow)
+    for side in (-1, 1):
+        cube("Dorsal radiator housing %s" % side,
+             (side * 0.30, 2.55, 0.55), (0.18, 1.10, 0.09), dark, 0.045)
+        for index in range(6):
+            cube("Radiator blade %s %s" % (side, index),
+                 (side * 0.30, 2.12 + index * 0.17, 0.61), (0.19, 0.045, 0.025), armor, 0.01)
+        cube("Engine warning chevron %s" % side,
+             (side * 1.33, 5.35, 0.405), (0.16, 0.44, 0.025), accent, 0.015)
 
     # Add an origin marker object for predictable placement in Godot.
     bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0.0, 0.0, 0.0))
