@@ -57,6 +57,10 @@ func _run_showcase() -> void:
 		if candidate is Node3D:
 			candidate.set("projectile_damage", 0.0)
 	print("SHOWCASE_NONLETHAL_TARGETS=", showcase_targets.size())
+	var player_weapon := player.get_node_or_null("WeaponSystem")
+	if player_weapon != null:
+		player_weapon.set("projectile_damage", 4.0)
+	print("SHOWCASE_PLAYER_WEAPON_DAMAGE=", 4.0)
 	await _capture_screenshot("03-hostiles-arrive.png")
 
 	var acquired: Node3D
@@ -76,11 +80,12 @@ func _run_showcase() -> void:
 		# The real mission spawn distances are unchanged outside this showcase.
 		var forward := -player.global_transform.basis.z
 		var right := player.global_transform.basis.x
-		acquired.global_position = player.global_position + forward * 24.0 + right * 5.0
+		acquired.global_position = player.global_position + forward * 18.0 + right * 3.0
 		if acquired is CharacterBody3D:
 			(acquired as CharacterBody3D).velocity = Vector3.ZERO
-			acquired.set("max_speed", 28.0)
-			acquired.set("acceleration", 18.0)
+			acquired.set("max_speed", 0.0)
+			acquired.set("acceleration", 0.0)
+			acquired.set("turn_rate", 3.0)
 		acquired.look_at(player.global_position, Vector3.UP)
 		player.look_at(acquired.global_position, Vector3.UP)
 		targeting.set_target(acquired)
