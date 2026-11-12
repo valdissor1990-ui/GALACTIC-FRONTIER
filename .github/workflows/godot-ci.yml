@@ -92,6 +92,9 @@ jobs:
       - name: Fleet hangar GLB loading and navigation regression test
         run: godot --headless --path . --script res://tests/ui/test_fleet_hangar.gd
 
+      - name: Main menu fleet hangar navigation integration test
+        run: godot --headless --path . --script res://tests/ui/test_main_menu_hangar_navigation.gd
+
       - name: Headless main menu smoke test
         run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
 
