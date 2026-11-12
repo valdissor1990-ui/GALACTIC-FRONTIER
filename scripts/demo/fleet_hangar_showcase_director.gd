@@ -2,13 +2,13 @@ extends Node3D
 ## Full HD in-engine lineup for visual QA of all seven original ship classes.
 
 const SHIPS: Array[Dictionary] = [
-	{"path": "res://assets/models/ships/player_fighter.glb", "name": "PLAYER FIGHTER", "role": "MULTIROLE / RECON", "scale": 0.34, "position": Vector3(-13.5, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/enemy_fighter.glb", "name": "RAIDER INTERCEPTOR", "role": "LIGHT ATTACK", "scale": 0.32, "position": Vector3(-4.5, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/heavy_fighter.glb", "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY ASSAULT", "scale": 0.34, "position": Vector3(4.5, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/bomber.glb", "name": "BASTION BOMBER", "role": "TORPEDO / STRIKE", "scale": 0.23, "position": Vector3(13.5, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.27, "position": Vector3(-9.0, 0.0, 11.0)},
-	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.16, "position": Vector3(0.0, 0.0, 11.0)},
-	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.12, "position": Vector3(9.0, 0.0, 11.0)}
+	{"path": "res://assets/models/ships/player_fighter.glb", "name": "PLAYER FIGHTER", "role": "MULTIROLE / RECON", "scale": 0.40, "position": Vector3(-12.0, 0.0, 0.0)},
+	{"path": "res://assets/models/ships/enemy_fighter.glb", "name": "RAIDER INTERCEPTOR", "role": "LIGHT ATTACK", "scale": 0.38, "position": Vector3(-4.0, 0.0, 0.0)},
+	{"path": "res://assets/models/ships/heavy_fighter.glb", "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY ASSAULT", "scale": 0.34, "position": Vector3(4.0, 0.0, 0.0)},
+	{"path": "res://assets/models/ships/bomber.glb", "name": "BASTION BOMBER", "role": "TORPEDO / STRIKE", "scale": 0.32, "position": Vector3(12.0, 0.0, 0.0)},
+	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.27, "position": Vector3(-8.0, 0.0, 9.0)},
+	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.19, "position": Vector3(0.0, 0.0, 9.0)},
+	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.14, "position": Vector3(8.0, 0.0, 9.0)}
 ]
 
 
@@ -56,22 +56,22 @@ func _build_environment() -> void:
 func _build_stage() -> void:
 	var floor := MeshInstance3D.new()
 	var floor_mesh := PlaneMesh.new()
-	floor_mesh.size = Vector2(120.0, 120.0)
+	floor_mesh.size = Vector2(48.0, 36.0)
 	floor.mesh = floor_mesh
 	var floor_material := StandardMaterial3D.new()
 	floor_material.albedo_color = Color(0.018, 0.028, 0.048)
 	floor_material.metallic = 0.55
 	floor_material.roughness = 0.34
 	floor.material_override = floor_material
-	floor.position = Vector3(0.0, -0.72, 5.0)
+	floor.position = Vector3(0.0, -0.72, 4.5)
 	add_child(floor)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 17.0, -39.0)
-	camera.fov = 58.0
+	camera.position = Vector3(0.0, 10.0, -24.0)
+	camera.fov = 50.0
 	camera.current = true
 	add_child(camera)
-	camera.look_at(Vector3(0.0, 1.6, 5.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 1.4, 4.5), Vector3.UP)
 
 
 func _spawn_ship(data: Dictionary) -> bool:
@@ -129,18 +129,18 @@ func _spawn_ship(data: Dictionary) -> bool:
 
 	var label := Label3D.new()
 	label.text = String(data["name"]) + "\n" + String(data["role"])
-	label.font_size = 48
-	label.outline_size = 9
+	label.font_size = 72
+	label.outline_size = 12
 	label.modulate = Color(0.78, 0.91, 1.0)
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.position = position + Vector3(0.0, 4.15, 0.0)
+	label.position = position + Vector3(0.0, 4.55, 0.0)
 	add_child(label)
 
 	var light := OmniLight3D.new()
 	light.position = position + Vector3(0.0, 5.0, 0.0)
 	light.light_color = Color(0.28, 0.55, 0.92)
-	light.light_energy = 1.15
-	light.omni_range = 11.0
+	light.light_energy = 1.35
+	light.omni_range = 13.0
 	add_child(light)
 	return true
 
