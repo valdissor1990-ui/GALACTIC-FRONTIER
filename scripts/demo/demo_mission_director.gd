@@ -269,6 +269,7 @@ func _build_navigation_beacon(position: Vector3, tint: Color) -> void:
 	torus.rings = 48
 	torus.ring_segments = 12
 	ring.mesh = torus
+	ring.rotation_degrees.x = 90.0
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.albedo_color = tint
