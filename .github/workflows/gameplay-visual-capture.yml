@@ -40,8 +40,10 @@ jobs:
           sudo apt-get install --yes xvfb python3-pil
           godot --version
 
-      - name: Import project and validate scripts
-        run: godot --headless --editor --path . --import --quit
+      - name: Import runtime assets and validate scripts
+        run: |
+          find assets/models/ships -type f -name '*.blend' -delete
+          godot --headless --editor --path . --import --quit
 
       - name: Render gameplay and save eight PNG screenshots
         shell: bash
