@@ -15,6 +15,8 @@ func _ready() -> void:
 
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
+	await _capture_screenshot("01-flight-start.png")
+
 	var travel_elapsed := 0.0
 	while mission.stage == 0 and travel_elapsed < 9.0:
 		player.look_at(mission._objective_position, Vector3.UP)
@@ -25,22 +27,50 @@ func _run_showcase() -> void:
 	Input.action_release("boost")
 	Input.action_release("move_forward")
 	await get_tree().create_timer(0.4).timeout
+	await _capture_screenshot("02-relay-approach.png")
 
 	if mission.stage == 1:
 		mission._complete_relay_scan()
+	await get_tree().process_frame
+	await _capture_screenshot("03-hostiles-arrive.png")
+
 	var acquired := targeting.acquire_target()
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	await _engage_for(4.0)
+	await _capture_screenshot("04-combat-targeting.png")
 
 	camera_rig.toggle_camera()
 	await get_tree().create_timer(2.0).timeout
+	await _capture_screenshot("05-cockpit-view.png")
 	camera_rig.toggle_camera()
 	await _engage_for(2.0)
+	await _capture_screenshot("06-chase-combat.png")
 
 	Input.action_release("fire_primary")
 	Input.action_release("move_forward")
 	Input.action_release("boost")
+	await get_tree().process_frame
+	await _capture_screenshot("07-mission-hud.png")
+	await get_tree().create_timer(0.25).timeout
+	await _capture_screenshot("08-final-frame.png")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+	get_tree().quit(0)
+
+
+func _capture_screenshot(file_name: String) -> void:
+	await get_tree().process_frame
+	var directory := ProjectSettings.globalize_path("user://screenshots")
+	var make_dir_error := DirAccess.make_dir_recursive_absolute(directory)
+	if make_dir_error != OK and make_dir_error != ERR_ALREADY_EXISTS:
+		push_error("Could not create screenshot directory: " + str(make_dir_error))
+		return
+	var image := get_viewport().get_texture().get_image()
+	var output_path := directory.path_join(file_name)
+	var save_error := image.save_png(output_path)
+	if save_error != OK:
+		push_error("Could not save screenshot %s: %s" % [file_name, save_error])
+		return
+	print("SHOWCASE_SCREENSHOT=", output_path)
 
 
 func _engage_for(duration: float) -> void:
