@@ -32,7 +32,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _create_trail() -> void:
-	var hostile := _source is EnemyCombatAI
+	var hostile := _source != null and _source.is_in_group("hostile_fighters")
 	var tint := Color(1.0, 0.16, 0.045) if hostile else Color(0.08, 0.66, 1.0)
 	var trail := GPUParticles3D.new()
 	trail.name = "EnergyTrail"
@@ -84,7 +84,7 @@ func _on_body_entered(body: Node3D) -> void:
 	var damageable := _find_damageable(body)
 	if damageable != null:
 		damageable.call("take_damage", damage)
-	var tint := Color(1.0, 0.16, 0.045) if _source is EnemyCombatAI else Color(0.08, 0.66, 1.0)
+	var tint := Color(1.0, 0.16, 0.045) if (_source != null and _source.is_in_group("hostile_fighters")) else Color(0.08, 0.66, 1.0)
 	CombatEffects.spawn_burst(get_tree().current_scene, global_position, tint, 0.55)
 	queue_free()
 
