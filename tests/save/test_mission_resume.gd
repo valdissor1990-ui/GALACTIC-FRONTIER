@@ -8,7 +8,12 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
-	GameSave.save_directory = "user://test_mission_resume"
+	if root.get_node_or_null("GameSave") == null:
+		var save_manager := SaveManager.new()
+		save_manager.name = "GameSave"
+		root.add_child(save_manager)
+	var save_manager := root.get_node("GameSave")
+	save_manager.save_directory = "user://test_mission_resume"
 	var error := change_scene_to_packed(DEMO_SCENE)
 	_check(error == OK, "demo scene must load")
 	await process_frame
@@ -27,7 +32,7 @@ func _run() -> void:
 	damageable.current_hull = 72.0
 	damageable.current_shield = 28.0
 	_check(director._save_checkpoint("integration test"), "checkpoint must be written")
-	var loaded := GameSave.load_slot("silent_relay")
+	var loaded := save_manager.load_slot("silent_relay")
 	_check(loaded.ok, "checkpoint must load from disk")
 	player.global_position = Vector3.ZERO
 	player.global_rotation = Vector3.ZERO
@@ -48,7 +53,7 @@ func _run() -> void:
 	_check(player.velocity.is_equal_approx(Vector3(4.0, 5.0, 6.0)), "player velocity must be restored")
 	_check(is_equal_approx(damageable.current_hull, 72.0), "hull must be restored")
 	_check(is_equal_approx(damageable.current_shield, 28.0), "shield must be restored")
-	GameSave.delete_slot("silent_relay")
+	save_manager.delete_slot("silent_relay")
 	if _failed == 0:
 		print("MISSION_RESUME_TEST_PASS")
 		quit(0)
