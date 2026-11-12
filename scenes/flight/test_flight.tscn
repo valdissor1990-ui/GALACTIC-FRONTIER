@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/ui/combat_hud.gd" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="10"]
 [ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
+[ext_resource type="Script" path="res://scripts/audio/engine_audio.gd" id="12"]
 
 [sub_resource type="Environment" id="Environment_space"]
 background_mode = 1
@@ -82,6 +83,9 @@ surface_material_override/0 = SubResource("Material_planet")
 [node name="PlayerShip" type="CharacterBody3D" parent="."]
 script = ExtResource("1")
 flight_config = ExtResource("4")
+
+[node name="EngineAudio" type="AudioStreamPlayer3D" parent="PlayerShip"]
+script = ExtResource("12")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerShip"]
 shape = SubResource("BoxShape3D_player_fuselage")
