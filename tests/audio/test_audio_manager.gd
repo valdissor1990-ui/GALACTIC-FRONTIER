@@ -1,6 +1,8 @@
 extends SceneTree
 ## Checks original procedural WAV streams are generated and configured correctly.
 
+const AUDIO_MANAGER_SCRIPT: Script = preload("res://scripts/audio/audio_manager.gd")
+
 var _failed := 0
 
 func _initialize() -> void:
