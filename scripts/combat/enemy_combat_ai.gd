@@ -122,11 +122,11 @@ func _try_fire() -> void:
 	if projectile == null:
 		return
 	projectile.configure(forward, self, projectile_speed, projectile_damage)
+	projectile.global_transform = _muzzle.global_transform
 	var host := get_tree().current_scene
 	if host == null:
 		host = get_parent()
 	host.add_child(projectile)
-	projectile.global_transform = _muzzle.global_transform
 	_cooldown = 1.0 / maxf(shots_per_second, 0.1)
 
 
