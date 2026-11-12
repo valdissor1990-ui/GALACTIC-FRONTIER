@@ -41,11 +41,11 @@ def beam(name,a,b,r,m,r2=None):
     o=bpy.context.object;o.name=name;o.rotation_mode="QUATERNION";o.rotation_quaternion=d.to_track_quat("Z","Y")
     return finish(o,m,.018)
 
-def loft(name,sections,m,sides=16):
+def loft(name,sections,m,sides=16,x_offset=0.0):
     verts=[];faces=[]
     for y,w,h,z in sections:
         for i in range(sides):
-            a=2*math.pi*i/sides;verts.append((math.cos(a)*w,y,z+math.sin(a)*h))
+            a=2*math.pi*i/sides;verts.append((x_offset+math.cos(a)*w,y,z+math.sin(a)*h))
     for j in range(len(sections)-1):
         for i in range(sides):
             a=j*sides+i;b=j*sides+(i+1)%sides;c=(j+1)*sides+(i+1)%sides;d=(j+1)*sides+i;faces.append((a,b,c,d))
@@ -77,7 +77,7 @@ def build(m):
     # Twin armored booms frame the central engine cluster.
     for s in (-1,1):
         x=s*1.15
-        loft("Twin tail boom %s"%s,[(1.2,.18,.18,0),(2.8,.24,.22,.02),(5.8,.30,.24,.02),(6.5,.25,.20,.02)],armor,12)
+        loft("Twin tail boom %s"%s,[(1.2,.18,.18,0),(2.8,.24,.22,.02),(5.8,.30,.24,.02),(6.5,.25,.20,.02)],armor,12,x)
         box("Boom armor cap %s"%s,(x,3.3,.25),(.42,2.6,.16),dark,.07)
         wing("Canted tail fin %s"%s,[(s*.72,3.0),(s*1.05,3.4),(s*1.75,6.0),(s*1.35,5.7)],.22,1.0,armor)
         # Weapon rails and recessed muzzles.
