@@ -102,6 +102,10 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Run combat systems regression tests
+        if: hashFiles('tests/combat/test_combat_systems.gd') != ''
+        run: godot --headless --path . --script res://tests/combat/test_combat_systems.gd
+
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
