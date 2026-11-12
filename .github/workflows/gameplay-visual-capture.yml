@@ -38,9 +38,8 @@ jobs:
       - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg python3-pil
+          sudo apt-get install --yes xvfb python3-pil
           godot --version
-          ffmpeg -version | head -n 1
 
       - name: Verify both original ship GLBs are present
         run: |
@@ -55,7 +54,7 @@ jobs:
       - name: Import project and validate scripts and GLB resources
         run: godot --headless --editor --path . --import --quit
 
-      - name: Capture eight real gameplay screenshots
+      - name: Capture eight deterministic gameplay screenshots
         shell: bash
         run: |
           set -euo pipefail
@@ -66,17 +65,16 @@ jobs:
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
-            for attempt in $(seq 1 80); do
-              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
+            for attempt in $(seq 1 120); do
+              if grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log; then ready=1; break; fi
               if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
               sleep 0.25
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            for shot in $(seq -w 1 8); do
-              sleep 2.5
-              ffmpeg -y -hide_banner -loglevel error -f x11grab -video_size 1280x720 -i "$DISPLAY" -frames:v 1 "build/screenshots/gameplay-${shot}.png"
-            done
-            sleep 1
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data"/gameplay-*.png build/screenshots/
+            test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
           '
@@ -116,6 +114,7 @@ jobs:
           file build/screenshots/gameplay-*.png
           grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 8
           grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
           if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
             echo "Gameplay visual capture contains broken GLB resources or scene overrides."
