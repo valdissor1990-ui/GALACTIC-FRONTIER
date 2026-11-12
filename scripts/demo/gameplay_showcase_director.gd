@@ -1,11 +1,20 @@
 extends Node
-## Deterministic visual-QA pilot. Uses the real flight controller, weapons and enemy AI.
+## Deterministic visual-QA pilot. Drives the real mission state machine and combat actors.
 
 @onready var world: Node3D = get_parent()
 @onready var mission: Node = world.get_node("DemoMissionDirector")
 @onready var player: ShipController = world.get_node("PlayerShip") as ShipController
 @onready var targeting: TargetingSystem = player.get_node("TargetingSystem") as TargetingSystem
 @onready var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
+
+const STAGE_OUTBOUND := 0
+const STAGE_SCAN_RELAY := 1
+const STAGE_DEFEND_RELAY := 2
+const STAGE_INVESTIGATE_WRECK := 3
+const STAGE_SCAN_WRECK := 4
+const STAGE_DEFEND_WRECK := 5
+const STAGE_RETURN_HOME := 6
+const STAGE_COMPLETE := 7
 
 
 func _ready() -> void:
@@ -17,30 +26,92 @@ func _ready() -> void:
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var original_chase_fov := camera_rig.chase_camera.fov
+	var original_chase_position := camera_rig.chase_camera.position
+	camera_rig.chase_camera.position = Vector3(0.0, 3.6, 11.5)
+	camera_rig.chase_camera.fov = 58.0
 	await _capture_screenshot("gameplay-01.png")
-	var travel_elapsed := 0.0
-	while mission.stage == 0 and travel_elapsed < 9.0:
-		player.look_at(mission._objective_position, Vector3.UP)
-		Input.action_press("move_forward")
-		Input.action_press("boost")
-		await get_tree().create_timer(0.05).timeout
-		travel_elapsed += 0.05
-	Input.action_release("boost")
-	Input.action_release("move_forward")
 
-	# Guarantee the showcase reaches the real encounter instead of producing
-	# eight screenshots of an empty outbound flight when acceleration varies
-	# between CI renderers. The mission's own stage transition and encounter
-	# spawning still run through DemoMissionDirector.
-	if mission.stage == 0:
-		player.global_position = mission._objective_position + Vector3(0.0, 0.0, 75.0)
-		await get_tree().create_timer(0.2).timeout
-	if mission.stage == 1:
-		mission._complete_relay_scan()
-	await get_tree().create_timer(0.4).timeout
+	# Move into the relay scan radius. The actual mission director performs
+	# the OUTBOUND -> SCAN_RELAY transition on its normal process tick.
+	await _move_to_objective(75.0)
+	if int(mission.stage) != STAGE_SCAN_RELAY:
+		push_error("SHOWCASE failed: relay approach did not enter scan stage; stage=%s" % mission.stage)
+		return
+	print("SHOWCASE_PHASE=RELAY_APPROACH")
 	await _capture_screenshot("gameplay-02.png")
+	mission._complete_relay_scan()
+	await get_tree().create_timer(0.25).timeout
 
-	var acquired: Node3D
+	var relay_target := _place_nearest_target_for_camera()
+	print("SHOWCASE_TARGET_ACQUIRED=", relay_target != null)
+	if relay_target == null:
+		push_error("SHOWCASE failed: relay defense did not spawn a combat target")
+		return
+	print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(relay_target))
+	print("SHOWCASE_PHASE=RELAY_COMBAT")
+	await _capture_screenshot("gameplay-03.png")
+	await _engage_for(1.0)
+	await _capture_screenshot("gameplay-04.png")
+	camera_rig.toggle_camera()
+	await get_tree().create_timer(0.35).timeout
+	await _capture_screenshot("gameplay-05.png")
+	camera_rig.toggle_camera()
+
+	# Resolve the three relay waves through the real Damageable.destroyed
+	# signal path, accelerating only the inter-wave wait for this QA scene.
+	var relay_waves_cleared: bool = await _clear_defense_waves(STAGE_DEFEND_RELAY)
+	if not relay_waves_cleared:
+		return
+	if int(mission.stage) != STAGE_INVESTIGATE_WRECK:
+		push_error("SHOWCASE failed: relay defense did not advance to wreck; stage=%s" % mission.stage)
+		return
+
+	await _move_to_objective(80.0)
+	if int(mission.stage) != STAGE_SCAN_WRECK:
+		push_error("SHOWCASE failed: wreck approach did not enter scan stage; stage=%s" % mission.stage)
+		return
+	print("SHOWCASE_PHASE=WRECK_INVESTIGATION")
+	await _capture_screenshot("gameplay-06.png")
+	mission._complete_wreck_scan()
+	await get_tree().create_timer(0.25).timeout
+	var wreck_target := _place_nearest_target_for_camera()
+	if wreck_target == null:
+		push_error("SHOWCASE failed: wreck defense did not spawn a combat target")
+		return
+	print("SHOWCASE_PHASE=WRECK_COMBAT")
+	await _engage_for(1.0)
+	await _capture_screenshot("gameplay-07.png")
+
+	var wreck_waves_cleared: bool = await _clear_defense_waves(STAGE_DEFEND_WRECK)
+	if not wreck_waves_cleared:
+		return
+	if int(mission.stage) != STAGE_RETURN_HOME:
+		push_error("SHOWCASE failed: wreck defense did not advance to return; stage=%s" % mission.stage)
+		return
+
+	await _move_to_objective(80.0)
+	if int(mission.stage) != STAGE_COMPLETE:
+		push_error("SHOWCASE failed: return did not complete mission; stage=%s" % mission.stage)
+		return
+	print("SHOWCASE_PHASE=MISSION_COMPLETE")
+	Input.action_release("fire_primary")
+	Input.action_release("move_forward")
+	Input.action_release("boost")
+	camera_rig.chase_camera.fov = original_chase_fov
+	camera_rig.chase_camera.position = original_chase_position
+	await get_tree().create_timer(0.25).timeout
+	await _capture_screenshot("gameplay-08.png")
+	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+
+
+func _move_to_objective(distance: float) -> void:
+	player.global_position = mission._objective_position + Vector3(0.0, 0.0, distance)
+	player.look_at(mission._objective_position, Vector3.UP)
+	await get_tree().create_timer(0.2).timeout
+
+
+func _place_nearest_target_for_camera() -> Node3D:
+	var nearest: Node3D
 	var nearest_distance := INF
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
 		if not (candidate is Node3D):
@@ -51,40 +122,40 @@ func _run_showcase() -> void:
 		var distance := player.global_position.distance_to(target.global_position)
 		if distance < nearest_distance:
 			nearest_distance = distance
-			acquired = target
-	if acquired != null:
-		# Bring one hostile into a readable showcase range; normal mission spawn
-		# distances and combat behavior remain unchanged outside this QA scene.
-		acquired.global_position = player.global_position + (-player.global_basis.z * 34.0) + Vector3.UP * 14.0
-		camera_rig.chase_camera.fov = 52.0
-		targeting.set_target(acquired)
-	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
-	if acquired != null:
-		print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(acquired))
-	await _capture_screenshot("gameplay-03.png")
-	if acquired == null:
-		push_error("SHOWCASE failed: no combat target was acquired")
-		return
-	await _engage_for(1.5)
-	await _capture_screenshot("gameplay-04.png")
-	await _engage_for(2.0)
+			nearest = target
+	if nearest != null:
+		nearest.global_position = player.global_position + (-player.global_basis.z * 24.0) + Vector3.UP * 5.0
+		camera_rig.chase_camera.fov = 54.0
+		targeting.set_target(nearest)
+	return nearest
 
-	camera_rig.toggle_camera()
-	await get_tree().create_timer(0.8).timeout
-	await _capture_screenshot("gameplay-05.png")
-	await get_tree().create_timer(1.2).timeout
-	camera_rig.toggle_camera()
-	await _engage_for(1.0)
-	await _capture_screenshot("gameplay-06.png")
-	await _engage_for(1.0)
-	await _capture_screenshot("gameplay-07.png")
 
-	Input.action_release("fire_primary")
-	Input.action_release("move_forward")
-	Input.action_release("boost")
-	await _capture_screenshot("gameplay-08.png")
-	camera_rig.chase_camera.fov = original_chase_fov
-	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+func _clear_defense_waves(expected_stage: int) -> bool:
+	var waves_resolved := 0
+	while int(mission.stage) == expected_stage and waves_resolved < 3:
+		var targets := get_tree().get_nodes_in_group("combat_targets")
+		if targets.is_empty():
+			await get_tree().create_timer(0.1).timeout
+			targets = get_tree().get_nodes_in_group("combat_targets")
+		if targets.is_empty():
+			push_error("SHOWCASE failed: no targets during defense wave %d" % (waves_resolved + 1))
+			return false
+		for candidate in targets:
+			if not (candidate is Node3D):
+				continue
+			var damageable := candidate.get_node_or_null("Damageable") as Damageable
+			if damageable != null and not damageable.is_destroyed():
+				damageable.take_damage(1000000.0)
+		await get_tree().create_timer(0.2).timeout
+		waves_resolved += 1
+		if int(mission.stage) == expected_stage and mission._next_wave_timer >= 0.0:
+			mission._next_wave_timer = 0.01
+			await get_tree().create_timer(0.2).timeout
+	if int(mission.stage) != expected_stage:
+		print("SHOWCASE_WAVES_RESOLVED=", waves_resolved, " next_stage=", mission.stage)
+		return true
+	push_error("SHOWCASE failed: defense stage did not finish after %d waves" % waves_resolved)
+	return false
 
 
 func _capture_screenshot(filename: String) -> void:
@@ -128,8 +199,6 @@ func _engage_for(duration: float) -> void:
 				best_target = target
 		if best_target != null:
 			player.look_at(best_target.global_position, Vector3.UP)
-			# Lock the selected target directly; camera follow interpolation can
-			# make cone-based reacquisition miss during automated capture.
 			targeting.set_target(best_target)
 			Input.action_press("fire_primary")
 		else:

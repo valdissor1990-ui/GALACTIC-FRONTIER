@@ -155,6 +155,16 @@ def build_bomber(m):
         wing("Bastion armored wing skin "+str(s),[(s*x,y) for x,y in ([(1.5,-3.1),(2.2,-2.0),(8.4,1.8),(9.0,2.9),(7.2,2.5),(1.7,1.5)] if s>0 else reversed([(1.5,-3.1),(2.2,-2.0),(8.4,1.8),(9.0,2.9),(7.2,2.5),(1.7,1.5)]))],.16,.26,a,.07)
         for j in range(3):
             x=s*(3.1+j*2.0)
+            # Twin armored pylons visibly bridge each aft engine pod to the
+            # bomber wing. The nacelles are no longer isolated silhouettes.
+            beam("Bastion engine pylon inner %s %s"%(s,j),
+                 (x-s*.34,2.35+j*.22,-.08),(x-s*.42,4.95,-.08),.14,a,.10)
+            beam("Bastion engine pylon outer %s %s"%(s,j),
+                 (x+s*.34,2.35+j*.22,-.08),(x+s*.42,4.95,-.08),.14,a,.10)
+            box("Bastion engine mount fairing %s %s"%(s,j),
+                (x,3.72+j*.10,-.08),(.88,1.55,.24),d,.10)
+            box("Bastion engine mount service plate %s %s"%(s,j),
+                (x,3.55+j*.10,.065),(.62,.92,.035),ac,.018)
             engine("Bastion wing drive %s %s"%(s,j),x,5.4,-.05,.48,m)
         turret("Bastion remote defense turret "+str(s),s*2.3,1.9,.86,.72,m)
         for j in range(4):
@@ -235,35 +245,93 @@ def build_frigate(m):
 
 def build_cruiser(m):
     h,a,d,ac,g,gl=m
-    hull("Leviathan cruiser armored central hull",[(-23,.16,.22,0),(-19,.72,.62,0),(-14,1.45,.95,0),(-7,2.0,1.25,0),(2,2.2,1.35,0),(10,1.9,1.15,0),(16,1.4,.90,0),(20,.85,.62,0)],h,24)
-    # Long swept armored shoulders create a broad capital-ship silhouette.
+    hull("Leviathan cruiser armored central hull",[
+        (-23,.22,.28,0),(-19,.90,.75,0),(-14,1.75,1.10,0),
+        (-7,2.50,1.50,0),(2,2.80,1.65,0),(10,2.40,1.45,0),
+        (16,1.80,1.10,0),(20,1.10,.75,0)
+    ],h,28)
+
+    # Broad, separate port/starboard sponsons give the cruiser a capital-ship
+    # profile instead of reading as an enlarged fighter with a long nose.
     for s in (-1,1):
-        wing("Leviathan port-starboard armor wing "+str(s),[(s*1.4,-8),(s*2.1,-5),(s*10,2),(s*12,8),(s*9.2,7),(s*1.8,1)],-.55,.55,a,.24)
-        box("Leviathan flank hangar module "+str(s),(s*2.5,2.0,-.05),(1.2,10.0,1.2),d,.20)
-        box("Leviathan hangar opening "+str(s),(s*3.12,-1.5,.10),(.08,3.8,.68),gl,.04)
+        wing("Leviathan port-starboard armor wing "+str(s),[
+            (s*1.8,-9),(s*2.8,-6),(s*10.5,1.0),(s*12.5,8.5),
+            (s*10.0,9.0),(s*2.2,2.0)
+        ],-.72,.58,a,.26)
+
+        box("Leviathan armored flank sponson "+str(s),
+            (s*3.95,1.0,-.05),(2.65,19.0,2.55),d,.28)
+        box("Leviathan forward shoulder armor "+str(s),
+            (s*3.95,-5.0,1.05),(2.85,8.5,1.05),a,.20)
+        box("Leviathan aft engineering shoulder "+str(s),
+            (s*3.95,7.0,1.05),(2.85,7.5,1.05),h,.20)
+
+        # Long recessed hangar aperture with illuminated internal framing.
+        box("Leviathan hangar opening "+str(s),
+            (s*5.30,-2.0,.10),(.08,6.0,1.10),gl,.04)
+        box("Leviathan hangar upper frame "+str(s),
+            (s*5.32,-2.0,.78),(.18,6.35,.16),a,.035)
+        box("Leviathan hangar lower frame "+str(s),
+            (s*5.32,-2.0,-.58),(.18,6.35,.16),a,.035)
+
+        # Five auxiliary drives are mounted on structural booms connected to
+        # the aft engineering shoulder and the cruiser wing.
         for j in range(5):
-            engine("Leviathan auxiliary drive %s %s"%(s,j),s*(3.2+j*.9),17.5,-.25,.62,m)
-        for y in (-9,-3,4,10):
-            turret("Leviathan heavy battery %s %s"%(s,y),s*(2.1+(y%2)*.4),y,1.25,1.25,m)
-        # Layered flank armor plates and thermal trenches.
-        for j in range(8):
-            box("Leviathan flank armor segment %s %s"%(s,j),(s*2.65,-8+j*3.1,.65),(1.0,2.35,.24),a,.10)
-            box("Leviathan flank heat trench %s %s"%(s,j),(s*3.18,-8+j*3.1,.38),(.08,1.7,.16),d,.025)
-    # Tiered dorsal command citadel and bridge.
-    box("Leviathan command citadel lower",(0,2.0,1.45),(2.8,12.0,1.55),a,.22)
-    box("Leviathan command citadel upper",(0,0.8,2.62),(2.25,7.5,1.05),h,.18)
-    box("Leviathan bridge armored visor",(0,-3.1,2.95),(2.0,1.3,.42),d,.12)
-    sphere("Leviathan bridge glazing",(0,-3.78,3.02),(.78,.20,.28),g)
-    box("Leviathan dorsal spine",(0,8.5,2.2),(1.15,7.5,.8),d,.16)
-    for j in range(9):
-        box("Leviathan radiator vane "+str(j),(0,5.0+j*.58,2.72),(1.45,.22,.32),a,.05)
-    for x in (-1.65,-.55,.55,1.65):
+            x=s*(3.2+j*.9)
+            beam("Leviathan auxiliary engine support %s %s"%(s,j),
+                 (s*3.55,8.2,-.12),(x,16.65,-.25),.22,a,.15)
+            engine("Leviathan auxiliary drive %s %s"%(s,j),x,17.5,-.25,.62,m)
+
+        for y in (-10,-4,3,10):
+            turret("Leviathan heavy battery %s %s"%(s,y),
+                   s*4.35,y,1.55,1.25,m)
+
+        # Layered flank armor, access hatches and recessed heat trenches.
+        for j in range(10):
+            y=-10+j*2.2
+            box("Leviathan flank armor segment %s %s"%(s,j),
+                (s*5.22,y,.88),(.18,1.62,.58),a,.065)
+            box("Leviathan flank heat trench %s %s"%(s,j),
+                (s*5.34,y,.43),(.08,1.08,.18),d,.025)
+            box("Leviathan service hatch %s %s"%(s,j),
+                (s*4.90,y,.92),(.20,.72,.10),ac,.035)
+
+        # Additional point-defense housings protect the outer hangar deck.
+        for y in (-7,1,8):
+            box("Leviathan point-defense socket %s %s"%(s,y),
+                (s*4.55,y,1.92),(.95,1.05,.28),d,.12)
+            turret("Leviathan outer point defense %s %s"%(s,y),
+                   s*4.55,y,2.10,.58,m)
+
+    # Tiered command citadel, bridge and exposed sensor deck.
+    box("Leviathan command citadel lower",(0,2.0,2.0),(4.2,14.0,2.0),a,.28)
+    box("Leviathan command citadel upper",(0,.5,3.45),(3.25,8.5,1.35),h,.22)
+    box("Leviathan bridge armored visor",(0,-4.1,3.95),(2.9,1.55,.48),d,.14)
+    sphere("Leviathan bridge glazing",(0,-4.90,4.08),(1.02,.24,.34),g)
+    box("Leviathan dorsal sensor spine",(0,9.0,2.95),(1.55,8.2,.72),d,.18)
+
+    for j in range(11):
+        y=4.8+j*.62
+        box("Leviathan dorsal radiator vane "+str(j),
+            (0,y,3.72),(1.95,.24,.34),a,.055)
+        box("Leviathan radiator dark channel "+str(j),
+            (0,y,.0+3.55),(.82,.11,.06),d,.018)
+
+    # Heavy central drive cluster remains integrated into the stern.
+    for x in (-1.8,-.6,.6,1.8):
         engine("Leviathan central drive "+str(x),x,20.0,-.05,.90,m)
-    # Fore and aft point-defense batteries.
+
+    # Fore and aft batteries are distinct from the broad flank turrets.
     for s in (-1,1):
-        turret("Leviathan bow point defense "+str(s),s*.9,-13,1.0,.82,m)
-        turret("Leviathan stern point defense "+str(s),s*1.1,12,1.0,.82,m)
-    detail_panels("Leviathan",2.0,[-15,-11,-7,-3,1,5,9,13,17],1.35,m)
+        turret("Leviathan bow point defense "+str(s),s*1.25,-14,1.15,.88,m)
+        turret("Leviathan stern point defense "+str(s),s*1.45,12,1.15,.88,m)
+
+    # Raised antenna masts and IFF beacons break up the upper silhouette.
+    for s in (-1,1):
+        beam("Leviathan sensor mast "+str(s),(s*1.25,7.0,3.4),(s*1.55,7.0,6.2),.085,a,.055)
+        sphere("Leviathan sensor beacon "+str(s),(s*1.55,7.0,6.25),(.16,.16,.16),gl)
+
+    detail_panels("Leviathan",2.4,[-15,-11,-7,-3,1,5,9,13,17],1.65,m)
 
 BUILDERS=[
  ("heavy_fighter","Aegis Heavy Fighter",build_heavy_fighter,((.075,.13,.19),(.32,.43,.49),(.04,.68,.78),(.02,.32,.95))),

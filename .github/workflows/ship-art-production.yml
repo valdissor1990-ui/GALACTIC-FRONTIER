@@ -19,6 +19,7 @@ on:
       - "tests/assets/**"
       - "assets/models/ships/**"
       - "assets/previews/**"
+      - ".github/workflows/ship-art-production.yml"
   workflow_dispatch:
 
 permissions:
@@ -102,9 +103,12 @@ jobs:
           godot --headless --path . --script res://tests/assets/test_ship_assets.gd
 
       - name: Publish validated GLBs and previews to the production branch
-        if: ${{ github.actor != 'github-actions[bot]' }}
+        if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
         run: |
-          BRANCH="${{ github.head_ref || github.ref_name }}"
+          BRANCH="${{ github.ref_name }}"
+          # Restore the tracked source tree after the temporary GLB import.
+          # Keep build/fleet untouched: it contains the validated generated files.
+          git reset --hard
           git fetch origin "$BRANCH"
           git checkout -B fleet-publish "origin/$BRANCH"
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
