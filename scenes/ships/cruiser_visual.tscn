@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/visual/runtime_gltf_model.gd" id="1"]
+
+[node name="CruiserVisual" type="Node3D"]
+
+[node name="LeviathanCruiser" type="Node3D" parent="."]
+script = ExtResource("1")
+source_path = "res://assets/models/ships/cruiser.glb"
+rotation_degrees = Vector3(0, 180, 0)
