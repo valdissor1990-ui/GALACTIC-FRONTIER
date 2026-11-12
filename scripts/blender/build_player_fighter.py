@@ -395,7 +395,7 @@ def add_micro_detail(root, materials):
                   (side*5.00,2.30,.29),(.10,.14,.10),glow if side < 0 else accent)
         # Antenna receivers and side-mounted sensor windows.
         cylinder_between("Player dorsal antenna %s" % side,
-                         (side*.28,2.2,.54),(side*.28,2.2,1.05),.035,dark,.018)
+                         (side*.28,2.2,.54),(side*.28,2.2,1.05),.035,dark,radius_end=.018)
         uv_sphere("Player antenna cap %s" % side,
                   (side*.28,2.2,1.07),(.075,.075,.075),accent)
         cube("Player side sensor window %s" % side,
