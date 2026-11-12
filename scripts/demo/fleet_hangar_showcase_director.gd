@@ -67,7 +67,7 @@ func _build_stage() -> void:
 	add_child(floor)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 7.0, -13.0)
+	camera.position = Vector3(0.0, 8.0, -16.0)
 	camera.fov = 50.0
 	camera.current = true
 	add_child(camera)
