@@ -6,13 +6,16 @@ Ship art is the active production gate. Mission content and environment expansio
 
 ## Visual target
 
-Aim for a contemporary 2026 real-time game presentation:
+Target a polished 2018–2020 AAA-era real-time game presentation at Full HD (1920×1080). The goal is strong art direction, readable silhouettes and convincing materials—not 4K assets or maximum polygon counts:
 - Distinct, readable silhouettes at gameplay distance and convincing construction when viewed close-up.
 - Layered hard-surface forms: primary hull, secondary armor, recessed seams, access hatches, vents, heat exchangers, actuators, hardpoints and fasteners.
 - Purposeful cockpit glazing and framing, readable engine architecture, weapon mounts and navigation/sensor hardware.
 - PBR materials with controlled roughness/metalness variation, subtle micro-surface detail and restrained emissive elements.
 - Lighting that reveals form without crushing the hull into black or clipping emissive surfaces into flat neon shapes.
 - Performance-conscious geometry and materials suitable for Godot Forward+.
+- Texture budget: generally 1K for small/secondary assets and up to 2K for hero ships and major environment surfaces. Do not author 4K textures for the first playable release.
+- Capture and review gameplay at 1920×1080. Target stable 60 FPS on a reasonable mid-range Windows gaming PC; profile before increasing geometry, texture size or post-processing.
+- Prefer detail from silhouette, layered geometry, material breakup, decals, lighting and restrained effects over oversized textures or excessive mesh density.
 
 This is a quality target, not a claim that the project already has AAA production values.
 
