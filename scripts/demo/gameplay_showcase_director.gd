@@ -9,8 +9,7 @@ extends Node
 
 
 func _ready() -> void:
-	var player_model := player.find_child("PlayerFighterModel", true, false)
-	print("SHOWCASE_PLAYER_MODEL_MESHES=", _count_meshes(player_model))
+	print("SHOWCASE_PLAYER_MODEL_MESHES=", _count_meshes(player))
 	print("SHOWCASE_READY")
 	call_deferred("_run_showcase")
 
@@ -59,8 +58,7 @@ func _run_showcase() -> void:
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired != null:
-		var enemy_model := acquired.find_child("RaiderInterceptorModel", true, false)
-		print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(enemy_model))
+		print("SHOWCASE_ENEMY_MODEL_MESHES=", _count_meshes(acquired))
 	await _capture_screenshot("gameplay-03.png")
 	if acquired == null:
 		push_error("SHOWCASE failed: no combat target was acquired")
