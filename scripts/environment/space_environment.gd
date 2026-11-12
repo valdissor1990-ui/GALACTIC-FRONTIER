@@ -13,6 +13,7 @@ func _ready() -> void:
 	_rng.seed = 741_2026
 	_build_world_environment()
 	_build_starfield()
+	_build_nebulae()
 	_build_planet()
 	_build_asteroid_field()
 
@@ -89,6 +90,80 @@ func _build_starfield() -> void:
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
+
+
+func _build_nebulae() -> void:
+	_add_nebula(
+		"AzureNebula",
+		Vector3(-138.0, 54.0, -465.0),
+		Vector2(310.0, 178.0),
+		Color(0.12, 0.34, 1.0, 0.24),
+		1138
+	)
+	_add_nebula(
+		"VioletNebula",
+		Vector3(158.0, -42.0, -520.0),
+		Vector2(270.0, 152.0),
+		Color(0.48, 0.16, 0.92, 0.18),
+		8821
+	)
+
+
+func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint: Color, seed_value: int) -> void:
+	var noise := FastNoiseLite.new()
+	noise.seed = seed_value
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 6
+	noise.fractal_lacunarity = 2.1
+	noise.fractal_gain = 0.52
+	noise.frequency = 0.72
+
+	var noise_texture := NoiseTexture2D.new()
+	noise_texture.noise = noise
+	noise_texture.width = 512
+	noise_texture.height = 512
+	noise_texture.seamless = true
+	noise_texture.generate_mipmaps = true
+
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+
+uniform sampler2D nebula_noise : repeat_enable, filter_linear_mipmap;
+uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.2);
+
+void fragment() {
+	vec2 drift = vec2(TIME * 0.0015, -TIME * 0.0007);
+	vec2 uv_a = UV * vec2(2.3, 1.8) + drift;
+	vec2 uv_b = UV * vec2(4.1, 3.2) - drift * 0.7 + vec2(0.23, 0.41);
+	float broad = texture(nebula_noise, uv_a).r;
+	float detail = texture(nebula_noise, uv_b).r;
+	float cloud = broad * 0.72 + detail * 0.28;
+	float filaments = smoothstep(0.43, 0.79, cloud);
+	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
+	float alpha = clamp((filaments + wisps) * nebula_tint.a, 0.0, 0.30);
+	ALBEDO = nebula_tint.rgb;
+	EMISSION = nebula_tint.rgb * (0.45 + filaments * 1.8);
+	ALPHA = alpha;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("nebula_noise", noise_texture)
+	material.set_shader_parameter("nebula_tint", tint)
+
+	var quad := QuadMesh.new()
+	quad.size = dimensions
+	quad.material = material
+
+	var cloud := MeshInstance3D.new()
+	cloud.name = node_name
+	cloud.mesh = quad
+	cloud.position = position
+	cloud.rotation_degrees = Vector3(8.0, 0.0, -4.0)
+	add_child(cloud)
 
 
 func _build_planet() -> void:
