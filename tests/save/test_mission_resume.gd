@@ -32,7 +32,7 @@ func _run() -> void:
 	damageable.current_hull = 72.0
 	damageable.current_shield = 28.0
 	_check(director._save_checkpoint("integration test"), "checkpoint must be written")
-	var loaded := save_manager.load_slot("silent_relay")
+	var loaded: Dictionary = save_manager.call("load_slot", "silent_relay")
 	_check(loaded.ok, "checkpoint must load from disk")
 	player.global_position = Vector3.ZERO
 	player.global_rotation = Vector3.ZERO
@@ -53,7 +53,7 @@ func _run() -> void:
 	_check(player.velocity.is_equal_approx(Vector3(4.0, 5.0, 6.0)), "player velocity must be restored")
 	_check(is_equal_approx(damageable.current_hull, 72.0), "hull must be restored")
 	_check(is_equal_approx(damageable.current_shield, 28.0), "shield must be restored")
-	save_manager.delete_slot("silent_relay")
+	save_manager.call("delete_slot", "silent_relay")
 	if _failed == 0:
 		print("MISSION_RESUME_TEST_PASS")
 		quit(0)
