@@ -3,15 +3,15 @@ extends Node
 const DEMO_SCENE: PackedScene = preload("res://scenes/demo/ten_minute_demo.tscn")
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	call_deferred("_run_test")
 
 
 func _run_test() -> void:
 	var demo := DEMO_SCENE.instantiate()
-	root.add_child(demo)
+	get_tree().root.add_child(demo)
 	await get_tree().process_frame
-	await process_frame
+	await get_tree().process_frame
 	var director: Node = demo.get_node("DemoMissionDirector")
 	var player: Node3D = demo.get_node("PlayerShip")
 	var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
@@ -22,7 +22,7 @@ func _run_test() -> void:
 	camera_rig.toggle_camera()
 	_check(not cockpit.visible and player.get_node("Visual").visible, "Chase mode must restore the exterior ship")
 	_check(director.stage == 0, "Mission must start at outbound navigation")
-	_check(get_nodes_in_group("combat_targets").is_empty(), "Demo must not start the legacy automatic encounter")
+	_check(get_tree().get_nodes_in_group("combat_targets").is_empty(), "Demo must not start the legacy automatic encounter")
 
 	player.global_position = Vector3(0.0, 18.0, -720.0)
 	await process_frame
@@ -44,7 +44,7 @@ func _run_test() -> void:
 	await process_frame
 	_check(director.stage == 7, "Returning to carrier must complete the mission")
 	print("DEMO_MISSION_TEST_PASS")
-	get_tree().quit(0)
+	get_tree().get_tree().quit(0)
 
 
 func _clear_three_waves(director: Node) -> void:
@@ -65,4 +65,4 @@ func _check(condition: bool, message: String) -> void:
 	if condition:
 		return
 	push_error("DEMO_MISSION_TEST_FAIL: " + message)
-	get_tree().quit(1)
+	get_tree().get_tree().quit(1)
