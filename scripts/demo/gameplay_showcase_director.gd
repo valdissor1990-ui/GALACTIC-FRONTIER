@@ -76,9 +76,11 @@ func _run_showcase() -> void:
 		# The real mission spawn distances are unchanged outside this showcase.
 		var forward := -player.global_transform.basis.z
 		var right := player.global_transform.basis.x
-		acquired.global_position = player.global_position + forward * 42.0 + right * 8.0
+		acquired.global_position = player.global_position + forward * 24.0 + right * 5.0
 		if acquired is CharacterBody3D:
 			(acquired as CharacterBody3D).velocity = Vector3.ZERO
+			acquired.set("max_speed", 28.0)
+			acquired.set("acceleration", 18.0)
 		acquired.look_at(player.global_position, Vector3.UP)
 		player.look_at(acquired.global_position, Vector3.UP)
 		targeting.set_target(acquired)
@@ -87,7 +89,7 @@ func _run_showcase() -> void:
 		push_error("SHOWCASE failed: no combat target was acquired")
 		get_tree().quit(1)
 		return
-	await _engage_for(4.0)
+	await _engage_for(2.5)
 	await _capture_screenshot("04-combat-targeting.png")
 
 	camera_rig.toggle_camera()
