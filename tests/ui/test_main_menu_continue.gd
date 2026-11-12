@@ -67,6 +67,7 @@ func _run() -> void:
 	_check(director != null, "mission director is initialized")
 	_check(player != null, "player ship is initialized")
 	if director != null and player != null:
+		print("DEBUG_RESTORED timer=", director.get("mission_seconds"), " position=", player.global_position, " velocity=", player.velocity, " hull=", player.get_node("Damageable").current_hull, " shield=", player.get_node("Damageable").current_shield)
 		_check(int(director.get("stage")) == 4, "saved mission stage is restored")
 		_check(is_equal_approx(float(director.get("mission_seconds")), 123.5), "saved mission timer is restored")
 		_check(int(director.get("enemies_destroyed")) == 5, "saved combat progress is restored")
