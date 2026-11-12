@@ -104,6 +104,11 @@ target_clear={
 "events": [Object(InputEventKey,"physical_keycode":89)]
 }
 
+scan={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":70)]
+}
+
 
 [physics]
 3d/default_gravity=0.0
