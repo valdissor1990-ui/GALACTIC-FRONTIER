@@ -59,9 +59,12 @@ func _build_menu() -> void:
 	var credits := Label.new()
 	credits.name = "PilotCredits"
 	credits.text = "PILOT ACCOUNT  /  %s CR" % str(profile.call("get_credits")) if profile != null else "PILOT ACCOUNT  /  -- CR"
+	credits.position = Vector2(930, 52)
+	credits.size = Vector2(300, 28)
+	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	credits.add_theme_font_size_override("font_size", 13)
 	credits.add_theme_color_override("font_color", Color("#55c7e6"))
-	layout.add_child(credits)
+	add_child(credits)
 	var start := Button.new()
 	start.text = "  NEW FLIGHT"
 	start.custom_minimum_size = Vector2(390, 54)
