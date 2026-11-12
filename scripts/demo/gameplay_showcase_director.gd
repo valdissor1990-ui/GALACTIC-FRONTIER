@@ -56,7 +56,8 @@ func _run_showcase() -> void:
 
 	# Resolve the three relay waves through the real Damageable.destroyed
 	# signal path, accelerating only the inter-wave wait for this QA scene.
-	if not await _clear_defense_waves(STAGE_DEFEND_RELAY):
+	var relay_waves_cleared: bool = await _clear_defense_waves(STAGE_DEFEND_RELAY)
+	if not relay_waves_cleared:
 		return
 	if int(mission.stage) != STAGE_INVESTIGATE_WRECK:
 		push_error("SHOWCASE failed: relay defense did not advance to wreck; stage=%s" % mission.stage)
@@ -78,7 +79,8 @@ func _run_showcase() -> void:
 	await _engage_for(1.0)
 	await _capture_screenshot("gameplay-07.png")
 
-	if not await _clear_defense_waves(STAGE_DEFEND_WRECK):
+	var wreck_waves_cleared: bool = await _clear_defense_waves(STAGE_DEFEND_WRECK)
+	if not wreck_waves_cleared:
 		return
 	if int(mission.stage) != STAGE_RETURN_HOME:
 		push_error("SHOWCASE failed: wreck defense did not advance to return; stage=%s" % mission.stage)
