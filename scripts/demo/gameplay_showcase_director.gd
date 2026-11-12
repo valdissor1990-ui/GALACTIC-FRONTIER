@@ -24,12 +24,23 @@ func _run_showcase() -> void:
 		travel_elapsed += 0.05
 	Input.action_release("boost")
 	Input.action_release("move_forward")
-	await get_tree().create_timer(0.4).timeout
 
+	# Guarantee the showcase reaches the real encounter instead of producing
+	# eight screenshots of an empty outbound flight when acceleration varies
+	# between CI renderers. The mission's own stage transition and encounter
+	# spawning still run through DemoMissionDirector.
+	if mission.stage == 0:
+		player.global_position = mission._objective_position + Vector3(0.0, 0.0, 75.0)
+		await get_tree().create_timer(0.2).timeout
 	if mission.stage == 1:
 		mission._complete_relay_scan()
+	await get_tree().create_timer(0.4).timeout
+
 	var acquired := targeting.acquire_target()
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
+	if acquired == null:
+		push_error("SHOWCASE failed: no combat target was acquired")
+		return
 	await _engage_for(4.0)
 
 	camera_rig.toggle_camera()
