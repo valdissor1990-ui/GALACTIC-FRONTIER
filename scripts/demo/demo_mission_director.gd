@@ -146,7 +146,7 @@ func _load_quick_slot() -> void:
 		damageable.hull_changed.emit(damageable.current_hull, damageable.max_hull)
 		damageable.shield_changed.emit(damageable.current_shield, damageable.max_shield)
 
-	stage = clampi(int(mission_data.get("stage", MissionStage.OUTBOUND)), MissionStage.OUTBOUND, MissionStage.FAILED) as MissionStage
+	stage = clampi(int(mission_data.get("stage", MissionStage.OUTBOUND)), MissionStage.OUTBOUND, MissionStage.FAILED)
 	wave_index = clampi(int(mission_data.get("wave_index", 0)), 0, 3)
 	mission_seconds = maxf(0.0, float(mission_data.get("mission_seconds", 0.0)))
 	_objective_position = _array_to_vector(mission_data.get("objective_position"), RELAY_POSITION)
