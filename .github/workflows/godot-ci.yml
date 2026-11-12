@@ -70,7 +70,7 @@ jobs:
         run: godot --headless --path . res://tests/ui/main_menu_test_runner.tscn
 
       - name: Run full demo mission progression test
-        run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
+        run: godot --headless --path . res://tests/demo/demo_mission_test_runner.tscn
 
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
