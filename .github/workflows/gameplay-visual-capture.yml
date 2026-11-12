@@ -1,4 +1,4 @@
-name: Gameplay visual quality capture
+name: Gameplay screenshot capture
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
     branches:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/gameplay-png-capture
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -15,72 +16,93 @@ permissions:
   contents: read
 
 concurrency:
-  group: gameplay-visual-capture-${{ github.ref }}-${{ github.sha }}
+  group: gameplay-screenshot-capture-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
   capture:
-    name: Render and inspect real gameplay
+    name: Render eight real gameplay screenshots
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out project
         uses: actions/checkout@v4
 
-      - name: Install Godot 4.7.2
+      - name: Install Godot 4.7.2 and screenshot tools
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
           use-dotnet: false
           include-templates: false
 
-      - name: Install virtual display and video capture tools
+      - name: Install virtual display and image tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg
+          sudo apt-get install --yes xvfb python3-pil
           godot --version
-          ffmpeg -version | head -n 1
 
       - name: Import project and validate scripts
         run: godot --headless --editor --path . --quit
 
-      - name: Capture a 20-second gameplay sequence
+      - name: Render gameplay and save eight PNG screenshots
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build
-          xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
-            set -euo pipefail
-            godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
-            game_pid=$!
-            trap "kill $game_pid 2>/dev/null || true" EXIT
-            ready=0
-            for attempt in $(seq 1 80); do
-              if grep -q "SHOWCASE_READY" build/gameplay-showcase.log; then ready=1; break; fi
-              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
-              sleep 0.25
-            done
-            if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            ffmpeg -y -hide_banner -loglevel error -f x11grab -framerate 30 -video_size 1280x720 -i "$DISPLAY" -t 20.0 -an -c:v libx264 -preset veryfast -crf 19 -pix_fmt yuv420p build/GALACTIC-FRONTIER-gameplay-20s.mp4
-            sleep 1
-            kill -TERM "$game_pid" 2>/dev/null || true
-            wait "$game_pid" 2>/dev/null || true
-          '
+          mkdir -p build/screenshots
+          timeout 45s xvfb-run -a -s "-screen 0 1280x720x24" \
+            godot --path . --windowed --resolution 1280x720 \
+            --rendering-method gl_compatibility --rendering-driver opengl3 \
+            res://scenes/demo/gameplay_showcase.tscn 2>&1 | tee build/gameplay-showcase.log
 
-      - name: Verify video and gameplay sequence
+          screenshot_dir="$(find "$HOME/.local/share/godot/app_userdata" -type d -name screenshots -print -quit)"
+          test -n "$screenshot_dir"
+          cp "$screenshot_dir"/*.png build/screenshots/
+          count="$(find build/screenshots -maxdepth 1 -type f -name '*.png' | wc -l)"
+          test "$count" -eq 8
+          grep -q "SHOWCASE_READY" build/gameplay-showcase.log
+          grep -q "SHOWCASE_TARGET_ACQUIRED=true" build/gameplay-showcase.log
+          grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log
+
+      - name: Build 960x1080 contact sheet
         run: |
-          test -s build/GALACTIC-FRONTIER-gameplay-20s.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 build/GALACTIC-FRONTIER-gameplay-20s.mp4 | tee build/video-duration.txt
-          awk '{ if ($1 < 19.9 || $1 > 20.1) exit 1 }' build/video-duration.txt
-          grep -E "SHOWCASE_(READY|TARGET_ACQUIRED|SEQUENCE_COMPLETE)" build/gameplay-showcase.log
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          files = sorted(Path("build/screenshots").glob("*.png"))
+          assert len(files) == 8, f"Expected 8 screenshots, found {len(files)}"
+          sheet = Image.new("RGB", (960, 1080), (8, 13, 22))
+          for index, path in enumerate(files):
+              with Image.open(path) as source:
+                  frame = source.convert("RGB").resize((480, 270), Image.Resampling.LANCZOS)
+              x = (index % 2) * 480
+              y = (index // 2) * 270
+              sheet.paste(frame, (x, y))
+          sheet.save("build/GALACTIC-FRONTIER-contact-sheet.png", optimize=True)
+          PY
 
-      - name: Upload gameplay capture and diagnostics
+      - name: Verify screenshot dimensions and contact sheet
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          files = sorted(Path("build/screenshots").glob("*.png"))
+          assert len(files) == 8
+          for path in files:
+              with Image.open(path) as image:
+                  assert image.size == (1280, 720), f"{path}: {image.size}"
+                  assert image.getbbox() is not None, f"{path}: blank image"
+          with Image.open("build/GALACTIC-FRONTIER-contact-sheet.png") as sheet:
+              assert sheet.size == (960, 1080), sheet.size
+          print("SCREENSHOT_QA_PASS: 8 PNG files at 1280x720; contact sheet 960x1080")
+          PY
+
+      - name: Upload gameplay screenshots and diagnostics
         uses: actions/upload-artifact@v4
         with:
-          name: GALACTIC-FRONTIER-gameplay-visual-qa
+          name: GALACTIC-FRONTIER-gameplay-screenshots
           path: |
-            build/GALACTIC-FRONTIER-gameplay-20s.mp4
-            build/video-duration.txt
+            build/screenshots/*.png
+            build/GALACTIC-FRONTIER-contact-sheet.png
             build/gameplay-showcase.log
           if-no-files-found: error
           retention-days: 30
