@@ -113,6 +113,9 @@ jobs:
       - name: Run mission retry and main-menu navigation test
         run: godot --headless --path . --script res://tests/demo/test_mission_retry.gd
 
+      - name: Run navigation route and physical scan regression test
+        run: godot --headless --path . res://tests/demo/test_route_safety.tscn
+
       - name: Headless main menu smoke test
         run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
 
