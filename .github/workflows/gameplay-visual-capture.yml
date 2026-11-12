@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
 
 permissions:
   contents: read
@@ -60,29 +66,33 @@ jobs:
               sleep 2.5
               ffmpeg -y -hide_banner -loglevel error -f x11grab -video_size 1280x720 -i "$DISPLAY" -frames:v 1 "build/screenshots/gameplay-${shot}.png"
             done
-            python3 - <<'PY'
-            from pathlib import Path
-            from PIL import Image
-            files = sorted(Path('build/screenshots').glob('gameplay-*.png'))
-            if len(files) != 8:
-                raise SystemExit(f'Expected 8 screenshots, got {len(files)}')
-            thumbs = []
-            for path in files:
-                image = Image.open(path).convert('RGB')
-                if image.size != (1280, 720):
-                    raise SystemExit(f'Unexpected screenshot size: {path} {image.size}')
-                thumbs.append(image.resize((480, 270)))
-            sheet = Image.new('RGB', (960, 1080), '#10151d')
-            for i, image in enumerate(thumbs):
-                x = (i % 2) * 480
-                y = (i // 2) * 270
-                sheet.paste(image, (x, y))
-            sheet.save('build/screenshots/contact-sheet.png')
-            PY
             sleep 1
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
           '
+
+      - name: Build and validate screenshot contact sheet
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          files = sorted(Path("build/screenshots").glob("gameplay-*.png"))
+          if len(files) != 8:
+              raise SystemExit(f"Expected 8 screenshots, got {len(files)}")
+
+          thumbs = []
+          for path in files:
+              image = Image.open(path).convert("RGB")
+              if image.size != (1280, 720):
+                  raise SystemExit(f"Unexpected screenshot size: {path} {image.size}")
+              thumbs.append(image.resize((480, 270)))
+
+          sheet = Image.new("RGB", (960, 1080), "#10151d")
+          for i, image in enumerate(thumbs):
+              sheet.paste(image, ((i % 2) * 480, (i // 2) * 270))
+          sheet.save("build/screenshots/contact-sheet.png")
+          PY
 
       - name: Verify screenshots and gameplay sequence
         run: |
