@@ -18,10 +18,10 @@ Status: foundation implemented; gameplay capture/restore integration remains a s
 
 Add `scripts/save/save_manager.gd` as an Autoload named `SaveManager` in Project Settings → Autoload.
 
-- `SaveManager.save_slot(slot_id: String, payload: Dictionary) -> Dictionary`
-- `SaveManager.load_slot(slot_id: String) -> Dictionary`
-- `SaveManager.list_slots() -> Array[Dictionary]`
-- `SaveManager.delete_slot(slot_id: String) -> Dictionary`
+- `SaveSlots.save_slot(slot_id: String, payload: Dictionary) -> Dictionary`
+- `SaveSlots.load_slot(slot_id: String) -> Dictionary`
+- `SaveSlots.list_slots() -> Array[Dictionary]`
+- `SaveSlots.delete_slot(slot_id: String) -> Dictionary`
 
 Every operation returns a Dictionary with `ok`. Failed operations include an `error` string. A successful load returns `payload`, `saved_at_unix`, `schema_version` and `recovered_from_backup`.
 
@@ -57,4 +57,4 @@ Run the regression suite with:
 godot --headless --path . --script res://tests/save/test_save_manager.gd
 ```
 
-The save foundation must pass the suite before it is connected to mission progression or exposed in the pause menu. Schema changes require an explicit migration path; never silently reinterpret an unknown future version.
+The Silent Relay mission currently uses the `quick` slot: F5 saves player flight state and mission checkpoint; F9 restores it. During a defence wave, loading recreates that wave rather than persisting individual enemy transforms and health. The save foundation must pass the suite before further persistence scope is added. Schema changes require an explicit migration path; never silently reinterpret an unknown future version.
