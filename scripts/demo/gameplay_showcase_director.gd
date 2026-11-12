@@ -28,7 +28,9 @@ func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var original_chase_fov := camera_rig.chase_camera.fov
 	var original_chase_position := camera_rig.chase_camera.position
+	var original_chase_rotation := camera_rig.chase_camera.rotation_degrees
 	camera_rig.chase_camera.position = Vector3(0.0, 3.6, 11.5)
+	camera_rig.chase_camera.rotation_degrees = Vector3(-17.0, 0.0, 0.0)
 	camera_rig.chase_camera.fov = 58.0
 	await _capture_screenshot("gameplay-01.png")
 
@@ -100,6 +102,7 @@ func _run_showcase() -> void:
 	Input.action_release("boost")
 	camera_rig.chase_camera.fov = original_chase_fov
 	camera_rig.chase_camera.position = original_chase_position
+	camera_rig.chase_camera.rotation_degrees = original_chase_rotation
 	await get_tree().create_timer(0.25).timeout
 	await _capture_screenshot("gameplay-08.png")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
