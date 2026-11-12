@@ -104,6 +104,15 @@ jobs:
           godot --headless --editor --path . --quit
           godot --headless --path . --script res://tests/assets/test_ship_assets.gd
 
+      - name: Verify Blender source files stay outside Godot import paths
+        run: |
+          test -f art_source/.gdignore
+          test -s art_source/README.md
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            test -s "art_source/ships/${ship}.blend"
+            test ! -e "assets/models/ships/${ship}.blend"
+          done
+
       - name: Publish validated GLBs and previews to the production branch
         if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
         run: |
