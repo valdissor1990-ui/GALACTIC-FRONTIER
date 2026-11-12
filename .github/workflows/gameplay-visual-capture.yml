@@ -80,6 +80,33 @@ jobs:
             wait "$game_pid" 2>/dev/null || true
           '
 
+      - name: Capture seven-ship Full HD hangar lineup in Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 240); do
+              if grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data/fleet-hangar.png" build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            test -s build/screenshots/fleet-hangar.png
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
       - name: Build and validate screenshot contact sheet
         run: |
           python3 - <<'PY'
@@ -111,7 +138,16 @@ jobs:
           cat build/gameplay-showcase.log
           test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
           test -s build/screenshots/contact-sheet.png
-          file build/screenshots/gameplay-*.png
+          test -s build/screenshots/fleet-hangar.png
+          python3 - <<'PY'
+          from PIL import Image
+          image = Image.open("build/screenshots/fleet-hangar.png")
+          if image.size != (1920, 1080):
+              raise SystemExit(f"Unexpected fleet hangar size: {image.size}")
+          PY
+          grep -E "FLEET_HANGAR_SHIPS_LOADED=7" build/fleet-hangar.log
+          grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
+          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png
           grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 8
@@ -132,5 +168,6 @@ jobs:
           path: |
             build/screenshots/*.png
             build/gameplay-showcase.log
+            build/fleet-hangar.log
           if-no-files-found: error
           retention-days: 30
