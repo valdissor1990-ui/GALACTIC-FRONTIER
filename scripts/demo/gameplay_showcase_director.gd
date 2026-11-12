@@ -63,7 +63,7 @@ func _run_showcase() -> void:
 	Input.action_release("fire_primary")
 
 	camera_rig.toggle_camera()
-	await get_tree().create_timer(2.0).timeout
+	await get_tree().create_timer(4.5).timeout
 	camera_rig.toggle_camera()
 	await _engage_for(2.0)
 
