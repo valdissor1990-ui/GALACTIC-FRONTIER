@@ -74,6 +74,9 @@ jobs:
       - name: Headless main menu smoke test
         run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
 
+      - name: Run navigation route and physical scan regression test
+        run: godot --headless --path . res://tests/demo/test_route_safety.tscn
+
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
