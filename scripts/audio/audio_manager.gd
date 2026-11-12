@@ -24,11 +24,11 @@ func play_3d(stream: AudioStream, world_position: Vector3, volume_db: float = -1
 	player.volume_db = volume_db
 	player.unit_size = unit_size
 	player.max_distance = max_distance
-	player.global_position = world_position
 	var host := get_tree().current_scene
 	if host == null:
 		host = get_tree().root
 	host.add_child(player)
+	player.global_position = world_position
 	player.play()
 	player.finished.connect(player.queue_free)
 
