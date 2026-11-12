@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/flight/test_flight.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://assets/models/ships/player_fighter.glb" id="2"]
+[ext_resource type="Script" path="res://scripts/visual/runtime_gltf_model.gd" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/environment/space_environment.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter_visual.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/visual/ship_vfx.gd" id="5"]
@@ -32,8 +32,10 @@ visible = false
 [node name="RightEngine" parent="PlayerShip/Visual" index="4"]
 visible = false
 
-[node name="PlayerFighterModel" parent="PlayerShip/Visual" instance=ExtResource("2")]
-scale = Vector3(0.30, 0.30, 0.30)
+[node name="PlayerFighterModel" type="Node3D" parent="PlayerShip/Visual"]
+script = ExtResource("7")
+source_path = "res://assets/models/ships/player_fighter.glb"
+model_scale = Vector3(0.30, 0.30, 0.30)
 
 [node name="ChaseCamera" parent="PlayerShip/CameraRig"]
 position = Vector3(0, 2.35, 6.6)
