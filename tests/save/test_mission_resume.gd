@@ -26,7 +26,7 @@ func _run() -> void:
 	director.wave_index = 3
 	director.mission_seconds = 123.5
 	director.enemies_destroyed = 8
-	player.global_position = Vector3(20.0, 40.0, 60.0)
+	player.global_position = Vector3(20.0, 40.0, -500.0)
 	player.global_rotation = Vector3(0.1, 0.2, 0.3)
 	player.velocity = Vector3(4.0, 5.0, 6.0)
 	damageable.current_hull = 72.0
@@ -48,7 +48,7 @@ func _run() -> void:
 	_check(director.wave_index == 3, "wave progress must be restored")
 	_check(is_equal_approx(director.mission_seconds, 123.5), "mission timer must be restored")
 	_check(director.enemies_destroyed == 8, "kill count must be restored")
-	_check(player.global_position.is_equal_approx(Vector3(20.0, 40.0, 60.0)), "player position must be restored")
+	_check(player.global_position.is_equal_approx(Vector3(20.0, 40.0, -500.0)), "player position must be restored")
 	_check(player.global_rotation.is_equal_approx(Vector3(0.1, 0.2, 0.3)), "player rotation must be restored")
 	_check(player.velocity.is_equal_approx(Vector3(4.0, 5.0, 6.0)), "player velocity must be restored")
 	_check(is_equal_approx(damageable.current_hull, 72.0), "hull must be restored")
