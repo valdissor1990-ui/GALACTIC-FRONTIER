@@ -63,6 +63,13 @@ jobs:
           find build/deepseek-blender -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort
           test "$(find build/deepseek-blender -name '*.glb' | wc -l)" -ge 2
           test "$(find build/deepseek-blender -name '*preview.png' | wc -l)" -ge 2
+      - name: Upload Blender models and visual previews for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-fleet-visual-qa
+          path: build/deepseek-blender/**
+          if-no-files-found: error
+          retention-days: 14
       - name: Install Godot 4.7.2 and export templates
         uses: chickensoft-games/setup-godot@v2
         with:
