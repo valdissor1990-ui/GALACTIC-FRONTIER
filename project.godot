@@ -20,6 +20,7 @@ window/stretch/mode="canvas_items"
 
 [autoload]
 GameSave="*res://scripts/save/save_manager.gd"
+GameProfile="*res://scripts/core/player_profile.gd"
 AudioManager="*res://scripts/audio/audio_manager.gd"
 UpdateManager="*res://scripts/update/update_manager.gd"
 
