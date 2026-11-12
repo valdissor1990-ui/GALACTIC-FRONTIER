@@ -1,14 +1,14 @@
 extends Node
-## Bootstraps the playable Silent Relay vertical-slice mission.
+## Opens the original single-player front end. The menu owns New Game / Continue.
 
-const FLIGHT_SCENE: String = "res://scenes/demo/ten_minute_demo.tscn"
+const MENU_SCENE: String = "res://scenes/ui/main_menu.tscn"
 
 
 func _ready() -> void:
-	call_deferred("_open_flight_scene")
+	call_deferred("_open_main_menu")
 
 
-func _open_flight_scene() -> void:
-	var error: Error = get_tree().change_scene_to_file(FLIGHT_SCENE)
+func _open_main_menu() -> void:
+	var error: Error = get_tree().change_scene_to_file(MENU_SCENE)
 	if error != OK:
-		push_error("GALACTIC FRONTIER: could not open flight scene. Error code: %s" % error)
+		push_error("GALACTIC FRONTIER: could not open main menu. Error code: %s" % error)
