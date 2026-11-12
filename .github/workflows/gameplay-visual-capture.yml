@@ -41,7 +41,7 @@ jobs:
           godot --version
 
       - name: Import project and validate scripts
-        run: godot --headless --editor --path . --quit
+        run: godot --headless --editor --path . --import --quit
 
       - name: Render gameplay and save eight PNG screenshots
         shell: bash
