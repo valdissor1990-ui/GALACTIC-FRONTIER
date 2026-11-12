@@ -15,6 +15,7 @@ func _initialize() -> void:
 func _run_tests() -> void:
 	_test_procedural_fallback_is_visible()
 	_test_imported_model_hides_fallback()
+	_test_runtime_glb_import()
 	print("")
 	if _failed == 0:
 		print("RESULT: PASS (%d assertions)" % _passed)
@@ -22,6 +23,33 @@ func _run_tests() -> void:
 	else:
 		print("RESULT: FAIL (%d passed, %d failed)" % [_passed, _failed])
 		quit(1)
+
+
+func _test_runtime_glb_import() -> void:
+	print("\\n[runtime GLB import]")
+	var visual := ShipVisualFallback.new()
+	visual.imported_model_name = &"RuntimeGLB"
+	visual.imported_model_path = "res://assets/models/ships/player_fighter.glb"
+	visual.imported_model_scale = Vector3.ONE * 0.3
+	visual.fallback_mesh_names = [&"Hull"]
+	var hull := MeshInstance3D.new()
+	hull.name = "Hull"
+	hull.mesh = BoxMesh.new()
+	visual.add_child(hull)
+	root.add_child(visual)
+	var imported := visual.get_node_or_null("RuntimeGLB")
+	_assert_true(imported != null and _contains_mesh(imported), "GLB is loaded through Godot's runtime glTF importer")
+	_assert_true(not hull.visible, "runtime GLB import hides primitive fallback geometry")
+	visual.queue_free()
+
+
+func _contains_mesh(node: Node) -> bool:
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
+		return true
+	for child in node.get_children():
+		if _contains_mesh(child):
+			return true
+	return false
 
 
 func _assert_true(condition: bool, message: String) -> void:
