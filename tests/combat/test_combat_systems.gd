@@ -15,6 +15,14 @@ func _initialize() -> void:
 	_test_destroyed_combatant_stops_regenerating()
 	_test_targeting_selects_forward_target()
 	_test_targeting_ignores_out_of_cone_target()
+	_test_intercept_for_stationary_target()
+	_test_intercept_leads_lateral_target_velocity()
+	_test_intercept_falls_back_for_unreachable_target()
+	_test_intercept_handles_negative_discriminant()
+	_test_intercept_handles_linear_case()
+	_test_intercept_selects_earliest_positive_root()
+	_test_intercept_handles_zero_speed()
+	_test_intercept_handles_coincident_positions()
 	print("")
 	if _failed == 0:
 		print("RESULT: PASS  (%d assertions)" % _passed)
@@ -132,3 +140,71 @@ func _test_targeting_ignores_out_of_cone_target() -> void:
 	scene["ship"].queue_free()
 	scene["camera"].queue_free()
 	target.queue_free()
+
+
+func _test_intercept_for_stationary_target() -> void:
+	print("\n[predictive aim — stationary target]")
+	var relative := Vector3(100.0, 0.0, 0.0)
+	var time := EnemyCombatAI.calculate_intercept_time(relative, Vector3.ZERO, 100.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, relative, Vector3.ZERO, 100.0)
+	_assert_approx(time, 1.0, "stationary target intercept time")
+	_assert_true(direction.is_equal_approx(Vector3.RIGHT), "stationary target aim remains direct")
+
+
+func _test_intercept_leads_lateral_target_velocity() -> void:
+	print("\n[predictive aim — lateral target]")
+	var relative := Vector3(100.0, 0.0, 0.0)
+	var target_velocity := Vector3(0.0, 0.0, 20.0)
+	var time := EnemyCombatAI.calculate_intercept_time(relative, target_velocity, 100.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, relative, target_velocity, 100.0)
+	_assert_approx(time, 1.020621, "exact lateral intercept time")
+	_assert_true(direction.is_equal_approx(Vector3(0.979796, 0.0, 0.2)), "exact lateral lead direction")
+	var miss_distance := (direction * 100.0 * time).distance_to(relative + target_velocity * time)
+	_assert_approx(miss_distance, 0.0, "projectile and target positions meet")
+
+
+func _test_intercept_falls_back_for_unreachable_target() -> void:
+	print("\n[predictive aim — unreachable target fallback]")
+	var relative := Vector3(100.0, 0.0, 0.0)
+	var target_velocity := Vector3(200.0, 0.0, 0.0)
+	var time := EnemyCombatAI.calculate_intercept_time(relative, target_velocity, 100.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, relative, target_velocity, 100.0)
+	_assert_approx(time, 1.0, "unreachable target uses fallback time")
+	_assert_true(direction.is_finite() and direction.is_equal_approx(Vector3.RIGHT), "collinear fallback remains stable")
+
+
+func _test_intercept_handles_negative_discriminant() -> void:
+	print("\n[predictive aim — negative discriminant]")
+	var relative := Vector3(100.0, 0.0, 0.0)
+	var target_velocity := Vector3(0.0, 0.0, 200.0)
+	var time := EnemyCombatAI.calculate_intercept_time(relative, target_velocity, 100.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, relative, target_velocity, 100.0)
+	var expected_direction := Vector3(1.0, 0.0, 2.0).normalized()
+	_assert_approx(time, 1.0, "negative discriminant uses distance/speed fallback time")
+	_assert_true(direction.is_equal_approx(expected_direction), "fallback direction includes target motion over fallback time")
+
+
+func _test_intercept_handles_linear_case() -> void:
+	print("\n[predictive aim — linear equation]")
+	var time := EnemyCombatAI.calculate_intercept_time(Vector3(100.0, 0.0, 0.0), Vector3(-100.0, 0.0, 0.0), 100.0)
+	_assert_approx(time, 0.5, "linear branch finds positive intercept time")
+
+
+func _test_intercept_selects_earliest_positive_root() -> void:
+	print("\n[predictive aim — earliest positive root]")
+	var time := EnemyCombatAI.calculate_intercept_time(Vector3(100.0, 0.0, 0.0), Vector3(-200.0, 0.0, 0.0), 100.0)
+	_assert_approx(time, 0.333333, "solver selects earliest of two positive roots")
+
+
+func _test_intercept_handles_zero_speed() -> void:
+	print("\n[predictive aim — zero projectile speed]")
+	var time := EnemyCombatAI.calculate_intercept_time(Vector3(100.0, 0.0, 0.0), Vector3.ZERO, 0.0)
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, Vector3(100.0, 0.0, 0.0), Vector3.ZERO, 0.0)
+	_assert_approx(time, 0.0, "zero projectile speed returns safe zero time")
+	_assert_true(direction.is_equal_approx(Vector3.RIGHT), "zero-speed fallback direction remains finite")
+
+
+func _test_intercept_handles_coincident_positions() -> void:
+	print("\n[predictive aim — coincident positions]")
+	var direction := EnemyCombatAI.calculate_intercept_direction(Vector3.ZERO, Vector3.ZERO, Vector3(0.0, 0.0, 20.0), 100.0)
+	_assert_true(direction == Vector3.ZERO, "coincident positions return zero direction for caller guard")
