@@ -55,6 +55,13 @@ func _build_menu() -> void:
 	intro.text = "A remote relay has gone dark.\nYour flight begins at the edge of known space."
 	intro.add_theme_color_override("font_color", Color("#9eb8c8"))
 	layout.add_child(intro)
+	var profile := get_node_or_null("/root/GameProfile")
+	var credits := Label.new()
+	credits.name = "PilotCredits"
+	credits.text = "PILOT ACCOUNT  /  %s CR" % str(profile.call("get_credits")) if profile != null else "PILOT ACCOUNT  /  -- CR"
+	credits.add_theme_font_size_override("font_size", 13)
+	credits.add_theme_color_override("font_color", Color("#55c7e6"))
+	layout.add_child(credits)
 	var start := Button.new()
 	start.text = "  NEW FLIGHT"
 	start.custom_minimum_size = Vector2(390, 54)
