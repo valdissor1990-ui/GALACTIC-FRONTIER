@@ -80,7 +80,7 @@ func _run_showcase() -> void:
 		# The real mission spawn distances are unchanged outside this showcase.
 		var forward := -player.global_transform.basis.z
 		var right := player.global_transform.basis.x
-		acquired.global_position = player.global_position + forward * 18.0 + right * 3.0
+		acquired.global_position = player.global_position + forward * 10.0 + right * 2.0
 		if acquired is CharacterBody3D:
 			(acquired as CharacterBody3D).velocity = Vector3.ZERO
 			acquired.set("max_speed", 0.0)
