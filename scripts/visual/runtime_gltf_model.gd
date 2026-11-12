@@ -8,6 +8,7 @@ extends Node3D
 static var _packed_scene_cache: Dictionary = {}
 
 func _ready() -> void:
+	_apply_player_profile_selection()
 	if source_path.is_empty():
 		_show_fallback_visuals()
 		push_error("RuntimeGLTFModel: source_path is empty.")
@@ -40,6 +41,20 @@ func _ready() -> void:
 	instance.name = "Model"
 	instance.scale = model_scale
 	add_child(instance)
+
+
+func _apply_player_profile_selection() -> void:
+	var visual_root := get_parent()
+	if visual_root == null or visual_root.name != "Visual":
+		return
+	var ship_root := visual_root.get_parent()
+	if ship_root == null or ship_root.name != "PlayerShip":
+		return
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		return
+	source_path = str(profile.call("get_selected_ship_model_path"))
+	model_scale = Vector3.ONE * float(profile.call("get_selected_ship_scale"))
 
 
 func _show_fallback_visuals() -> void:
