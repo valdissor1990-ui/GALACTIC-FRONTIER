@@ -71,7 +71,9 @@ func _engage_for(duration: float) -> void:
 				best_target = target
 		if best_target != null:
 			player.look_at(best_target.global_position, Vector3.UP)
-			targeting.acquire_target()
+			# Lock the selected target directly; camera follow interpolation can
+			# make cone-based reacquisition miss during automated capture.
+			targeting.set_target(best_target)
 			Input.action_press("fire_primary")
 		else:
 			Input.action_release("fire_primary")
