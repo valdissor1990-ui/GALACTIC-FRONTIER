@@ -11,9 +11,6 @@
 
 [node name="SpaceEnvironment" parent="." instance=ExtResource("3")]
 
-[node name="WorldEnvironment" parent="." index="0"]
-environment = null
-
 [node name="KeyLight" parent="." index="1"]
 visible = false
 
@@ -36,7 +33,16 @@ visible = false
 visible = false
 
 [node name="PlayerFighterModel" parent="PlayerShip/Visual" instance=ExtResource("2")]
-scale = Vector3(0.22, 0.22, 0.22)
+scale = Vector3(0.30, 0.30, 0.30)
+
+[node name="ChaseCamera" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 2.35, 6.6)
+rotation_degrees = Vector3(11, 0, 0)
+fov = 66.0
+
+[node name="CockpitCamera" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 0.38, -0.65)
+fov = 82.0
 
 [node name="CombatEncounterController" parent="." index="6"]
 enemy_scene = ExtResource("4")
