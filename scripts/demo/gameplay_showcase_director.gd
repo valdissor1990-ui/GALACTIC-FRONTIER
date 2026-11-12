@@ -16,6 +16,7 @@ func _ready() -> void:
 
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
+	var original_chase_fov := camera_rig.chase_camera.fov
 	await _capture_screenshot("gameplay-01.png")
 	var travel_elapsed := 0.0
 	while mission.stage == 0 and travel_elapsed < 9.0:
@@ -54,7 +55,8 @@ func _run_showcase() -> void:
 	if acquired != null:
 		# Bring one hostile into a readable showcase range; normal mission spawn
 		# distances and combat behavior remain unchanged outside this QA scene.
-		acquired.global_position = player.global_position + (-player.global_basis.z * 34.0) + Vector3.UP * 2.0
+		acquired.global_position = player.global_position + (-player.global_basis.z * 34.0) + Vector3.UP * 14.0
+		camera_rig.chase_camera.fov = 52.0
 		targeting.set_target(acquired)
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired != null)
 	if acquired != null:
@@ -81,6 +83,7 @@ func _run_showcase() -> void:
 	Input.action_release("move_forward")
 	Input.action_release("boost")
 	await _capture_screenshot("gameplay-08.png")
+	camera_rig.chase_camera.fov = original_chase_fov
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
 
 

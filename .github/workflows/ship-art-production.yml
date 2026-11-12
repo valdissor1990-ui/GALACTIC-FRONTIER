@@ -104,6 +104,9 @@ jobs:
       - name: Publish validated GLBs and previews to the production branch
         if: ${{ github.actor != 'github-actions[bot]' }}
         run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          git fetch origin "$BRANCH"
+          git checkout -B fleet-publish "origin/$BRANCH"
           for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
             test -s "assets/models/ships/${ship}.glb"
             test -s "assets/previews/${ship}_preview.png"
