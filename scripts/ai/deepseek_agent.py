@@ -6,7 +6,8 @@ def run(*a): return subprocess.check_output(a,text=True,stderr=subprocess.STDOUT
 def context():
  paths=run('git','ls-files').splitlines(); priority=('scripts/blender/','scenes/ships/','scenes/combat/','scripts/combat/','scripts/flight/','tests/','.github/workflows/','docs/','project.godot','README.md'); paths.sort(key=lambda p:(not any(p.startswith(x) or p==x for x in priority),p)); out=[]; used=0
  for p in paths:
-  if any(x in p for x in ('.git/','.godot/','build/','assets/','.png','.glb','.blend','.fbx','.zip','.exe','.pck')) or not Path(p).is_file(): continue
+  name=Path(p).name.lower()
+  if any(x in p for x in ('.git/','.godot/','build/','assets/','.png','.glb','.blend','.fbx','.zip','.exe','.pck')) or name.startswith('.env') or any(x in name for x in ('secret','credential','token','id_rsa','keystore')) or name.endswith(('.pem','.key','.p12','.pfx')) or not Path(p).is_file(): continue
   try: s=Path(p).read_text(encoding='utf-8')
   except (UnicodeDecodeError,OSError): continue
   block='\n\n===== FILE: '+p+' =====\n'+s[:18000]
