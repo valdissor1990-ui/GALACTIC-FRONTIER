@@ -39,7 +39,7 @@ func fire_primary() -> bool:
 
 	var forward := -_muzzle.global_transform.basis.z
 	projectile.configure(forward, _ship, projectile_speed, projectile_damage)
-	get_tree().current_scene.add_child(projectile)
 	projectile.global_transform = _muzzle.global_transform
+	get_tree().current_scene.add_child(projectile)
 	_cooldown = 1.0 / maxf(shots_per_second, 0.1)
 	return true
