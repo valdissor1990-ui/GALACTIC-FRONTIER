@@ -2,7 +2,7 @@ extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses generated geometry and textures only; no network or third-party assets.
 
-@export_range(300, 2400, 100) var star_count: int = 1200
+@export_range(300, 2400, 100) var star_count: int = 1800
 @export_range(40, 220, 10) var asteroid_count: int = 120
 
 var _rng := RandomNumberGenerator.new()
@@ -91,8 +91,8 @@ func _build_world_environment() -> void:
 
 func _build_starfield() -> void:
 	var star_mesh := SphereMesh.new()
-	star_mesh.radius = 0.22
-	star_mesh.height = 0.44
+	star_mesh.radius = 0.32
+	star_mesh.height = 0.64
 	star_mesh.radial_segments = 6
 	star_mesh.rings = 4
 
@@ -100,15 +100,15 @@ func _build_starfield() -> void:
 	star_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	star_material.albedo_color = Color(0.72, 0.84, 1.0)
 	star_material.emission_enabled = true
-	star_material.emission = Color(0.48, 0.68, 1.0)
-	star_material.emission_energy_multiplier = 1.6
+	star_material.emission = Color(0.56, 0.76, 1.0)
+	star_material.emission_energy_multiplier = 2.1
 	star_mesh.material = star_material
 
 	_starfield = _make_multimesh("Starfield", star_mesh, star_count)
 	for index in range(star_count):
 		var direction := _random_unit_vector()
-		var distance := _rng.randf_range(760.0, 1120.0)
-		var size := _rng.randf_range(0.8, 2.4)
+		var distance := _rng.randf_range(520.0, 980.0)
+		var size := _rng.randf_range(1.0, 2.8)
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
@@ -119,14 +119,14 @@ func _build_nebulae() -> void:
 		"AzureNebula",
 		Vector3(-138.0, 54.0, -465.0),
 		Vector2(310.0, 178.0),
-		Color(0.12, 0.34, 1.0, 0.24),
+		Color(0.16, 0.40, 1.0, 0.38),
 		1138
 	)
 	_add_nebula(
 		"VioletNebula",
 		Vector3(158.0, -42.0, -520.0),
 		Vector2(270.0, 152.0),
-		Color(0.48, 0.16, 0.92, 0.18),
+		Color(0.52, 0.20, 0.94, 0.32),
 		8821
 	)
 
@@ -163,11 +163,11 @@ void fragment() {
 	float broad = texture(nebula_noise, uv_a).r;
 	float detail = texture(nebula_noise, uv_b).r;
 	float cloud = broad * 0.72 + detail * 0.28;
-	float filaments = smoothstep(0.43, 0.79, cloud);
-	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
+	float filaments = smoothstep(0.36, 0.74, cloud);
+	float wisps = smoothstep(0.49, 0.82, detail) * 0.22;
 	vec2 centered = UV * 2.0 - 1.0;
 	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
-	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.30);
+	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.36);
 	ALBEDO = nebula_tint.rgb;
 	EMISSION = nebula_tint.rgb * (0.45 + filaments * 1.8);
 	ALPHA = alpha;
