@@ -29,6 +29,8 @@ var _distance_label: Label
 var _timer_label: Label
 var _progress_label: Label
 var _rng := RandomNumberGenerator.new()
+var enemies_destroyed: int = 0
+var _result_shown: bool = false
 
 
 func _ready() -> void:
@@ -60,8 +62,13 @@ func _process(delta: float) -> void:
 		return
 	var player_damageable := player.get_node_or_null("Damageable") as Damageable
 	if player_damageable != null and player_damageable.is_destroyed():
-		stage = MissionStage.FAILED
-		_set_radio("MISSION CONTROL", "Your fighter is lost. Mission failed.")
+		if stage != MissionStage.FAILED:
+			stage = MissionStage.FAILED
+			_set_radio("MISSION CONTROL", "Your fighter is lost. Mission failed.")
+			CombatEffects.spawn_burst(world, player.global_position, Color(0.12, 0.72, 1.0), 3.2)
+			_show_mission_result(false)
+		_update_hud()
+		return
 	_update_mission(delta)
 	_update_hud()
 
@@ -99,6 +106,7 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.COMPLETE
 				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
 				print("MISSION_COMPLETE seconds=", mission_seconds)
+				_show_mission_result(true)
 
 
 func _complete_relay_scan() -> void:
@@ -144,6 +152,7 @@ func _spawn_wave() -> void:
 
 
 func _on_enemy_destroyed(enemy: Node3D) -> void:
+	enemies_destroyed += 1
 	if is_instance_valid(enemy):
 		CombatEffects.spawn_burst(world, enemy.global_position, Color(1.0, 0.18, 0.055), 2.1)
 		enemy.queue_free()
@@ -353,3 +362,81 @@ func _build_station() -> void:
 	station_light.light_energy = 3.5
 	station_light.omni_range = 90.0
 	_station.add_child(station_light)
+
+
+func _show_mission_result(success: bool) -> void:
+	if _result_shown:
+		return
+	_result_shown = true
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+		player.set_process_unhandled_input(false)
+		var weapon := player.get_node_or_null("WeaponSystem")
+		if weapon != null:
+			weapon.set_process(false)
+	if is_instance_valid(encounter):
+		encounter.set_process(false)
+		encounter.set_physics_process(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var layer := CanvasLayer.new()
+	layer.name = "MissionResult"
+	layer.layer = 30
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	world.add_child(layer)
+	var shade := ColorRect.new()
+	shade.color = Color(0.005, 0.012, 0.025, 0.82)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(520, 330)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.018, 0.045, 0.075, 0.98)
+	style.border_color = Color(0.12, 0.62, 0.82, 0.9) if success else Color(0.78, 0.24, 0.18, 0.9)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 34
+	style.content_margin_right = 34
+	style.content_margin_top = 28
+	style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = "MISSION COMPLETE" if success else "MISSION FAILED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#67d9f3") if success else Color("#ff887d"))
+	column.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "THE SILENT RELAY  /  DEBRIEFING"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_color_override("font_color", Color("#9eb8c8"))
+	column.add_child(subtitle)
+	var stats := Label.new()
+	stats.text = "FLIGHT TIME     %02d:%02d\nHOSTILES DESTROYED     %d / 18\nWAVES CLEARED     %d / 6" % [int(mission_seconds) / 60, int(mission_seconds) % 60, enemies_destroyed, 6 if success else mini(6, wave_index - (1 if enemies_remaining > 0 else 0))]
+	stats.add_theme_font_size_override("font_size", 16)
+	stats.add_theme_color_override("font_color", Color("#d5e8f2"))
+	stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(stats)
+	var retry := Button.new()
+	retry.text = "PLAY AGAIN"
+	retry.custom_minimum_size.y = 48
+	retry.pressed.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/demo/ten_minute_demo.tscn")
+	)
+	column.add_child(retry)
+	var menu := Button.new()
+	menu.text = "MAIN MENU"
+	menu.custom_minimum_size.y = 42
+	menu.pressed.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	)
+	column.add_child(menu)
+	print("MISSION_RESULT_SHOWN success=", success, " kills=", enemies_destroyed, " seconds=", mission_seconds)
