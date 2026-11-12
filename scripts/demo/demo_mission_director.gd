@@ -47,6 +47,7 @@ func _initialize_mission() -> void:
 	_build_mission_hud()
 	_set_radio("ORBITAL CONTROL", "Pilot, the relay stopped transmitting. Approach the beacon and scan its core.")
 	print("MISSION_READY: THE SILENT RELAY")
+	_save_checkpoint("mission start")
 
 
 func _process(delta: float) -> void:
@@ -77,7 +78,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
 	var key_event := event as InputEventKey
-	if not event.is_action_pressed("scan") or key_event.echo:
+	if key_event.echo or not key_event.pressed:
+		return
+	if key_event.keycode == KEY_F5:
+		_save_checkpoint("manual")
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.keycode == KEY_F9:
+		_load_checkpoint()
+		get_viewport().set_input_as_handled()
+		return
+	if not event.is_action_pressed("scan"):
 		return
 	if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
 		_complete_relay_scan()
@@ -106,6 +117,7 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.COMPLETE
 				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
 				print("MISSION_COMPLETE seconds=", mission_seconds)
+				GameSave.delete_slot("silent_relay")
 				_show_mission_result(true)
 
 
@@ -149,6 +161,7 @@ func _spawn_wave() -> void:
 		if damageable != null:
 			damageable.destroyed.connect(_on_enemy_destroyed.bind(enemy), CONNECT_ONE_SHOT)
 	print("MISSION_WAVE_STARTED stage=", stage, " wave=", wave_index, " count=", count)
+	_save_checkpoint("wave %d" % wave_index)
 
 
 func _on_enemy_destroyed(enemy: Node3D) -> void:
@@ -166,6 +179,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_objective_position = WRECK_POSITION
 		_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
 		_set_radio("ORBITAL CONTROL", "Relay secured. A debris trail leads to a second signal source. Investigate.")
+		_save_checkpoint("relay secured")
 	elif stage == MissionStage.DEFEND_WRECK and wave_index < 3:
 		_next_wave_timer = 5.0
 	elif stage == MissionStage.DEFEND_WRECK:
@@ -173,6 +187,86 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_objective_position = HOME_POSITION
 		_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
 		_set_radio("ORBITAL CONTROL", "All hostiles eliminated. Return to the carrier for debriefing.")
+		_save_checkpoint("wreck secured")
+
+
+func _save_checkpoint(reason: String = "manual") -> bool:
+	if not is_instance_valid(player):
+		return false
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	var payload := {
+		"mission_id": "silent_relay",
+		"stage": int(stage),
+		"wave_index": wave_index,
+		"mission_seconds": mission_seconds,
+		"enemies_destroyed": enemies_destroyed,
+		"player_position": [player.global_position.x, player.global_position.y, player.global_position.z],
+		"player_rotation": [player.global_rotation.x, player.global_rotation.y, player.global_rotation.z],
+		"player_velocity": [player.velocity.x, player.velocity.y, player.velocity.z],
+		"player_hull": damageable.current_hull if damageable != null else 100.0,
+		"player_shield": damageable.current_shield if damageable != null else 100.0
+	}
+	var result: Dictionary = GameSave.save_slot("silent_relay", payload)
+	if result.ok:
+		print("CHECKPOINT_SAVED reason=", reason, " stage=", stage, " wave=", wave_index)
+		if is_instance_valid(_radio_label) and reason == "manual":
+			_set_radio("SAVE SYSTEM", "Checkpoint saved locally. Press F9 to restore it.")
+		return true
+	push_error("Checkpoint save failed: " + str(result.get("error", "unknown")))
+	return false
+
+
+func _load_checkpoint() -> bool:
+	var result: Dictionary = GameSave.load_slot("silent_relay")
+	if not result.ok:
+		_set_radio("SAVE SYSTEM", "No valid local checkpoint is available.")
+		return false
+	var restored := restore_from_save(result.payload)
+	if restored:
+		_set_radio("SAVE SYSTEM", "Checkpoint restored. Flight resumed.")
+	return restored
+
+
+func restore_from_save(payload: Dictionary) -> bool:
+	if str(payload.get("mission_id", "")) != "silent_relay":
+		return false
+	var saved_stage := int(payload.get("stage", -1))
+	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.RETURN_HOME:
+		return false
+	stage = saved_stage
+	wave_index = maxi(0, int(payload.get("wave_index", 0)))
+	mission_seconds = maxf(0.0, float(payload.get("mission_seconds", 0.0)))
+	enemies_destroyed = clampi(int(payload.get("enemies_destroyed", 0)), 0, 18)
+	player.global_position = _vector_from_payload(payload.get("player_position", []), player.global_position)
+	player.global_rotation = _vector_from_payload(payload.get("player_rotation", []), player.global_rotation)
+	player.velocity = _vector_from_payload(payload.get("player_velocity", []), Vector3.ZERO)
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	if damageable != null:
+		damageable.current_hull = clampf(float(payload.get("player_hull", damageable.max_hull)), 1.0, damageable.max_hull)
+		damageable.current_shield = clampf(float(payload.get("player_shield", damageable.max_shield)), 0.0, damageable.max_shield)
+	for enemy in get_tree().get_nodes_in_group("combat_targets"):
+		if enemy != player and is_instance_valid(enemy):
+			enemy.queue_free()
+	enemies_remaining = 0
+	_next_wave_timer = -1.0
+	match stage:
+		MissionStage.OUTBOUND, MissionStage.SCAN_RELAY, MissionStage.DEFEND_RELAY:
+			_move_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
+		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK, MissionStage.DEFEND_WRECK:
+			_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
+		MissionStage.RETURN_HOME:
+			_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
+	if stage == MissionStage.DEFEND_RELAY or stage == MissionStage.DEFEND_WRECK:
+		wave_index = maxi(0, wave_index - 1)
+		_spawn_wave()
+	_update_hud()
+	return true
+
+
+func _vector_from_payload(value: Variant, fallback: Vector3) -> Vector3:
+	if not value is Array or value.size() != 3:
+		return fallback
+	return Vector3(float(value[0]), float(value[1]), float(value[2]))
 
 
 func _distance_to_objective() -> float:
