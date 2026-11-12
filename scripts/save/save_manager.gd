@@ -159,7 +159,8 @@ func _read_and_validate(path: String) -> Dictionary:
 
 
 func _payload_checksum(payload: Dictionary) -> String:
-	return str(hash(JSON.stringify(_canonicalize_json(payload))))
+	var normalized: Variant = JSON.parse_string(JSON.stringify(payload))
+	return str(hash(JSON.stringify(_canonicalize_json(normalized))))
 
 
 func _canonicalize_json(value: Variant) -> Variant:
