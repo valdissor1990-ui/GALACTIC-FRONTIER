@@ -6,8 +6,14 @@
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter_visual.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/visual/ship_vfx.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/visual/cockpit_interior.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/visual/ship_visual_fallback.gd" id="7"]
 
 [node name="VisualFlight" instance=ExtResource("1")]
+
+[node name="Visual" parent="PlayerShip" index="1"]
+script = ExtResource("7")
+imported_model_name = &"PlayerFighterModel"
+fallback_mesh_names = [&"Hull", &"Nose", &"Wings", &"LeftEngine", &"RightEngine"]
 
 [node name="SpaceEnvironment" parent="." instance=ExtResource("3")]
 
@@ -17,20 +23,6 @@ visible = false
 [node name="DistantPlanet" parent="." index="2"]
 visible = false
 
-[node name="Hull" parent="PlayerShip/Visual" index="0"]
-visible = false
-
-[node name="Nose" parent="PlayerShip/Visual" index="1"]
-visible = false
-
-[node name="Wings" parent="PlayerShip/Visual" index="2"]
-visible = false
-
-[node name="LeftEngine" parent="PlayerShip/Visual" index="3"]
-visible = false
-
-[node name="RightEngine" parent="PlayerShip/Visual" index="4"]
-visible = false
 
 [node name="PlayerFighterModel" parent="PlayerShip/Visual" instance=ExtResource("2")]
 scale = Vector3(0.30, 0.30, 0.30)
