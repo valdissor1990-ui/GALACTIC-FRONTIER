@@ -31,8 +31,13 @@ func _run_showcase() -> void:
 	var acquired := false
 	var targets := get_tree().get_nodes_in_group("combat_targets")
 	if not targets.is_empty() and targets[0] is Node3D:
-		player.look_at((targets[0] as Node3D).global_position, Vector3.UP)
-		await get_tree().process_frame
+		var first_target := targets[0] as Node3D
+		player.look_at(first_target.global_position, Vector3.UP)
+		await get_tree().physics_frame
+		var active_camera := get_viewport().get_camera_3d()
+		if active_camera != null:
+			active_camera.look_at(first_target.global_position, Vector3.UP)
+			await get_tree().process_frame
 		acquired = targeting.acquire_target() != null
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired)
 	await _engage_for(4.0)
