@@ -76,9 +76,17 @@ func _build_stage() -> void:
 
 func _spawn_ship(data: Dictionary) -> bool:
 	var path: String = data["path"]
-	var packed := load(path) as PackedScene
-	if packed == null:
-		push_error("Fleet hangar cannot load %s" % path)
+	# Use the same runtime GLTFDocument path as the flight scene. This avoids
+	# depending on editor-generated .import cache entries for direct GLB loads.
+	var document := GLTFDocument.new()
+	var state := GLTFState.new()
+	var parse_error := document.append_from_file(path, state)
+	if parse_error != OK:
+		push_error("Fleet hangar cannot parse %s (error %d)" % [path, parse_error])
+		return false
+	var ship := document.generate_scene(state) as Node3D
+	if ship == null:
+		push_error("Fleet hangar generated a null scene for %s" % path)
 		return false
 
 	var position: Vector3 = data["position"]
@@ -114,10 +122,6 @@ func _spawn_ship(data: Dictionary) -> bool:
 	ring.position = position + Vector3(0.0, -0.22, 0.0)
 	add_child(ring)
 
-	var ship := packed.instantiate() as Node3D
-	if ship == null:
-		push_error("Fleet hangar GLB root is not Node3D: %s" % path)
-		return false
 	ship.name = String(data["name"]).replace(" ", "")
 	ship.scale = Vector3.ONE * float(data["scale"])
 	ship.position = position + Vector3(0.0, 0.12, 0.0)
