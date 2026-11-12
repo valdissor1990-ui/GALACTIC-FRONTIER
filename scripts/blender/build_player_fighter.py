@@ -479,7 +479,7 @@ def main():
     }
 
     root = create_ship(materials)
-    add_micro_detail(root, materials)
+    # Keep the primary armor layout clean; micro-detail pass is being redesigned to avoid floating plates.
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.
