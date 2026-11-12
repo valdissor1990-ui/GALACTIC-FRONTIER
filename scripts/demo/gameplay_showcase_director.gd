@@ -15,6 +15,13 @@ func _ready() -> void:
 
 func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
+	var player_model := player.get_node_or_null("Visual/PlayerFighterModel")
+	var player_mesh_count := _count_visible_meshes(player_model)
+	print("SHOWCASE_PLAYER_MODEL_MESHES=", player_mesh_count)
+	if player_mesh_count == 0:
+		push_error("SHOWCASE failed: player GLB has no visible mesh instances")
+		get_tree().quit(1)
+		return
 	await _capture_screenshot("01-flight-start.png")
 
 	var travel_elapsed := 0.0
@@ -34,6 +41,15 @@ func _run_showcase() -> void:
 	if mission.stage == 1:
 		mission._complete_relay_scan()
 	await get_tree().create_timer(0.4).timeout
+	var enemy_mesh_count := 0
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if candidate is Node3D:
+			enemy_mesh_count += _count_visible_meshes(candidate.get_node_or_null("Visual/RaiderInterceptorModel"))
+	print("SHOWCASE_ENEMY_MODEL_MESHES=", enemy_mesh_count)
+	if enemy_mesh_count == 0:
+		push_error("SHOWCASE failed: enemy GLB has no visible mesh instances")
+		get_tree().quit(1)
+		return
 	await _capture_screenshot("03-hostiles-arrive.png")
 
 	var acquired: Node3D
@@ -116,3 +132,14 @@ func _engage_for(duration: float) -> void:
 			Input.action_release("fire_primary")
 		await get_tree().create_timer(0.05).timeout
 		elapsed += 0.05
+
+
+func _count_visible_meshes(node: Node) -> int:
+	if node == null:
+		return 0
+	var count := 0
+	if node is MeshInstance3D and (node as MeshInstance3D).visible and (node as MeshInstance3D).mesh != null:
+		count += 1
+	for child in node.get_children():
+		count += _count_visible_meshes(child)
+	return count
