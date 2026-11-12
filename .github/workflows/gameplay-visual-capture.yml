@@ -63,7 +63,7 @@ jobs:
               sleep 0.25
             done
             if [ "$ready" -ne 1 ]; then cat build/gameplay-showcase.log; exit 1; fi
-            sleep 1.5
+            sleep 5
             for shot in $(seq -w 1 8); do
               sleep 2.5
               ffmpeg -y -hide_banner -loglevel error -f x11grab -video_size 1280x720 -i "$DISPLAY" -frames:v 1 "build/screenshots/gameplay-${shot}.png"
