@@ -36,6 +36,9 @@ func _run_tests() -> void:
 		return
 
 	_assert_true(continue_button.disabled, "Continue is disabled without a valid quick save")
+	SaveSlots.save_slot("quick", {"game_id": "another_campaign"})
+	_menu.call("_refresh_continue_state")
+	_assert_true(continue_button.disabled, "Continue rejects a save from another campaign")
 	var saved := SaveSlots.save_slot("quick", {"game_id": "galactic_frontier_silent_relay", "credits": 100})
 	_menu.call("_refresh_continue_state")
 	_assert_true(saved.ok and not continue_button.disabled, "Continue enables when a valid quick save exists")
