@@ -9,17 +9,6 @@ on:
       - "scripts/blender/**"
       - "tests/assets/**"
       - ".github/workflows/ship-art-production.yml"
-  pull_request:
-    branches:
-      - chatgpt/ten-minute-vertical-slice
-      - chatgpt/ship-art-production
-      - chatgpt/mission-save-integration
-    paths:
-      - "scripts/blender/**"
-      - "tests/assets/**"
-      - "assets/models/ships/**"
-      - "assets/previews/**"
-      - ".github/workflows/ship-art-production.yml"
   workflow_dispatch:
 
 permissions:
