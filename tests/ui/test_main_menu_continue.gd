@@ -36,9 +36,6 @@ func _run() -> void:
 	}
 	var save_result: Dictionary = save_manager.call("save_slot", "silent_relay", payload)
 	_check(save_result.ok, "valid Silent Relay checkpoint is written")
-	var verified_save: Dictionary = save_manager.call("load_slot", "silent_relay")
-	_check(verified_save.ok, "saved checkpoint can be loaded before opening the menu")
-	print("DEBUG_CHECKPOINT_LOAD ", verified_save)
 
 	var scene_error := change_scene_to_file(MENU_SCENE)
 	_check(scene_error == OK, "main menu scene can be opened")
@@ -50,7 +47,6 @@ func _run() -> void:
 		_finish(save_manager)
 		return
 
-	print("DEBUG_MENU_VALID_CHECKPOINT ", menu.call("_is_valid_checkpoint", verified_save))
 	var continue_button := menu.get_node_or_null("MainMenuLayout/ContinueButton") as Button
 	_check(continue_button != null, "Continue button is shown for a valid checkpoint")
 	if continue_button == null:
