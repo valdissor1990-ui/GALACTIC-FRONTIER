@@ -3,8 +3,8 @@ extends Node
 ## Uses the real player flight controller, combat projectiles, enemy AI and damage model.
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/combat/enemy_fighter_visual.tscn")
-const RELAY_POSITION := Vector3(0.0, 18.0, -720.0)
-const WRECK_POSITION := Vector3(210.0, -28.0, -1420.0)
+const RELAY_POSITION := Vector3(0.0, 18.0, -13500.0)
+const WRECK_POSITION := Vector3(520.0, -28.0, -28000.0)
 const HOME_POSITION := Vector3(0.0, 0.0, 90.0)
 
 enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED }
@@ -151,7 +151,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 	if enemies_remaining > 0:
 		return
 	if stage == MissionStage.DEFEND_RELAY and wave_index < 3:
-		_next_wave_timer = 5.0
+		_next_wave_timer = 22.0
 	elif stage == MissionStage.DEFEND_RELAY:
 		stage = MissionStage.INVESTIGATE_WRECK
 		_objective_position = WRECK_POSITION
