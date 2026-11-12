@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+  pull_request:
+    branches:
+      - chatgpt/ten-minute-vertical-slice
 
 permissions:
   contents: read
