@@ -38,6 +38,11 @@ func _run_showcase() -> void:
 		if active_camera != null:
 			active_camera.look_at(first_target.global_position, Vector3.UP)
 			await get_tree().process_frame
+			var offset := first_target.global_position - active_camera.global_position
+			var alignment := (-active_camera.global_transform.basis.z.normalized()).dot(offset.normalized())
+			print("SHOWCASE_TARGET_DEBUG camera=", active_camera.name, " target=", first_target.name, " distance=", offset.length(), " alignment=", alignment, " threshold=", cos(deg_to_rad(targeting.acquisition_cone_degrees)))
+		else:
+			print("SHOWCASE_TARGET_DEBUG camera=null")
 		acquired = targeting.acquire_target() != null
 	print("SHOWCASE_TARGET_ACQUIRED=", acquired)
 	await _engage_for(4.0)
