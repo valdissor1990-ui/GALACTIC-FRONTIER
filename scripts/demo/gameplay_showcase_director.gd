@@ -28,6 +28,9 @@ func _run_showcase() -> void:
 	Input.action_release("move_forward")
 	await get_tree().create_timer(0.4).timeout
 	await _capture_screenshot("02-relay-approach.png")
+	if mission.stage == 0:
+		player.global_position = mission._objective_position
+		await get_tree().physics_frame
 
 	if mission.stage == 1:
 		mission._complete_relay_scan()
@@ -90,7 +93,9 @@ func _engage_for(duration: float) -> void:
 				best_target = target
 		if best_target != null:
 			player.look_at(best_target.global_position, Vector3.UP)
-			targeting.acquire_target()
+			var locked_target := targeting.acquire_target()
+			if locked_target != null:
+				print("SHOWCASE_TARGET_ACQUIRED=true")
 			Input.action_press("fire_primary")
 		else:
 			Input.action_release("fire_primary")
