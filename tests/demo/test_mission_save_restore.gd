@@ -23,8 +23,8 @@ func _run_tests() -> void:
 		return
 	_mission = packed.instantiate()
 	get_tree().root.add_child(_mission)
-	await process_frame
-	await process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 	var director := _mission.get_node_or_null("DemoMissionDirector")
 	var player := _mission.get_node_or_null("PlayerShip") as ShipController
