@@ -32,7 +32,7 @@ jobs:
       - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb ffmpeg
+          sudo apt-get install --yes xvfb ffmpeg python3-pil
           godot --version
           ffmpeg -version | head -n 1
 
@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build
+          mkdir -p build/screenshots
           xvfb-run -a -s "-screen 0 1280x720x24" bash -lc '
             set -euo pipefail
             godot --path . --windowed --resolution 1280x720 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
@@ -62,7 +62,7 @@ jobs:
             done
             python3 - <<'PY'
             from pathlib import Path
-            from PIL import Image, ImageOps, ImageDraw
+            from PIL import Image
             files = sorted(Path('build/screenshots').glob('gameplay-*.png'))
             if len(files) != 8:
                 raise SystemExit(f'Expected 8 screenshots, got {len(files)}')
