@@ -144,6 +144,7 @@ func _try_fire() -> void:
 	if host == null:
 		host = get_parent()
 	host.add_child(projectile)
+	AudioManager.play_3d(AudioManager.weapon_stream, _muzzle.global_position, -11.0, 24.0, 420.0)
 	_cooldown = 1.0 / maxf(shots_per_second, 0.1)
 
 
