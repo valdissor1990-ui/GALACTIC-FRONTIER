@@ -60,6 +60,9 @@ jobs:
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
 
+      - name: Run mission quick-save and restore tests
+        run: godot --headless --path . --script res://tests/demo/test_mission_save_restore.gd
+
       - name: Run full demo mission progression test
         run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
 
