@@ -8,6 +8,15 @@
 
 [node name="SpaceEnvironment" parent="." instance=ExtResource("3")]
 
+[node name="WorldEnvironment" parent="." index="0"]
+environment = null
+
+[node name="KeyLight" parent="." index="1"]
+visible = false
+
+[node name="DistantPlanet" parent="." index="2"]
+visible = false
+
 [node name="Hull" parent="PlayerShip/Visual" index="0"]
 visible = false
 
