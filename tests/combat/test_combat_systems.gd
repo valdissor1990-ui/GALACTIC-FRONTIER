@@ -9,6 +9,13 @@ var _failed: int = 0
 
 func _initialize() -> void:
 	print("=== GALACTIC FRONTIER — Combat system tests ===")
+	call_deferred("_run_tests")
+
+
+func _run_tests() -> void:
+	# SceneTree._initialize runs before the first frame. Wait until the root
+	# viewport and active Camera3D are available before testing target acquisition.
+	await process_frame
 	_test_shield_absorbs_damage_before_hull()
 	_test_hull_takes_overflow_damage()
 	_test_shields_regenerate_after_delay()
@@ -31,7 +38,6 @@ func _initialize() -> void:
 		print("RESULT: FAIL  (%d passed, %d failed)" % [_passed, _failed])
 		quit(1)
 
-
 func _assert_true(condition: bool, message: String) -> void:
 	if condition:
 		_passed += 1
@@ -51,6 +57,10 @@ func _make_damageable() -> Damageable:
 	component.max_shield = 50.0
 	component.shield_regen_per_second = 10.0
 	component.shield_regen_delay = 2.0
+	# SceneTree tests may construct components before _ready has run.
+	# Initialize runtime values explicitly from the configured maxima.
+	component.current_hull = component.max_hull
+	component.current_shield = component.max_shield
 	root.add_child(component)
 	return component
 
