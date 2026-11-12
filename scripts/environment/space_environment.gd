@@ -129,7 +129,7 @@ func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
 uniform sampler2D nebula_noise : repeat_enable, filter_linear_mipmap;
 uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.2);
@@ -143,9 +143,9 @@ void fragment() {
 	float cloud = broad * 0.72 + detail * 0.28;
 	float filaments = smoothstep(0.43, 0.79, cloud);
 	float wisps = smoothstep(0.55, 0.86, detail) * 0.22;
-	float alpha = clamp((filaments + wisps) * nebula_tint.a, 0.0, 0.30);
+	float alpha = clamp((filaments * 0.62 + wisps * 0.38) * nebula_tint.a * 0.22, 0.0, 0.055);
 	ALBEDO = nebula_tint.rgb;
-	EMISSION = nebula_tint.rgb * (0.45 + filaments * 1.8);
+	EMISSION = nebula_tint.rgb * (0.035 + filaments * 0.11);
 	ALPHA = alpha;
 }
 """
