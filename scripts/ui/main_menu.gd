@@ -68,8 +68,9 @@ func _build_menu() -> void:
 	layout.add_child(hangar)
 	var save_manager := get_node_or_null("/root/GameSave")
 	var saved_game: Dictionary = save_manager.call("load_slot", "silent_relay") if save_manager != null else {"ok": false}
-	if saved_game.ok:
+	if _is_valid_checkpoint(saved_game):
 		var continue_button := Button.new()
+		continue_button.name = "ContinueButton"
 		continue_button.text = "  CONTINUE FLIGHT"
 		continue_button.custom_minimum_size = Vector2(390, 48)
 		continue_button.pressed.connect(_continue_game)
@@ -149,6 +150,7 @@ func _on_update_available(version: String, _notes: String) -> void:
 func _start_game() -> void:
 	var save_manager := get_node_or_null("/root/GameSave")
 	if save_manager != null:
+		save_manager.set("pending_mission_payload", {})
 		save_manager.call("delete_slot", "silent_relay")
 	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
 	if error != OK:
@@ -161,28 +163,26 @@ func _continue_game() -> void:
 		push_error("Continue is unavailable: local save manager is missing.")
 		return
 	var saved: Dictionary = save_manager.call("load_slot", "silent_relay")
-	if not saved.ok:
-		push_error("Could not load the local mission checkpoint: %s" % saved.get("error", "unknown"))
+	if not _is_valid_checkpoint(saved):
+		push_error("Could not load a valid Silent Relay checkpoint.")
 		return
+	# The autoload survives the scene change; the mission director consumes this
+	# payload only after its player, HUD and navigation beacon are initialized.
+	save_manager.set("pending_mission_payload", saved.payload)
 	var error := get_tree().change_scene_to_file(FLIGHT_SCENE)
 	if error != OK:
+		save_manager.set("pending_mission_payload", {})
 		push_error("Could not load Silent Relay mission: %s" % error)
-		return
-	_restore_saved_mission.call_deferred(saved.payload)
 
 
-func _restore_saved_mission(payload: Dictionary) -> void:
-	await get_tree().process_frame
-	var current := get_tree().current_scene
-	if current == null:
-		push_error("Continue failed: mission scene is not active.")
-		return
-	var director := current.get_node_or_null("DemoMissionDirector")
-	if director == null or not director.has_method("restore_from_save"):
-		push_error("Continue failed: mission director is unavailable.")
-		return
-	if not director.call("restore_from_save", payload):
-		push_error("Continue failed: checkpoint data was rejected.")
+func _is_valid_checkpoint(saved: Dictionary) -> bool:
+	if not bool(saved.get("ok", false)):
+		return false
+	var payload: Variant = saved.get("payload", {})
+	if not payload is Dictionary or str(payload.get("mission_id", "")) != "silent_relay":
+		return false
+	var stage := int(payload.get("stage", -1))
+	return stage >= 0 and stage <= 6
 
 
 func _open_hangar() -> void:

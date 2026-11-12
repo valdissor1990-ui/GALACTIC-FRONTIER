@@ -49,7 +49,19 @@ func _initialize_mission() -> void:
 	_build_mission_hud()
 	_set_radio("ORBITAL CONTROL", "Pilot, the relay stopped transmitting. Approach the beacon and scan its core.")
 	print("MISSION_READY: THE SILENT RELAY")
-	_save_checkpoint("mission start")
+	var save_manager := _get_save_manager()
+	var pending_payload: Variant = save_manager.get("pending_mission_payload") if save_manager != null else {}
+	if pending_payload is Dictionary and not pending_payload.is_empty():
+		save_manager.set("pending_mission_payload", {})
+		call_deferred("_restore_pending_checkpoint", pending_payload)
+	else:
+		_save_checkpoint("mission start")
+
+
+func _restore_pending_checkpoint(payload: Dictionary) -> void:
+	if not restore_from_save(payload):
+		_set_radio("SAVE SYSTEM", "Checkpoint could not be restored. Starting a new flight.")
+		_save_checkpoint("mission start")
 
 
 func _process(delta: float) -> void:

@@ -28,7 +28,9 @@ func _run_showcase() -> void:
 	await get_tree().create_timer(0.5).timeout
 	var original_chase_fov := camera_rig.chase_camera.fov
 	var original_chase_position := camera_rig.chase_camera.position
-	camera_rig.chase_camera.position = Vector3(0.0, 3.6, 11.5)
+	var original_chase_rotation := camera_rig.chase_camera.rotation_degrees
+	camera_rig.chase_camera.position = Vector3(0.0, 3.0, 9.5)
+	camera_rig.chase_camera.rotation_degrees = Vector3(-17.0, 0.0, 0.0)
 	camera_rig.chase_camera.fov = 58.0
 	await _capture_screenshot("gameplay-01.png")
 
@@ -100,6 +102,7 @@ func _run_showcase() -> void:
 	Input.action_release("boost")
 	camera_rig.chase_camera.fov = original_chase_fov
 	camera_rig.chase_camera.position = original_chase_position
+	camera_rig.chase_camera.rotation_degrees = original_chase_rotation
 	await get_tree().create_timer(0.25).timeout
 	await _capture_screenshot("gameplay-08.png")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
@@ -125,7 +128,7 @@ func _place_nearest_target_for_camera() -> Node3D:
 			nearest_distance = distance
 			nearest = target
 	if nearest != null:
-		nearest.global_position = player.global_position + (-player.global_basis.z * 24.0) + Vector3.UP * 5.0
+		nearest.global_position = player.global_position + (-player.global_basis.z * 16.0) + Vector3.UP * 3.0
 		camera_rig.chase_camera.fov = 54.0
 		targeting.set_target(nearest)
 	return nearest
