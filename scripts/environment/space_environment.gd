@@ -169,7 +169,7 @@ void fragment() {
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
 	planet.name = "Aurelia"
-	planet.position = Vector3(0.0, 26.0, -285.0)
+	planet.position = Vector3(-160.0, 26.0, -285.0)
 	planet.scale = Vector3.ONE * 42.0
 
 	var sphere := SphereMesh.new()
