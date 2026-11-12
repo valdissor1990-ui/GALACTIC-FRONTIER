@@ -28,7 +28,7 @@ jobs:
       - name: Install Blender 4.5.16
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xz-utils libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
+          sudo apt-get install --yes xz-utils file libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
           curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
           sudo mkdir -p /opt/blender
           sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
