@@ -147,6 +147,46 @@ func download_and_install_update() -> void:
 	get_tree().quit()
 
 
+func has_rollback_backup() -> bool:
+	if not OS.has_feature("windows"):
+		return false
+	var rollback_dir := OS.get_environment("LOCALAPPDATA").path_join("GALACTIC-FRONTIER").path_join("rollback")
+	return FileAccess.file_exists(rollback_dir.path_join(OS.get_executable_path().get_file())) and FileAccess.file_exists(rollback_dir.path_join("GALACTIC-FRONTIER.pck"))
+
+
+func rollback_last_update() -> void:
+	if _busy or not has_rollback_backup():
+		return
+	var folder := "user://updates"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	var helper_text := FileAccess.get_file_as_string(HELPER_SOURCE)
+	if helper_text.is_empty():
+		_fail("Установщик обновлений отсутствует.")
+		return
+	var helper_path := folder.path_join("install_update.ps1")
+	var helper := FileAccess.open(helper_path, FileAccess.WRITE)
+	if helper == null:
+		_fail("Не удалось подготовить откат.")
+		return
+	helper.store_string(helper_text)
+	helper.close()
+	var executable := OS.get_executable_path()
+	var args := PackedStringArray([
+		"-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+		"-File", ProjectSettings.globalize_path(helper_path),
+		"-ProcessId", str(OS.get_process_id()),
+		"-InstallDir", executable.get_base_dir(),
+		"-ExecutableName", executable.get_file(),
+		"-Rollback"
+	])
+	var child_pid := OS.create_process("powershell.exe", args, false)
+	if child_pid <= 0:
+		_fail("Не удалось запустить откат.")
+		return
+	status_changed.emit("Возвращаем предыдущую версию игры…")
+	get_tree().quit()
+
+
 func _request_json(url: String) -> Dictionary:
 	_http.download_file = ""
 	var headers := PackedStringArray(["User-Agent: GALACTIC-FRONTIER-Updater", "Accept: application/vnd.github+json"])
