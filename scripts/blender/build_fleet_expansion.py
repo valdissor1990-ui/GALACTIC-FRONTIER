@@ -301,7 +301,10 @@ def main():
                 o.parent=root
         # Bounds from ship meshes determine a robust framing target and scale.
         meshes=[o for o in root.children_recursive if o.type=="MESH"]
-        coords=[root.matrix_world @ Vector(corner) for o in meshes for corner in o.bound_box]
+        bpy.context.view_layer.update()
+        coords=[o.matrix_world @ Vector(corner) for o in meshes for corner in o.bound_box]
+        if not coords:
+            raise RuntimeError("Fleet ship has no mesh geometry: "+slug)
         center=sum(coords,Vector())/len(coords)
         extent=max((max(v[i] for v in coords)-min(v[i] for v in coords)) for i in range(3))
         bpy.ops.object.select_all(action="DESELECT"); root.select_set(True)
