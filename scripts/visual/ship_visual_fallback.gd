@@ -6,6 +6,8 @@ class_name ShipVisualFallback
 enum Profile { PLAYER_FIGHTER, RAIDER_INTERCEPTOR }
 
 @export var imported_model_name: StringName = &""
+@export_file("*.glb") var imported_model_path: String = ""
+@export var imported_model_scale: Vector3 = Vector3.ONE
 @export var fallback_mesh_names: Array[StringName] = []
 @export var profile: Profile = Profile.PLAYER_FIGHTER
 
@@ -17,6 +19,8 @@ var _glow_material: StandardMaterial3D
 
 func _ready() -> void:
 	var imported_model := get_node_or_null(NodePath(String(imported_model_name)))
+	if imported_model == null:
+		imported_model = _load_runtime_glb()
 	var use_imported := imported_model != null and _contains_mesh(imported_model)
 	for node_name in fallback_mesh_names:
 		var fallback := get_node_or_null(NodePath(String(node_name))) as GeometryInstance3D
@@ -24,6 +28,25 @@ func _ready() -> void:
 			fallback.visible = not use_imported
 	if not use_imported:
 		_build_procedural_details()
+
+
+func _load_runtime_glb() -> Node3D:
+	if imported_model_path.is_empty() or not FileAccess.file_exists(imported_model_path):
+		return null
+	var document := GLTFDocument.new()
+	var state := GLTFState.new()
+	var import_error := document.append_from_file(imported_model_path, state)
+	if import_error != OK:
+		push_warning("ShipVisualFallback could not load %s (error %d); using procedural geometry." % [imported_model_path, import_error])
+		return null
+	var generated := document.generate_scene(state)
+	if generated == null:
+		push_warning("ShipVisualFallback generated no scene for %s; using procedural geometry." % imported_model_path)
+		return null
+	generated.name = String(imported_model_name)
+	generated.scale = imported_model_scale
+	add_child(generated)
+	return generated
 
 
 func _contains_mesh(node: Node) -> bool:
