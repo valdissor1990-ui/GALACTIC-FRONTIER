@@ -5,13 +5,8 @@
 #include "GFHangarSubsystem.generated.h"
 
 class UGFSaveSubsystem;
-struct FGFShipDefinition;
-struct FGFModuleDefinition;
 
-/**
- * Meta-game hangar: list owned ships, select loadout, buy modules via SaveSubsystem + catalog.
- * Does not load 3D hangar level by itself — UI/Blueprint binds to these APIs.
- */
+/** Meta hangar API for UI: ships, modules, contracts. */
 UCLASS()
 class GALACTICFRONTIER_API UGFHangarSubsystem : public UGameInstanceSubsystem
 {
@@ -25,7 +20,7 @@ public:
     bool PurchaseShip(FName ShipId);
 
     UFUNCTION(BlueprintCallable, Category="GF|Hangar")
-    bool PurchaseModule(FName ModuleId);
+    bool PurchaseModule(FName ShipId, FName ModuleId);
 
     UFUNCTION(BlueprintCallable, Category="GF|Hangar")
     bool SelectContract(FName ContractId);
@@ -37,7 +32,7 @@ public:
     int32 GetCredits() const;
 
     UFUNCTION(BlueprintPure, Category="GF|Hangar")
-    TArray<FName> GetOwnedShipIds() const;
+    TArray<FName> GetUnlockedShipIds() const;
 
 private:
     UGFSaveSubsystem* GetSave() const;
