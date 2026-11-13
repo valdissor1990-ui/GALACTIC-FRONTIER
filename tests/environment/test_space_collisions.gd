@@ -44,6 +44,7 @@ func _run() -> void:
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
+	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
