@@ -67,6 +67,9 @@ public:
     EGFMissionStage GetMissionStage() const { return Stage; }
 
     UFUNCTION(BlueprintPure, Category="Mission")
+    FText GetActiveContractName() const { return ActiveContractName; }
+
+    UFUNCTION(BlueprintPure, Category="Mission")
     int32 GetEnemiesRemaining() const { return EnemiesRemaining; }
 
 private:
