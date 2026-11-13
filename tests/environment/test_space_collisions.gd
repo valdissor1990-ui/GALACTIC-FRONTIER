@@ -55,6 +55,8 @@ func _run() -> void:
 	root.add_child(sky_camera)
 	sky_camera.make_current()
 	await process_frame
+	await process_frame
+	environment.call("_process", 0.0)
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
