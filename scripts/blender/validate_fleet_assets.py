@@ -66,11 +66,26 @@ def mesh_metrics():
     materials = set()
     bad_vertices = []
     uv_meshes = 0
+    uv_degenerate_faces = 0
+    uv_non_finite_values = 0
     points = []
     for obj in meshes:
         obj.data.calc_loop_triangles()
         if len(obj.data.uv_layers) > 0:
             uv_meshes += 1
+            uv_layer = obj.data.uv_layers.active
+            for polygon in obj.data.polygons:
+                coords = [uv_layer.data[index].uv for index in polygon.loop_indices]
+                if any(not finite(component) for uv in coords for component in uv):
+                    uv_non_finite_values += 1
+                    continue
+                if len(coords) >= 3:
+                    twice_area = 0.0
+                    for index, uv in enumerate(coords):
+                        nxt = coords[(index + 1) % len(coords)]
+                        twice_area += uv.x * nxt.y - nxt.x * uv.y
+                    if abs(twice_area) < 2.0e-10:
+                        uv_degenerate_faces += 1
         polygons += len(obj.data.polygons)
         triangles += len(obj.data.loop_triangles)
         for slot in obj.material_slots:
@@ -100,6 +115,8 @@ def mesh_metrics():
         "mesh_objects": len(meshes),
         "image_textures": image_textures,
         "uv_mesh_objects": uv_meshes,
+        "uv_degenerate_faces": uv_degenerate_faces,
+        "uv_non_finite_values": uv_non_finite_values,
         "polygons": polygons,
         "triangles": triangles,
         "materials": sorted(materials),
@@ -186,6 +203,11 @@ def validate_one(slug, output_dir):
             record["errors"].append("blend: no mesh objects")
         if blend["uv_mesh_objects"] < blend["mesh_objects"]:
             record["errors"].append(f"blend: UV mapping missing on {blend['mesh_objects'] - blend['uv_mesh_objects']} mesh objects")
+        uv_face_limit = max(3, int(blend["polygons"] * 0.01))
+        if blend["uv_degenerate_faces"] > uv_face_limit:
+            record["errors"].append(f"blend: {blend['uv_degenerate_faces']} degenerate UV faces exceed limit {uv_face_limit}")
+        if blend["uv_non_finite_values"] > 0:
+            record["errors"].append(f"blend: {blend['uv_non_finite_values']} faces contain non-finite UV values")
         if blend["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"blend: polygon count {blend['polygons']} < {MIN_POLYGONS}")
         if blend["material_count"] < MIN_MATERIALS:
@@ -205,6 +227,11 @@ def validate_one(slug, output_dir):
             record["errors"].append("glb: no mesh objects after import")
         if glb["uv_mesh_objects"] < glb["mesh_objects"]:
             record["errors"].append(f"glb: UV mapping missing on {glb['mesh_objects'] - glb['uv_mesh_objects']} mesh objects")
+        uv_face_limit = max(3, int(glb["polygons"] * 0.01))
+        if glb["uv_degenerate_faces"] > uv_face_limit:
+            record["errors"].append(f"glb: {glb['uv_degenerate_faces']} degenerate UV faces exceed limit {uv_face_limit}")
+        if glb["uv_non_finite_values"] > 0:
+            record["errors"].append(f"glb: {glb['uv_non_finite_values']} faces contain non-finite UV values")
         if glb["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"glb: polygon count {glb['polygons']} < {MIN_POLYGONS}")
         if glb["material_count"] < MIN_MATERIALS:
