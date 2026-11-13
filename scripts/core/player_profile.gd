@@ -281,7 +281,8 @@ func get_contract_catalog() -> Array[Dictionary]:
 		entry["completed"] = completed_mission_ids.has(str(contract_id))
 		entry["active"] = active_contract_id == str(contract_id)
 		var system_id := str(entry.get("system_id", "aurelia"))
-		entry["system_name"] = str(SYSTEM_CATALOG.get(system_id, {}).get("name", system_id))
+		var system_data: Dictionary = SYSTEM_CATALOG.get(system_id, {})
+		entry["system_name"] = str(system_data.get("name", system_id))
 		result.append(entry)
 	return result
 
