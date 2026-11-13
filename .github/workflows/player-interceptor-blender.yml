@@ -1,0 +1,40 @@
+name: Player interceptor Blender production
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [chatgpt/player-interceptor-blender-production]
+    paths:
+      - "scripts/blender/build_player_interceptor.py"
+      - ".github/workflows/player-interceptor-blender.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xz-utils libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
+          curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+          sudo mkdir -p /opt/blender
+          sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
+          sudo ln -sf /opt/blender/blender /usr/local/bin/blender
+          blender --version
+      - name: Build native Blender scene, GLB and preview
+        run: |
+          blender --background --python scripts/blender/build_player_interceptor.py -- --output-dir build/player_interceptor
+          test -s build/player_interceptor/player_interceptor.blend
+          test -s build/player_interceptor/player_interceptor.glb
+          test -s build/player_interceptor/player_interceptor_preview.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GF-01-player-interceptor-blender
+          path: build/player_interceptor/
+          if-no-files-found: error
+          retention-days: 30
