@@ -10,6 +10,7 @@ import json
 import math
 import os
 import sys
+import struct
 import traceback
 
 import bpy
@@ -135,6 +136,58 @@ def inspect_blend(path):
     return mesh_metrics()
 
 
+def count_embedded_glb_images(path):
+    """Count real image payloads embedded in the GLB binary container.
+
+    Blender's importer can register packed GLB images without exposing pixel
+    buffers through bpy.data.images.has_data. Inspect the glTF JSON and binary
+    bufferViews directly so validation measures the delivered file, not an
+    importer-side image cache.
+    """
+    with open(path, "rb") as handle:
+        data = handle.read()
+    if len(data) < 20:
+        raise ValueError("GLB is too small to contain a JSON and BIN chunk")
+    magic, version, total_length = struct.unpack_from("<4sII", data, 0)
+    if magic != b"glTF" or version != 2 or total_length != len(data):
+        raise ValueError("Invalid GLB header or declared length")
+
+    offset = 12
+    document = None
+    binary_length = 0
+    while offset + 8 <= len(data):
+        chunk_length, chunk_type = struct.unpack_from("<II", data, offset)
+        chunk_start = offset + 8
+        chunk_end = chunk_start + chunk_length
+        if chunk_end > len(data):
+            raise ValueError("GLB chunk extends beyond file boundary")
+        chunk = data[chunk_start:chunk_end]
+        if chunk_type == 0x4E4F534A:
+            document = json.loads(chunk.decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+        elif chunk_type == 0x004E4942:
+            binary_length = chunk_length
+        offset = chunk_end
+
+    if document is None:
+        raise ValueError("GLB JSON chunk is missing")
+    views = document.get("bufferViews", [])
+    valid_names = []
+    for image in document.get("images", []):
+        view_index = image.get("bufferView")
+        if view_index is None or not isinstance(view_index, int) or view_index >= len(views):
+            continue
+        view = views[view_index]
+        buffer_index = int(view.get("buffer", 0))
+        byte_offset = int(view.get("byteOffset", 0))
+        byte_length = int(view.get("byteLength", 0))
+        mime_type = str(image.get("mimeType", ""))
+        if (buffer_index == 0 and byte_length > 0
+                and byte_offset >= 0 and byte_offset + byte_length <= binary_length
+                and mime_type in ("image/png", "image/jpeg")):
+            valid_names.append(str(image.get("name", "embedded-image")))
+    return len(valid_names), valid_names
+
+
 def inspect_glb(path):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     importer = getattr(bpy.ops.import_scene, "gltf", None)
@@ -144,7 +197,11 @@ def inspect_glb(path):
     if "FINISHED" not in result:
         raise RuntimeError("glTF importer did not finish: " + repr(result))
     bpy.context.view_layer.update()
-    return mesh_metrics()
+    metrics = mesh_metrics()
+    image_count, image_names = count_embedded_glb_images(path)
+    metrics["image_textures"] = image_count
+    metrics["embedded_image_names"] = image_names
+    return metrics
 
 
 def inspect_preview(path):
