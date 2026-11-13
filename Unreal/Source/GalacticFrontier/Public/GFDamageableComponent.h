@@ -24,6 +24,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Ship|Damage")
     bool IsDestroyed() const { return bDestroyed; }
 
+    UFUNCTION(BlueprintPure, Category="Ship|Damage")
+    float GetHullRatio() const { return CurrentHull / FMath::Max(MaximumHull, 0.001f); }
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ship|Damage", meta=(ClampMin="1.0"))
     float MaximumHull = 100.0f;
 
