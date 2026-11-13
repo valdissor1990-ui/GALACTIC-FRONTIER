@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space visual stack with quality-aware bloom / shadows.
+## Open-space visual stack with quality-aware HDR bloom / tonemap / shadows.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -37,10 +37,15 @@ func apply_quality(gq: Node) -> void:
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
 		env.ssao_enabled = enable_ssao
+		env.tonemap_exposure = gq.tonemap_exposure()
+		env.tonemap_white = gq.tonemap_white()
 		env.glow_enabled = gq.glow_enabled()
 		env.glow_intensity = gq.glow_intensity()
 		env.glow_bloom = gq.glow_bloom()
 		env.glow_hdr_threshold = gq.glow_hdr_threshold()
+		env.glow_hdr_scale = gq.glow_hdr_scale()
+		env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap()
+		env.glow_strength = gq.glow_strength()
 	if _key_light:
 		_key_light.shadow_enabled = gq.shadow_enabled()
 		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
@@ -78,12 +83,13 @@ func _setup_sky_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.26
-	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
-	env.tonemap_exposure = 0.95
-	env.tonemap_white = 6.5
 
-	# Bloom / glow — HDR spill for engines, bolts, relay
 	var gq := _gq()
+	# ACES: filmic contrast; keeps engine plumes readable in dark space
+	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
+	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.95
+	env.tonemap_white = gq.tonemap_white() if gq else 6.5
+
 	env.glow_enabled = true
 	env.glow_levels[1] = 0.0
 	env.glow_levels[2] = 0.6
@@ -92,10 +98,11 @@ func _setup_sky_environment() -> void:
 	env.glow_levels[5] = 0.35
 	env.glow_levels[6] = 0.15
 	env.glow_intensity = gq.glow_intensity() if gq else 0.55
-	env.glow_strength = 1.05
+	env.glow_strength = gq.glow_strength() if gq else 1.05
 	env.glow_bloom = gq.glow_bloom() if gq else 0.25
 	env.glow_hdr_threshold = gq.glow_hdr_threshold() if gq else 0.8
-	env.glow_hdr_scale = 2.0
+	env.glow_hdr_scale = gq.glow_hdr_scale() if gq else 2.0
+	env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap() if gq else 12.0
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 
 	env.adjustment_enabled = true
