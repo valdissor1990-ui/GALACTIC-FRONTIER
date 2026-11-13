@@ -626,16 +626,10 @@ def add_integrated_surface_detail(root, materials):
             (4.75, 2.28), (3.70, 1.70)
         ]]
         extruded_wing("Wingtip armored cap %s" % side, outer, 0.105, 0.235, dark, 0.035)
-        # Leading-edge reinforcement rails and trailing-edge control surfaces.
-        cylinder_between("Wing leading edge spar %s" % side,
-                         (side*1.05, -2.35, 0.13), (side*5.15, 2.42, 0.13),
-                         0.075, dark, radius_end=0.035)
-        control_outline = [(side*x, y) for x, y in [
-            (2.05, 0.65), (2.55, 0.98), (4.72, 2.00),
-            (4.35, 2.12), (2.45, 1.32)
-        ]]
-        extruded_wing("Articulated trailing control surface %s" % side,
-                      control_outline, -0.005, 0.075, hull, 0.025)
+        # Keep the aerodynamic leading edge clean. The original pass used a
+        # cylindrical spar and a second raised wing slab; both read as loose
+        # rods/overlapping plates in the hero camera. Structural reinforcement
+        # is now represented by the flush armor skin and panel seams below.
         # Recessed-looking maintenance bays with nested lips and fasteners.
         for idx, (x, y) in enumerate(((2.15, -0.15), (3.05, 0.62), (3.88, 1.28))):
             x *= side
@@ -649,14 +643,15 @@ def add_integrated_surface_detail(root, materials):
                 uv_sphere("Wing bay captive bolt %s %s %s" % (side, idx, k),
                           (x + side*(-0.16 + (k%2)*0.32), y - 0.22 + (k//2)*0.44, 0.269),
                           (0.018, 0.018, 0.010), white)
-        # Recessed radiator trenches and repeated heat-exchanger vanes.
-        cube("Wing radiator trench %s" % side,
-             (side*1.78, 1.05, 0.235), (0.28, 1.05, 0.045), dark, 0.045,
+        # A single recessed heat-exchanger insert replaces the dense stack
+        # of raised bars, which visually overwhelmed the wing surface.
+        cube("Wing radiator recess %s" % side,
+             (side*1.78, 1.05, 0.226), (0.24, 0.88, 0.025), dark, 0.035,
              (0, 0, side*-0.10))
-        for k in range(7):
-            cube("Wing radiator vane %s %s" % (side, k),
-                 (side*1.78, 0.62 + k*0.145, 0.264), (0.22, 0.045, 0.025),
-                 white if k in (0,6) else armor, 0.012)
+        for k in range(4):
+            cube("Wing radiator fin %s %s" % (side, k),
+                 (side*1.78, 0.76 + k*0.19, 0.245), (0.16, 0.035, 0.012),
+                 armor, 0.009)
         # Side armor cheek panels make the central fuselage less cylindrical.
         for y in (-3.8, -2.3, -0.7, 1.0, 2.6):
             cube("Fuselage lateral armor cheek %s %.1f" % (side, y),
