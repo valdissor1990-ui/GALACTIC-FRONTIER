@@ -22,6 +22,7 @@ on:
       - chatgpt/audit-fixes-pr24
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
+      - chatgpt/campaign-story-integration
     paths:
       - "scenes/**"
       - "scripts/**"
