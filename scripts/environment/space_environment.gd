@@ -20,6 +20,7 @@ var _cosmic_dust: MultiMeshInstance3D
 var _distant_galaxy: MeshInstance3D
 var _stellar_primary: MeshInstance3D
 var _stellar_corona: MeshInstance3D
+var _stellar_key_light: DirectionalLight3D
 
 
 func _ready() -> void:
@@ -51,6 +52,9 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_star_clusters):
 		_star_clusters.global_position = camera.global_position
 	var camera_transform := camera.global_transform
+	if is_instance_valid(_stellar_key_light):
+		var incoming_light := camera.global_basis * Vector3(620.0, -285.0, 3200.0).normalized()
+		_stellar_key_light.global_basis = Basis.looking_at(incoming_light, camera.global_basis.y)
 	var star_transform := camera_transform * Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
 	if is_instance_valid(_stellar_primary):
 		_stellar_primary.global_transform = star_transform
@@ -174,6 +178,7 @@ func _build_world_environment() -> void:
 	key_light.light_energy = 1.65
 	key_light.shadow_enabled = true
 	key_light.directional_shadow_max_distance = 260.0
+	_stellar_key_light = key_light
 	add_child(key_light)
 
 	# Low-energy blue fill preserves hull readability on the shadow side while
