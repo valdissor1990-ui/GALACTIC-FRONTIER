@@ -238,3 +238,40 @@ Run 43478941870 запущен на раннем промежуточном SHA 
 - Добавить station set-pieces, seeded NPC traffic, AI LOD и economy tables.
 
 Эти задачи включены в master prompt как обязательные пакеты, а не факультативные идеи.
+
+
+## 12. Реальный Full HD gameplay capture — визуальная приёмка FAIL
+
+Проверен artifact run 43478273435, SHA c4ce91083f535fddd0316599b8fbe10c7ba11413:
+https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43478273435
+
+Артефакт скачан и PNG-файлы открыты вручную. Технический запуск Forward+ Vulkan на CI llvmpipe состоялся, восемь gameplay screenshots созданы, но space capture workflow завершился FAILURE: созданы только 6 из 7 space screenshots, отсутствует `space-07-asteroid-corridor.png`, не появился marker `SPACE_SHOWCASE_COMPLETE count=7`.
+
+### Визуальные дефекты, подтверждённые скриншотами
+
+- Chase camera: корабль слишком мал в кадре и почти чёрный силуэт; фон чрезмерно яркий, однотонный сине-голубой, нет читаемого starfield/nebula depth.
+- Cockpit camera: чёрные элементы корпуса/рамки занимают чрезмерную часть кадра; центральная зона и приборная панель перекрывают обзор; HUD и внутренние элементы не имеют правильной иерархии.
+- Space views 01–04 и 06: на артефакте почти полностью однотонный синий/белый фон; планета, туманность, галактика и derelict landmark не читаются. Это визуальный FAIL, даже несмотря на успешную загрузку сцены и наличие сотен дочерних объектов.
+- Space view 06: вместо читаемого wreck виден пересвеченный фон и небольшие тёмные точки.
+- В gameplay capture отсутствует полный цикл семи space views; capture workflow не должен отмечаться PASS.
+
+### Следующее исправление
+
+После c4ce910 на branch chatgpt/grok-completion-full-2026-11 создан follow-up commit b3b74ac3cf04d685abd43c4b0676a714c124e353:
+- camera направляется на первый shot до diagnostic capture;
+- выставляется полный cull mask;
+- SpaceEnvironment принудительно делается visible;
+- viewport получает явное назначение WorldEnvironment.
+Запущен новый gameplay visual capture run 43480389576 на b3b74; он ещё не завершён, поэтому результат этих исправлений пока NOT VERIFIED.
+
+Новый capture должен подтвердить:
+1. реальный небесный фон и звёзды;
+2. видимую планету и её атмосферу;
+3. туманности и спиральную галактику;
+4. читаемый derelict и asteroid corridor;
+5. все 7 снимков и marker завершения;
+6. повторную проверку cockpit/chase framing.
+
+Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43480389576
+
+Визуальная приёмка текущего игрового процесса: FAIL. Не заменять этот вывод зелёным Godot CI.
