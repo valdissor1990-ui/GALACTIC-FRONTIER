@@ -72,6 +72,7 @@ func _validate_glb(path: String) -> void:
 	var valid_surfaces := 0
 	var uv_surfaces := 0
 	var triplanar_detail_surfaces := 0
+	var over_metallic_detail_surfaces := 0
 	for instance in meshes:
 		if instance.mesh == null:
 			continue
@@ -80,6 +81,8 @@ func _validate_glb(path: String) -> void:
 			var detailed_material := instance.get_surface_override_material(surface) as StandardMaterial3D
 			if detailed_material != null and detailed_material.detail_enabled and detailed_material.uv1_triplanar:
 				triplanar_detail_surfaces += 1
+			if detailed_material != null and detailed_material.detail_enabled and detailed_material.metallic > 0.6201:
+				over_metallic_detail_surfaces += 1
 			var arrays := instance.mesh.surface_get_arrays(surface)
 			if arrays.size() > Mesh.ARRAY_TEX_UV and arrays[Mesh.ARRAY_TEX_UV] is PackedVector2Array and not (arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).is_empty():
 				uv_surfaces += 1
@@ -93,6 +96,10 @@ func _validate_glb(path: String) -> void:
 		return
 	if triplanar_detail_surfaces == 0:
 		_fail(path, "runtime GLB has no triplanar PBR detail surfaces")
+		scene.free()
+		return
+	if over_metallic_detail_surfaces > 0:
+		_fail(path, "runtime ship finish left %d painted armor surfaces too metallic for the unprobed space environment" % over_metallic_detail_surfaces)
 		scene.free()
 		return
 
