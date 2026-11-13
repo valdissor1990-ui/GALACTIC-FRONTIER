@@ -6,6 +6,7 @@
 
 class UStaticMesh;
 class UStaticMeshComponent;
+class UMaterialInterface;
 class USceneComponent;
 
 /** One visible node from an original multi-mesh ship scene. */
