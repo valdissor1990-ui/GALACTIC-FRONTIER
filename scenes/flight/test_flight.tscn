@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -16,7 +16,6 @@
 [ext_resource type="Shader" path="res://assets/shaders/engine_plume.gdshader" id="14"]
 [ext_resource type="Script" path="res://scripts/vfx/engine_thrust_fx.gd" id="15"]
 [ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="16"]
-[ext_resource type="Script" path="res://scripts/vfx/hit_flash_fx.gd" id="17"]
 
 [sub_resource type="ShaderMaterial" id="Material_hull"]
 render_priority = 0
@@ -174,11 +173,6 @@ fov = 88.0
 
 [node name="Damageable" type="Node" parent="PlayerShip"]
 script = ExtResource("8")
-
-[node name="HitFlashFx" type="Node" parent="PlayerShip"]
-script = ExtResource("17")
-damageable_path = NodePath("../Damageable")
-visual_root_path = NodePath("../Visual")
 
 [node name="TargetingSystem" type="Node3D" parent="PlayerShip"]
 script = ExtResource("7")

@@ -1,6 +1,7 @@
 extends CanvasLayer
 class_name ScreenPostFx
-## Fullscreen single-pass post. Layer 1 — HUD on layer 10+.
+## Fullscreen single-pass post (vignette + soft chroma).
+## Layer 1 — keep gameplay HUD on layer 10+ so UI stays sharp.
 
 @export var enabled_fx: bool = true
 @export_range(0.0, 1.5, 0.01) var vignette_strength: float = 0.5
@@ -25,22 +26,7 @@ func _ready() -> void:
 		_apply_params()
 		_rect.material = _mat
 	add_child(_rect)
-	var gq := get_node_or_null("/root/GraphicsQuality")
-	if gq:
-		apply_quality(gq)
-	else:
-		_rect.visible = enabled_fx
-
-
-func apply_quality(gq: Node) -> void:
-	if gq == null:
-		return
-	enabled_fx = gq.screen_post_enabled()
-	vignette_strength = gq.vignette_strength()
-	chroma_strength = gq.chroma_strength()
-	_apply_params()
-	if _rect:
-		_rect.visible = enabled_fx
+	_rect.visible = enabled_fx
 
 
 func _apply_params() -> void:

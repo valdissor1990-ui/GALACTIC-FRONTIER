@@ -1,9 +1,9 @@
 # Art source
 
-Authoritative visual source material for GALACTIC FRONTIER.
+Canonical original concept studies and editable source art for GALACTIC FRONTIER.
 
-- `references/` — original user sketches and approved visual references; keep originals unchanged.
-- `blender/` — editable Blender production files.
-- `../docs/VISUAL_TARGET.md` — permanent art direction and technical target.
+- `references/` — approved SVG concept studies. Treat these as the project's visual target.
+- `blender/` — editable Blender production files (to be added as models are built).
+- `../docs/VISUAL_TARGET.md` — visual direction, constraints and review checklist.
 
-Original sketches still need to be supplied to this repository. Do not invent replacements or approve final silhouettes without comparing them to the originals.
+The SVGs are authored for this project; they are not third-party assets.

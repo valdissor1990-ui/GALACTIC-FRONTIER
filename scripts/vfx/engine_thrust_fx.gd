@@ -12,8 +12,6 @@ var _ship: ShipController
 var _particles: Array[GPUParticles3D] = []
 var _plume_mats: Array[ShaderMaterial] = []
 var _intensity: float = 0.25
-var _particle_scale: float = 1.0
-var _base_amounts: Array[int] = []
 
 
 func _ready() -> void:
@@ -23,27 +21,13 @@ func _ready() -> void:
 		_ship = get_parent() as ShipController
 	for child in get_children():
 		if child is GPUParticles3D:
-			var p := child as GPUParticles3D
-			_particles.append(p)
-			_base_amounts.append(p.amount)
-			p.emitting = true
+			_particles.append(child)
+			child.emitting = true
 		elif child is MeshInstance3D:
 			var mi := child as MeshInstance3D
 			var mat := mi.get_active_material(0)
 			if mat is ShaderMaterial:
 				_plume_mats.append(mat)
-	var gq := get_node_or_null("/root/GraphicsQuality")
-	if gq:
-		apply_quality(gq)
-
-
-func apply_quality(gq: Node) -> void:
-	if gq == null:
-		return
-	_particle_scale = gq.particle_amount_scale()
-	for i in _particles.size():
-		var base_amt := _base_amounts[i] if i < _base_amounts.size() else _particles[i].amount
-		_particles[i].amount = maxi(4, int(float(base_amt) * _particle_scale))
 
 
 func _process(delta: float) -> void:
