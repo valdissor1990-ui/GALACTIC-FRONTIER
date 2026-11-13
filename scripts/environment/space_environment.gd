@@ -553,9 +553,44 @@ void fragment() {
 	moon_mesh.height = 2.0
 	moon_mesh.radial_segments = 32
 	moon_mesh.rings = 16
-	var moon_material := StandardMaterial3D.new()
-	moon_material.albedo_color = _theme.get("snow", Color(0.34, 0.39, 0.46))
-	moon_material.roughness = 0.96
+	var moon_shader := Shader.new()
+	moon_shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec4 moon_tint : source_color = vec4(0.66, 0.70, 0.76, 1.0);
+float hash22(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float value_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash22(i), hash22(i + vec2(1.0, 0.0)), f.x),
+		mix(hash22(i + vec2(0.0, 1.0)), hash22(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void fragment() {
+	vec2 grid = UV * vec2(34.0, 17.0);
+	vec2 cell = floor(grid);
+	vec2 local = fract(grid);
+	float seed = hash22(cell);
+	vec2 crater_center = vec2(0.5) + vec2(hash22(cell + 3.1), hash22(cell + 7.7)) * 0.30 - 0.15;
+	float crater_radius = mix(0.16, 0.43, hash22(cell + 11.3));
+	float distance_to_crater = length((local - crater_center) * vec2(1.0, 0.82));
+	float crater = 1.0 - smoothstep(crater_radius * 0.66, crater_radius, distance_to_crater);
+	float rim = smoothstep(crater_radius * 0.82, crater_radius * 0.96, distance_to_crater)
+		* (1.0 - smoothstep(crater_radius * 0.98, crater_radius * 1.18, distance_to_crater));
+	float terrain = value_noise(UV * vec2(82.0, 41.0));
+	float albedo = 0.66 + terrain * 0.18 - crater * 0.28 + rim * 0.18;
+	ALBEDO = moon_tint.rgb * albedo;
+	ROUGHNESS = 0.98;
+	METALLIC = 0.0;
+}
+"""
+	var moon_material := ShaderMaterial.new()
+	moon_material.shader = moon_shader
+	moon_material.set_shader_parameter("moon_tint", _theme.get("snow", Color(0.66, 0.70, 0.76)))
 	moon_mesh.material = moon_material
 	moon.mesh = moon_mesh
 	moon.scale = Vector3.ONE * 18.0
