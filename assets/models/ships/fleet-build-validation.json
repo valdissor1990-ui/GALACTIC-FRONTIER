@@ -35,9 +35,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 12,
-        "mesh_nodes": 12,
-        "node_count": 13,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 7,
         "embedded_images": 9
       },
@@ -71,9 +71,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 217,
-        "mesh_nodes": 217,
-        "node_count": 218,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 6,
         "embedded_images": 0
       },
@@ -107,9 +107,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 84,
-        "mesh_nodes": 84,
-        "node_count": 85,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 6,
         "embedded_images": 0
       },
@@ -143,9 +143,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 200,
-        "mesh_nodes": 200,
-        "node_count": 201,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 6,
         "embedded_images": 0
       },
@@ -179,9 +179,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 153,
-        "mesh_nodes": 153,
-        "node_count": 154,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 6,
         "embedded_images": 0
       },
@@ -214,9 +214,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 218,
-        "mesh_nodes": 218,
-        "node_count": 219,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 5,
         "embedded_images": 0
       },
@@ -250,9 +250,9 @@
         "uv_complete": true
       },
       "glb": {
-        "mesh_definitions": 428,
-        "mesh_nodes": 428,
-        "node_count": 429,
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
         "material_count": 6,
         "embedded_images": 0
       },
