@@ -12,6 +12,7 @@ class_name OpenSpaceBackdrop
 var _rng := RandomNumberGenerator.new()
 var _world_env: WorldEnvironment
 var _key_light: DirectionalLight3D
+var _asteroid_belt: MultiMeshInstance3D
 var _sky_mat: ShaderMaterial
 
 
@@ -240,89 +241,49 @@ func _add_ice_ring(ring_name: String, center: Vector3, inner_r: float, outer_r: 
 
 
 func _setup_asteroid_belt() -> void:
-	_spawn_rock_field(
-		"AsteroidBelt",
-		asteroid_count,
-		belt_radius,
-		belt_width,
-		belt_height,
-		Color(0.22, 0.2, 0.18),
-		0.6,
-		3.4,
-		900.0
-	)
-	# Inner denser cluster near player start
-	var inner_n := maxi(asteroid_count / 4, 20)
-	_spawn_rock_field(
-		"InnerCluster",
-		inner_n,
-		55.0,
-		22.0,
-		10.0,
-		Color(0.28, 0.24, 0.2),
-		0.4,
-		2.0,
-		400.0
-	)
+	if is_instance_valid(_asteroid_belt):
+		remove_child(_asteroid_belt)
+		_asteroid_belt.queue_free()
 
-
-func _setup_outer_debris() -> void:
-	var n := maxi(asteroid_count / 3, 24)
-	_spawn_rock_field(
-		"OuterDebris",
-		n,
-		280.0,
-		90.0,
-		40.0,
-		Color(0.16, 0.17, 0.2),
-		0.8,
-		4.5,
-		1400.0
-	)
-
-
-func _spawn_rock_field(
-	field_name: String,
-	count: int,
-	radius: float,
-	width: float,
-	height: float,
-	albedo: Color,
-	scale_min: float,
-	scale_max: float,
-	vis_end: float
-) -> void:
-	var multi := MultiMeshInstance3D.new()
-	multi.name = field_name
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = count
+	_asteroid_belt = MultiMeshInstance3D.new()
+	_asteroid_belt.name = "AsteroidBelt"
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
 	var rock := SphereMesh.new()
 	rock.radius = 1.0
 	rock.height = 2.0
-	rock.radial_segments = 7
-	rock.rings = 4
-	mm.mesh = rock
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = albedo
-	mat.roughness = 0.95
-	mat.metallic = 0.08
-	rock.material = mat
-	for i in count:
+	rock.radial_segments = 8
+	rock.rings = 5
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.22, 0.2, 0.18)
+	material.roughness = 0.95
+	material.metallic = 0.08
+	rock.material = material
+	multi.mesh = rock
+	multi.instance_count = maxi(asteroid_count, 0)
+	for i in asteroid_count:
 		var angle := _rng.randf() * TAU
-		var r := radius + _rng.randf_range(-width, width)
-		var y := _rng.randf_range(-height, height)
-		var pos := Vector3(cos(angle) * r, y, sin(angle) * r)
-		var s := _rng.randf_range(scale_min, scale_max)
+		var radius := belt_radius + _rng.randf_range(-belt_width, belt_width)
+		var y := _rng.randf_range(-belt_height, belt_height)
+		var position := Vector3(cos(angle) * radius, y, sin(angle) * radius)
+		var size := _rng.randf_range(0.6, 3.2)
 		var basis := Basis.from_euler(Vector3(
 			_rng.randf() * TAU,
 			_rng.randf() * TAU,
 			_rng.randf() * TAU
-		)).scaled(Vector3(s, s * _rng.randf_range(0.55, 1.25), s * _rng.randf_range(0.7, 1.15)))
-		mm.set_instance_transform(i, Transform3D(basis, pos))
-	multi.multimesh = mm
-	multi.visibility_range_end = vis_end
-	add_child(multi)
+		)).scaled(Vector3(size, size * _rng.randf_range(0.6, 1.2), size))
+		multi.set_instance_transform(i, Transform3D(basis, position))
+	_asteroid_belt.multimesh = multi
+	_asteroid_belt.visibility_range_end = 900.0
+	add_child(_asteroid_belt)
+
+
+func _apply_planet_quality(segments: int) -> void:
+	for child in get_children():
+		if child is MeshInstance3D and child.mesh is SphereMesh:
+			var sphere := child.mesh as SphereMesh
+			sphere.radial_segments = segments
+			sphere.rings = maxi(segments / 2, 8)
 
 
 func _setup_relay_beacon() -> void:
