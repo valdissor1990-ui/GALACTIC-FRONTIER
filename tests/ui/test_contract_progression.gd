@@ -29,6 +29,13 @@ func _run() -> void:
 	_check(str(profile.get_active_contract().get("id", "")) == "kestrel_patrol", "active contract persists as Kestrel Patrol")
 	_check(str(profile.get_active_system().get("id", "")) == "kestrel", "Kestrel contract selects the Kestrel system")
 
+	_check(profile.set_story_flag("m01_done", true), "canonical M01 completion flag is accepted")
+	_check(profile.has_story_flag("m01_done"), "story flag is visible immediately")
+	_check(not profile.set_story_flag("unknown_flag", true), "unknown story flags are rejected")
+	profile.call("_load_profile")
+	_check(profile.has_story_flag("m01_done"), "story flags persist through profile reload")
+	_check(not profile.has_story_flag("vesper_access"), "unset story flags remain false after reload")
+
 	var board: Control = load("res://scenes/ui/contract_board.tscn").instantiate() as Control
 	root.add_child(board)
 	await process_frame
@@ -39,7 +46,7 @@ func _run() -> void:
 
 	_restore_profile(profile, backup)
 	if _failures.is_empty():
-		print("CONTRACT_PROGRESSION_TEST_PASS assertions=14")
+		print("CONTRACT_PROGRESSION_TEST_PASS assertions=19")
 		quit(0)
 	else:
 		for failure in _failures:
@@ -54,7 +61,8 @@ func _backup_profile(profile: PlayerProfile) -> Dictionary:
 		"unlocked_ship_ids": profile.unlocked_ship_ids.duplicate(),
 		"completed_mission_ids": profile.completed_mission_ids.duplicate(),
 		"installed_modules": profile.installed_modules.duplicate(true),
-		"active_contract_id": profile.active_contract_id
+		"active_contract_id": profile.active_contract_id,
+		"story_flags": profile.story_flags.duplicate(true)
 	}
 
 
@@ -69,6 +77,7 @@ func _restore_profile(profile: PlayerProfile, backup: Dictionary) -> void:
 		profile.completed_mission_ids.append(str(mission_id))
 	profile.installed_modules = backup["installed_modules"].duplicate(true)
 	profile.active_contract_id = str(backup["active_contract_id"])
+	profile.story_flags = backup["story_flags"].duplicate(true)
 	profile.call("_save_profile")
 
 
