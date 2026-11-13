@@ -44,6 +44,8 @@ func _run() -> void:
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
+	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
+	_check(cratered_moon != null and cratered_moon.mesh.material is ShaderMaterial, "the distant moon has procedural crater and regolith shading")
 	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
 	var cloud_layer := environment.get_node_or_null("AureliaCloudLayer") as MeshInstance3D
 	_check(cloud_layer != null and cloud_layer.mesh.material is ShaderMaterial, "the nearby planet has a separate procedural cloud shell")
