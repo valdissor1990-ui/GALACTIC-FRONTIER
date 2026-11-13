@@ -71,12 +71,17 @@ static func _apply_surface_finish_recursive(node: Node) -> int:
 
 static func _finished_material(source: StandardMaterial3D) -> StandardMaterial3D:
 	var material := source.duplicate(true) as StandardMaterial3D
+	# Preserve canopy transparency and unshaded emissive elements; the detail
+	# layer is intended for opaque painted hulls, armor and structural parts.
+	if material.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED or material.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+		return material
 	material.detail_enabled = true
 	material.detail_albedo = _surface_albedo_noise
 	material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
 	material.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
-	material.roughness_texture = _surface_roughness_noise
-	material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	if material.roughness_texture == null:
+		material.roughness_texture = _surface_roughness_noise
+		material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	material.roughness = clampf(material.roughness, 0.24, 0.88)
 	return material
 
