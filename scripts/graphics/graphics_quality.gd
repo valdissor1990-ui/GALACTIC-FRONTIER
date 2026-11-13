@@ -396,6 +396,61 @@ func planet_segments() -> int:
 	return 40
 
 
+func sky_star_density() -> float:
+	match current:
+		Preset.LOW:
+			return 1.25
+		Preset.MEDIUM:
+			return 1.9
+		Preset.HIGH:
+			return 2.35
+	return 1.9
+
+
+func sky_star_brightness() -> float:
+	match current:
+		Preset.LOW:
+			return 0.85
+		Preset.MEDIUM:
+			return 1.1
+		Preset.HIGH:
+			return 1.3
+	return 1.1
+
+
+func sky_nebula_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.25
+		Preset.MEDIUM:
+			return 0.42
+		Preset.HIGH:
+			return 0.58
+	return 0.42
+
+
+func sky_dust_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.12
+		Preset.MEDIUM:
+			return 0.22
+		Preset.HIGH:
+			return 0.3
+	return 0.22
+
+
+func sky_galactic_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.18
+		Preset.MEDIUM:
+			return 0.32
+		Preset.HIGH:
+			return 0.42
+	return 0.32
+
+
 func _apply_to_scene_tree() -> void:
 	var root := get_tree().root
 	if root == null:
