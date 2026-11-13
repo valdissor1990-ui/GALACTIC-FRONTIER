@@ -62,6 +62,9 @@ func _run() -> void:
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
+	var world_environment := environment.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	_check(world_environment != null and world_environment.environment != null and world_environment.environment.background_mode == Environment.BG_SKY, "space backdrop uses the dark procedural sky instead of a flat color clear")
+	_check(world_environment != null and world_environment.environment.sky != null, "procedural sky is available for ambient and reflected light")
 	var gas_giant := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
 	var gas_material := gas_giant.mesh.surface_get_material(0) as ShaderMaterial if gas_giant != null else null
 	var gas_albedo := gas_material.get_shader_parameter("gas_albedo_texture") as Texture2D if gas_material != null else null
