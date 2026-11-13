@@ -76,6 +76,30 @@ void AGFMissionDirector::Tick(const float DeltaSeconds)
         }
     }
 
+    if (Stage == EGFMissionStage::ScanRelay || Stage == EGFMissionStage::ScanWreck)
+    {
+        const FVector ScanTarget = Stage == EGFMissionStage::ScanRelay ? RelayPosition : WreckPosition;
+        if (FVector::Dist(PlayerPawn.IsValid() ? PlayerPawn->GetActorLocation() : FVector::ZeroVector,
+                          ScanTarget) <= InteractionRange)
+        {
+            ScanProgressSeconds += DeltaSeconds;
+            if (ScanProgressSeconds >= FMath::Max(0.1f, ScanDurationSeconds))
+            {
+                ScanProgressSeconds = 0.0f;
+                Stage = Stage == EGFMissionStage::ScanRelay
+                    ? EGFMissionStage::DefendRelay
+                    : EGFMissionStage::DefendWreck;
+                WaveIndex = 0;
+                UE_LOG(LogTemp, Display, TEXT("GF Mission: scan complete. Hostile response detected."));
+                SpawnWave();
+            }
+        }
+        else
+        {
+            ScanProgressSeconds = 0.0f;
+        }
+    }
+
     if (NextWaveDelay >= 0.0f)
     {
         NextWaveDelay -= DeltaSeconds;
@@ -103,29 +127,21 @@ void AGFMissionDirector::HandleInteract()
     if (!PlayerPawn.IsValid()) return;
     const FVector PlayerLocation = PlayerPawn->GetActorLocation();
 
-    if ((Stage == EGFMissionStage::Outbound || Stage == EGFMissionStage::ScanRelay) &&
+    if (Stage == EGFMissionStage::Outbound &&
         FVector::Dist(PlayerLocation, RelayPosition) <= InteractionRange)
     {
-        if (Stage == EGFMissionStage::Outbound)
-        {
-            Stage = EGFMissionStage::DefendRelay;
-            WaveIndex = 0;
-            UE_LOG(LogTemp, Display, TEXT("GF Mission: Relay scan complete. Hostile response detected."));
-            SpawnWave();
-        }
+        Stage = EGFMissionStage::ScanRelay;
+        ScanProgressSeconds = 0.0f;
+        UE_LOG(LogTemp, Display, TEXT("GF Mission: scanning relay. Hold position within range."));
         return;
     }
 
-    if ((Stage == EGFMissionStage::InvestigateWreck || Stage == EGFMissionStage::ScanWreck) &&
+    if (Stage == EGFMissionStage::InvestigateWreck &&
         FVector::Dist(PlayerLocation, WreckPosition) <= InteractionRange)
     {
-        if (Stage == EGFMissionStage::InvestigateWreck)
-        {
-            Stage = EGFMissionStage::DefendWreck;
-            WaveIndex = 0;
-            UE_LOG(LogTemp, Display, TEXT("GF Mission: Wreck data recovered. Second hostile response detected."));
-            SpawnWave();
-        }
+        Stage = EGFMissionStage::ScanWreck;
+        ScanProgressSeconds = 0.0f;
+        UE_LOG(LogTemp, Display, TEXT("GF Mission: scanning wreck data. Hold position within range."));
         return;
     }
 
