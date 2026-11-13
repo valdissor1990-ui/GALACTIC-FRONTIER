@@ -10,6 +10,7 @@ on:
       - chatgpt/ship-art-production
       - chatgpt/save-system-foundation
       - chatgpt/mission-save-integration
+      - chatgpt/campaign-objectives
       - chatgpt/fullhd-showcase-qa
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
