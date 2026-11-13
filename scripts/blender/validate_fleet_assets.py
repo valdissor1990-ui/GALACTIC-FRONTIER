@@ -38,6 +38,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="build/fleet")
     parser.add_argument("--report", default="build/fleet/validation.json")
+    parser.add_argument("--ships", nargs="+", choices=SHIPS, default=list(SHIPS),
+                        help="Ship slugs to validate; defaults to the complete fleet.")
     return parser.parse_args(argv)
 
 
@@ -269,10 +271,12 @@ def validate_one(slug, output_dir):
 def main():
     args = parse_args()
     output_dir = os.path.abspath(args.output_dir)
-    results = [validate_one(ship, output_dir) for ship in SHIPS]
+    selected_ships = tuple(args.ships)
+    results = [validate_one(ship, output_dir) for ship in selected_ships]
     failed = [item["name"] for item in results if item["status"] != "ok"]
     report = {
         "schema": "galactic-frontier.asset-validation/v1",
+        "scope": list(selected_ships),
         "blender_version": bpy.app.version_string,
         "output_dir": output_dir,
         "ships_total": len(results),
