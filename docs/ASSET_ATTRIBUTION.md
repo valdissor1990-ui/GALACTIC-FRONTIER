@@ -69,3 +69,10 @@ Prefer CC0/public-domain sources for assets intended for direct integration. For
 - Import: original GLB files, imported by Godot 4.7.2 glTF importer without conversion.
 
 The cargo-B model is staged for future traffic variation. The detailed meteor is instanced as a second asteroid silhouette, and the double turret is mounted on the derelict wreck.
+
+## Kenney Sci-Fi Sounds
+
+- Files: `assets/audio/sfx/kenney_laser_small.ogg`, `kenney_laser_large.ogg`, `kenney_explosion_crunch.ogg`, `kenney_impact_metal.ogg`, `kenney_force_field.ogg`.
+- Source: [Kenney Sci-Fi Sounds](https://kenney.nl/assets/sci-fi-sounds), mirrored in [danvanderboom/Aetherium](https://github.com/danvanderboom/Aetherium/tree/main/samples/unity/Aphelion/Assets/ThirdParty/Kenney/SciFiSounds).
+- License: CC0 1.0 Universal; source `License.txt` is included as `assets/audio/sfx/KENNEY_SCI_FI_SOUNDS_LICENSE.txt`.
+- Integration: AudioManager loads authored OGG weapon, explosion, metal-impact and shield sounds. The procedural engine loop and synthesized fallback sounds remain available if an imported OGG is missing.

@@ -5,15 +5,31 @@ extends Node
 const SAMPLE_RATE := 11025
 const ENGINE_SECONDS := 2.0
 
-var engine_stream: AudioStreamWAV
-var weapon_stream: AudioStreamWAV
-var impact_stream: AudioStreamWAV
+var engine_stream: AudioStream
+var weapon_stream: AudioStream
+var heavy_weapon_stream: AudioStream
+var impact_stream: AudioStream
+var metal_impact_stream: AudioStream
+var shield_stream: AudioStream
 
 
 func _ready() -> void:
+	# Keep the speed-responsive engine loop procedural; Kenney's short OGGs
+	# provide authored transient sounds, with local synthesis as a safe fallback.
 	engine_stream = _build_engine_loop()
-	weapon_stream = _build_weapon_fire()
-	impact_stream = _build_impact()
+	weapon_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_small.ogg", _build_weapon_fire())
+	heavy_weapon_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_large.ogg", _build_weapon_fire())
+	impact_stream = _load_optional_audio("res://assets/audio/sfx/kenney_explosion_crunch.ogg", _build_impact())
+	metal_impact_stream = _load_optional_audio("res://assets/audio/sfx/kenney_impact_metal.ogg", _build_impact())
+	shield_stream = _load_optional_audio("res://assets/audio/sfx/kenney_force_field.ogg", _build_impact())
+
+
+func _load_optional_audio(path: String, fallback: AudioStream) -> AudioStream:
+	if ResourceLoader.exists(path):
+		var loaded := load(path) as AudioStream
+		if loaded != null:
+			return loaded
+	return fallback
 
 
 func play_3d(stream: AudioStream, world_position: Vector3, volume_db: float = -10.0, unit_size: float = 24.0, max_distance: float = 500.0) -> void:

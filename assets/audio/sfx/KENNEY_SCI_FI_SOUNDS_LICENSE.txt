@@ -1,0 +1,6 @@
+Kenney Sci-Fi Sounds (1.0)
+Created/distributed by Kenney (www.kenney.nl), creation date 2020-10-11.
+License: Creative Commons Zero (CC0 1.0): https://creativecommons.org/publicdomain/zero/1.0/
+Free for personal, educational and commercial projects. Attribution is not required; optional credit: Kenney / www.kenney.nl.
+Source pack: https://kenney.nl/assets/sci-fi-sounds
+Mirror used for selected original OGG files: https://github.com/danvanderboom/Aetherium/tree/main/samples/unity/Aphelion/Assets/ThirdParty/Kenney/SciFiSounds
