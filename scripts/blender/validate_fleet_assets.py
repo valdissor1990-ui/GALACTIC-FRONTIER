@@ -63,9 +63,15 @@ def mesh_metrics():
     triangles = 0
     materials = set()
     bad_vertices = []
+    uv_missing_meshes = []
+    uv_mapped_meshes = 0
     points = []
     for obj in meshes:
         obj.data.calc_loop_triangles()
+        if len(obj.data.uv_layers) > 0:
+            uv_mapped_meshes += 1
+        else:
+            uv_missing_meshes.append(obj.name)
         polygons += len(obj.data.polygons)
         triangles += len(obj.data.loop_triangles)
         for slot in obj.material_slots:
@@ -96,6 +102,8 @@ def mesh_metrics():
         "triangles": triangles,
         "materials": sorted(materials),
         "material_count": len(materials),
+        "uv_mapped_meshes": uv_mapped_meshes,
+        "uv_missing_meshes": sorted(uv_missing_meshes),
         "dimensions": dimensions,
         "root_nodes": root_names,
         "bad_geometry_objects": sorted(set(bad_vertices)),
@@ -184,6 +192,8 @@ def validate_one(slug, output_dir):
             record["errors"].append(f"blend: invalid world bounds {blend['dimensions']}")
         if blend["bad_geometry_objects"]:
             record["errors"].append("blend: non-finite geometry/transforms: " + repr(blend["bad_geometry_objects"]))
+        if blend["uv_missing_meshes"]:
+            record["errors"].append("blend: meshes without UV maps: " + repr(blend["uv_missing_meshes"][:20]))
         if len(blend["root_nodes"]) != 1:
             record["errors"].append(f"blend: expected one GF_ root EMPTY, found {blend['root_nodes']}")
 
@@ -199,6 +209,8 @@ def validate_one(slug, output_dir):
             record["errors"].append(f"glb: invalid world bounds {glb['dimensions']}")
         if glb["bad_geometry_objects"]:
             record["errors"].append("glb: non-finite geometry/transforms: " + repr(glb["bad_geometry_objects"]))
+        if glb["uv_missing_meshes"]:
+            record["errors"].append("glb: meshes without UV maps after export: " + repr(glb["uv_missing_meshes"][:20]))
         if not glb["root_nodes"]:
             record["errors"].append("glb: exported GF_ root node not found")
 
