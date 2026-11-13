@@ -345,9 +345,11 @@ def add_detail_uv(mesh, scale=4.0):
     this keeps hard-surface faces textured after Blender -> glTF -> Godot.
     """
     mesh.update()
-    existing = mesh.uv_layers.get("GF_DetailUV")
-    if existing is not None:
-        mesh.uv_layers.remove(existing)
+    # Normalize every mesh to the same active UV layer before material-based
+    # consolidation. Joining meshes with mixed UVMap/GF_DetailUV names leaves
+    # entire source islands at (0, 0), which the validator correctly flags.
+    for layer in list(mesh.uv_layers):
+        mesh.uv_layers.remove(layer)
     uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
 
     for polygon in mesh.polygons:
@@ -551,9 +553,9 @@ def create_ship(materials):
     for side in (-1, 1):
         cube("Dorsal radiator housing %s" % side,
              (side * 0.30, 2.55, 0.55), (0.18, 1.10, 0.09), dark, 0.045)
-        for index in range(6):
+        for index in range(4):
             cube("Radiator blade %s %s" % (side, index),
-                 (side * 0.30, 2.12 + index * 0.17, 0.61), (0.19, 0.045, 0.025), armor, 0.01)
+                 (side * 0.30, 2.20 + index * 0.23, 0.595), (0.15, 0.032, 0.018), armor, 0.008)
         cube("Engine warning chevron %s" % side,
              (side * 1.33, 5.35, 0.405), (0.16, 0.44, 0.025), accent, 0.015)
 
@@ -655,16 +657,8 @@ def add_integrated_surface_detail(root, materials):
             (4.75, 2.28), (3.70, 1.70)
         ]]
         extruded_wing("Wingtip armored cap %s" % side, outer, 0.105, 0.235, dark, 0.035)
-        # Leading-edge reinforcement rails and trailing-edge control surfaces.
-        cylinder_between("Wing leading edge spar %s" % side,
-                         (side*1.05, -2.35, 0.13), (side*5.15, 2.42, 0.13),
-                         0.075, dark, radius_end=0.035)
-        control_outline = [(side*x, y) for x, y in [
-            (2.05, 0.65), (2.55, 0.98), (4.72, 2.00),
-            (4.35, 2.12), (2.45, 1.32)
-        ]]
-        extruded_wing("Articulated trailing control surface %s" % side,
-                      control_outline, -0.005, 0.075, hull, 0.025)
+        # Structural reinforcement is integrated into the wing armor skin.
+        # Avoid raised rails and overlapping slabs that read as loose add-ons.
         # Recessed-looking maintenance bays with nested lips and fasteners.
         for idx, (x, y) in enumerate(((2.15, -0.15), (3.05, 0.62), (3.88, 1.28))):
             x *= side
@@ -682,10 +676,10 @@ def add_integrated_surface_detail(root, materials):
         cube("Wing radiator trench %s" % side,
              (side*1.78, 1.05, 0.235), (0.28, 1.05, 0.045), dark, 0.045,
              (0, 0, side*-0.10))
-        for k in range(7):
+        for k in range(4):
             cube("Wing radiator vane %s %s" % (side, k),
-                 (side*1.78, 0.62 + k*0.145, 0.264), (0.22, 0.045, 0.025),
-                 white if k in (0,6) else armor, 0.012)
+                 (side*1.78, 0.66 + k*0.25, 0.258), (0.18, 0.032, 0.018),
+                 armor, 0.008)
         # Side armor cheek panels make the central fuselage less cylindrical.
         for y in (-3.8, -2.3, -0.7, 1.0, 2.6):
             cube("Fuselage lateral armor cheek %s %.1f" % (side, y),
@@ -968,6 +962,10 @@ def consolidate_static_meshes(root):
         objects = [obj for obj in objects if obj is not None and obj.type == "MESH"]
         if len(objects) < 2:
             continue
+        # Modifiers may add faces after the original UV pass. Rebuild a
+        # consistent dominant-axis UV layer on every baked mesh before join.
+        for obj in objects:
+            add_detail_uv(obj.data)
         bpy.ops.object.select_all(action="DESELECT")
         for obj in objects:
             obj.select_set(True)
@@ -1036,7 +1034,7 @@ def main():
         "armor": make_material("Brushed gunmetal armor", (0.19, 0.25, 0.31), 0.84, 0.25),
         "dark": make_material("Graphite recesses", (0.012, 0.021, 0.032), 0.62, 0.38),
         "accent": make_material("Ion cyan accent", (0.025, 0.42, 0.62), 0.55, 0.24, (0.01, 0.18, 0.34), 0.8),
-        "glass": make_material("Cockpit polarized glass", (0.015, 0.10, 0.17), 0.62, 0.12, (0.01, 0.08, 0.15), 0.15, 0.72),
+        "glass": make_material("Cockpit polarized glass", (0.045, 0.19, 0.28), 0.08, 0.09, (0.004, 0.018, 0.028), 0.04, 0.34),
         "glow": make_material("Ion engine emission", (0.02, 0.45, 0.95), 0.2, 0.2, (0.02, 0.38, 1.0), 5.0),
         "white": make_material("Identification ceramic", (0.62, 0.72, 0.78), 0.48, 0.30),
     }
