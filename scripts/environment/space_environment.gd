@@ -325,8 +325,9 @@ shader_type spatial;
 render_mode unshaded;
 void fragment() {
 	vec4 tint = INSTANCE_CUSTOM;
-	ALBEDO = tint.rgb;
-	EMISSION = tint.rgb * (1.2 + tint.a * 2.8);
+	float pulse = 0.82 + 0.18 * sin(TIME * 1.4 + tint.a * 6.28318);
+	ALBEDO = tint.rgb * pulse;
+	EMISSION = tint.rgb * (1.1 + pulse * 2.4);
 }
 """
 	var material := ShaderMaterial.new()
