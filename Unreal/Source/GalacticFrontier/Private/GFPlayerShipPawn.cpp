@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GFShipFlightComponent.h"
 #include "GFDamageableComponent.h"
+#include "GFWeaponComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/PlayerController.h"
 
@@ -20,6 +21,7 @@ AGFPlayerShipPawn::AGFPlayerShipPawn()
 
     Flight = CreateDefaultSubobject<UGFShipFlightComponent>(TEXT("Flight"));
     Damageable = CreateDefaultSubobject<UGFDamageableComponent>(TEXT("Damageable"));
+    Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
 
     ChaseArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm"));
     ChaseArm->SetupAttachment(ShipMesh);
@@ -48,6 +50,7 @@ void AGFPlayerShipPawn::BeginPlay()
     bCockpitCameraActive = false;
     if (ChaseCamera) ChaseCamera->SetActive(true);
     if (CockpitCamera) CockpitCamera->SetActive(false);
+
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
         PC->bShowMouseCursor = false;
@@ -59,11 +62,8 @@ void AGFPlayerShipPawn::BeginPlay()
 void AGFPlayerShipPawn::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-    if (Flight)
-    {
-        Flight->SetFlightInput(FVector(ForwardInput, StrafeInput, VerticalInput));
-        Flight->SetRotationInput(FVector(PitchInput, YawInput, RollInput));
-    }
+    if (Flight) Flight->SetFlightInput(FVector(ForwardInput, StrafeInput, VerticalInput));
+    if (Flight) Flight->SetRotationInput(FVector(PitchInput, YawInput, RollInput));
 }
 
 void AGFPlayerShipPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -83,6 +83,8 @@ void AGFPlayerShipPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     PlayerInputComponent->BindAction(TEXT("ShipBoost"), IE_Released, this, &AGFPlayerShipPawn::SetBoostReleased);
     PlayerInputComponent->BindAction(TEXT("ShipBrake"), IE_Pressed, this, &AGFPlayerShipPawn::SetBrakePressed);
     PlayerInputComponent->BindAction(TEXT("ShipBrake"), IE_Released, this, &AGFPlayerShipPawn::SetBrakeReleased);
+    PlayerInputComponent->BindAction(TEXT("ShipFire"), IE_Pressed, this, &AGFPlayerShipPawn::SetFirePressed);
+    PlayerInputComponent->BindAction(TEXT("ShipFire"), IE_Released, this, &AGFPlayerShipPawn::SetFireReleased);
     PlayerInputComponent->BindAction(TEXT("ToggleShipCamera"), IE_Pressed, this, &AGFPlayerShipPawn::SetCameraTogglePressed);
 }
 
@@ -105,4 +107,6 @@ void AGFPlayerShipPawn::SetBoostPressed() { if (Flight) Flight->SetBoostRequeste
 void AGFPlayerShipPawn::SetBoostReleased() { if (Flight) Flight->SetBoostRequested(false); }
 void AGFPlayerShipPawn::SetBrakePressed() { if (Flight) Flight->SetBrakeRequested(true); }
 void AGFPlayerShipPawn::SetBrakeReleased() { if (Flight) Flight->SetBrakeRequested(false); }
+void AGFPlayerShipPawn::SetFirePressed() { if (Weapon) Weapon->StartFiring(); }
+void AGFPlayerShipPawn::SetFireReleased() { if (Weapon) Weapon->StopFiring(); }
 void AGFPlayerShipPawn::SetCameraTogglePressed() { ToggleCameraMode(); }
