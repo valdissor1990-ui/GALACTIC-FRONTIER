@@ -23,10 +23,16 @@ def ensure_glb_file_image(image):
     image.filepath_raw = image_path
     image.file_format = "PNG"
     image.save()
+    if not os.path.isfile(image_path) or os.path.getsize(image_path) < 128:
+        raise RuntimeError("GLB texture staging failed: " + image_path)
     file_image = bpy.data.images.load(image_path, check_existing=False)
     file_image.name = export_name
     file_image.colorspace_settings.name = image.colorspace_settings.name
+    if file_image.source != "FILE" or not file_image.has_data:
+        raise RuntimeError("GLB texture is not file-backed: " + export_name)
     file_image.pack()
+    print("GF_GLTF_IMAGE_READY", export_name, file_image.source,
+          tuple(file_image.size), os.path.getsize(image_path))
     return file_image
 
 
