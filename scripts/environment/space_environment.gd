@@ -80,7 +80,7 @@ func _load_system_theme() -> void:
 				"nebula_b": Color(0.72, 0.14, 0.04, 0.34), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
 				"water_dark": Color(0.05, 0.03, 0.02), "water_light": Color(0.18, 0.08, 0.04),
 				"land_low": Color(0.34, 0.18, 0.08), "land_high": Color(0.58, 0.30, 0.12),
-				"snow": Color(0.82, 0.62, 0.38), "star": Color(1.0, 0.76, 0.52)
+				"snow": Color(0.82, 0.62, 0.38), "star": Color(1.0, 0.76, 0.52), "asteroid_tint": Color(0.48, 0.31, 0.22)
 			}
 		"kestrel":
 			_theme = {
@@ -90,7 +90,7 @@ func _load_system_theme() -> void:
 				"nebula_b": Color(0.42, 0.28, 0.95, 0.30), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
 				"water_dark": Color(0.015, 0.08, 0.18), "water_light": Color(0.05, 0.22, 0.42),
 				"land_low": Color(0.22, 0.36, 0.52), "land_high": Color(0.44, 0.55, 0.65),
-				"snow": Color(0.86, 0.92, 1.0), "star": Color(0.70, 0.88, 1.0)
+				"snow": Color(0.86, 0.92, 1.0), "star": Color(0.70, 0.88, 1.0), "asteroid_tint": Color(0.34, 0.48, 0.62)
 			}
 		_:
 			_system_id = "aurelia"
@@ -101,7 +101,7 @@ func _load_system_theme() -> void:
 				"nebula_b": Color(0.52, 0.20, 0.94, 0.32), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
 				"water_dark": Color(0.018, 0.075, 0.16), "water_light": Color(0.035, 0.19, 0.31),
 				"land_low": Color(0.18, 0.34, 0.31), "land_high": Color(0.43, 0.38, 0.25),
-				"snow": Color(0.78, 0.79, 0.72), "star": Color(0.72, 0.84, 1.0)
+				"snow": Color(0.78, 0.79, 0.72), "star": Color(0.72, 0.84, 1.0), "asteroid_tint": Color(0.48, 0.52, 0.56)
 			}
 
 
@@ -436,6 +436,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 varying float rock_variation;
+uniform vec3 rock_tint = vec3(0.48, 0.52, 0.56);
 
 void vertex() {
 	vec3 p = VERTEX;
@@ -450,13 +451,14 @@ void vertex() {
 void fragment() {
 	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
 	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
-	ALBEDO = vec3(value * 0.88, value * 0.93, value);
+	ALBEDO = rock_tint * value;
 	METALLIC = 0.12;
 	ROUGHNESS = 0.94;
 }
 """
 	var asteroid_material := ShaderMaterial.new()
 	asteroid_material.shader = asteroid_shader
+	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
 	asteroid_mesh.material = asteroid_material
 
 	var field := _make_multimesh("AsteroidField", asteroid_mesh, asteroid_count)
