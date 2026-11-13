@@ -1,0 +1,173 @@
+extends Node3D
+class_name OpenSpaceBackdrop
+## Builds a denser open-space read without external textures.
+## Star sky + key/fill lights + planets + MultiMesh asteroid belt.
+
+@export var asteroid_count: int = 220
+@export var belt_radius: float = 140.0
+@export var belt_width: float = 55.0
+@export var belt_height: float = 18.0
+
+var _rng := RandomNumberGenerator.new()
+
+
+func _ready() -> void:
+	_rng.randomize()
+	_setup_sky_environment()
+	_setup_lights()
+	_setup_planets()
+	_setup_asteroid_belt()
+
+
+func _setup_sky_environment() -> void:
+	var world := WorldEnvironment.new()
+	world.name = "WorldEnvironment"
+	var env := Environment.new()
+	env.background_mode = Environment.BG_SKY
+	var sky := Sky.new()
+	var sky_mat := ShaderMaterial.new()
+	var shader := load("res://assets/shaders/space_starfield_sky.gdshader") as Shader
+	if shader:
+		sky_mat.shader = shader
+		sky_mat.set_shader_parameter("space_color", Color(0.004, 0.01, 0.03))
+		sky_mat.set_shader_parameter("nebula_strength", 0.38)
+		sky_mat.set_shader_parameter("star_density", 1.7)
+		sky_mat.set_shader_parameter("star_brightness", 1.05)
+		sky.sky_material = sky_mat
+	else:
+		var proc := ProceduralSkyMaterial.new()
+		proc.sky_top_color = Color(0.01, 0.02, 0.05)
+		proc.sky_horizon_color = Color(0.03, 0.05, 0.1)
+		proc.ground_bottom_color = Color(0.01, 0.01, 0.02)
+		proc.ground_horizon_color = Color(0.02, 0.03, 0.06)
+		proc.sky_energy_multiplier = 0.8
+		sky.sky_material = proc
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.28
+	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
+	env.tonemap_exposure = 1.0
+	env.tonemap_white = 6.0
+	env.glow_enabled = true
+	env.glow_levels[2] = 0.6
+	env.glow_levels[3] = 0.85
+	env.glow_levels[4] = 0.5
+	env.glow_intensity = 0.45
+	env.glow_strength = 0.9
+	env.glow_bloom = 0.12
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.06
+	env.adjustment_saturation = 1.08
+	# SSAO helps station/ship contact later; mild for open space
+	env.ssao_enabled = true
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 1.4
+	world.environment = env
+	add_child(world)
+
+
+func _setup_lights() -> void:
+	var key := DirectionalLight3D.new()
+	key.name = "StarKeyLight"
+	key.rotation_degrees = Vector3(-24, 40, 0)
+	key.light_color = Color(1.0, 0.96, 0.88)
+	key.light_energy = 1.55
+	key.shadow_enabled = true
+	key.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	add_child(key)
+
+	var fill := DirectionalLight3D.new()
+	fill.name = "FillLight"
+	fill.rotation_degrees = Vector3(15, -120, 0)
+	fill.light_color = Color(0.45, 0.55, 0.85)
+	fill.light_energy = 0.25
+	fill.shadow_enabled = false
+	add_child(fill)
+
+
+func _setup_planets() -> void:
+	_add_planet(
+		"GasGiant",
+		Vector3(-90, 40, -260),
+		48.0,
+		Color(0.15, 0.28, 0.42),
+		Color(0.05, 0.12, 0.2),
+		0.15,
+		0.85
+	)
+	_add_planet(
+		"RockyWorld",
+		Vector3(120, -30, -200),
+		18.0,
+		Color(0.35, 0.22, 0.16),
+		Color(0.08, 0.05, 0.04),
+		0.05,
+		0.92
+	)
+
+
+func _add_planet(
+	planet_name: String,
+	pos: Vector3,
+	radius: float,
+	albedo: Color,
+	emission: Color,
+	metallic: float,
+	roughness: float
+) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = planet_name
+	mi.position = pos
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = 64
+	mesh.rings = 32
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = albedo
+	mat.metallic = metallic
+	mat.roughness = roughness
+	mat.emission_enabled = true
+	mat.emission = emission
+	mat.emission_energy_multiplier = 0.35
+	mi.set_surface_override_material(0, mat)
+	# Far planets never need tight cull margins
+	mi.visibility_range_end = 2000.0
+	add_child(mi)
+
+
+func _setup_asteroid_belt() -> void:
+	var multi := MultiMeshInstance3D.new()
+	multi.name = "AsteroidBelt"
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.instance_count = asteroid_count
+	var rock := SphereMesh.new()
+	rock.radius = 1.0
+	rock.height = 2.0
+	rock.radial_segments = 10
+	rock.rings = 6
+	mm.mesh = rock
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.22, 0.2, 0.18)
+	mat.roughness = 0.95
+	mat.metallic = 0.08
+	# Assign material via mesh surface — MultiMesh uses mesh materials
+	rock.material = mat
+	for i in asteroid_count:
+		var angle := _rng.randf() * TAU
+		var r := belt_radius + _rng.randf_range(-belt_width, belt_width)
+		var y := _rng.randf_range(-belt_height, belt_height)
+		var pos := Vector3(cos(angle) * r, y, sin(angle) * r)
+		var s := _rng.randf_range(0.6, 3.2)
+		var basis := Basis.from_euler(Vector3(
+			_rng.randf() * TAU,
+			_rng.randf() * TAU,
+			_rng.randf() * TAU
+		)).scaled(Vector3(s, s * _rng.randf_range(0.6, 1.2), s))
+		mm.set_instance_transform(i, Transform3D(basis, pos))
+	multi.multimesh = mm
+	multi.visibility_range_end = 900.0
+	add_child(multi)
