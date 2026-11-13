@@ -20,6 +20,7 @@ func _run() -> void:
 	_check(obstacles.size() >= 100, "planet and asteroid collision proxies must be registered")
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
+	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
 	if asteroid_field != null:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
