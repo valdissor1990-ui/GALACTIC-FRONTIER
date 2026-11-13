@@ -48,7 +48,7 @@ func _capture_sequence() -> void:
 	diagnostic_material.emission_energy_multiplier = 1.5
 	diagnostic_mesh.material = diagnostic_material
 	diagnostic_sphere.mesh = diagnostic_mesh
-	diagnostic_sphere.global_position = Vector3(-138.0, 54.0, -465.0)
+	diagnostic_sphere.position = Vector3(-138.0, 54.0, -465.0)
 	_environment.add_child(diagnostic_sphere)
 	await get_tree().process_frame
 	await get_tree().create_timer(0.2).timeout
@@ -58,13 +58,23 @@ func _capture_sequence() -> void:
 		" diagnostic_save=", diagnostic_error,
 		" children=", _environment.get_child_count())
 	var visible_mesh_children := 0
+	var has_world_environment := false
+	var world_environment_names: Array[String] = []
+	var environment_background_mode := -1
 	for child in _environment.get_children():
-		if child is MeshInstance3D and child.mesh != null and child.visible:
+		if child is MeshInstance3D and child.name != "ShowcaseCameraDiagnostic" and child.mesh != null and child.visible:
 			visible_mesh_children += 1
+		if child is WorldEnvironment:
+			has_world_environment = true
+			world_environment_names.append(child.name)
+			if child.environment != null:
+				environment_background_mode = child.environment.background_mode
 	print("SPACE_SHOWCASE_VISIBLE_MESH_CHILDREN=", visible_mesh_children,
 		" camera_position=", _camera.global_position,
 		" camera_forward=", -_camera.global_basis.z,
-		" world_environment=", _environment.get_node_or_null("WorldEnvironment") != null)
+		" world_environment=", has_world_environment,
+		" world_environment_names=", world_environment_names,
+		" background_mode=", environment_background_mode)
 	diagnostic_sphere.queue_free()
 	await get_tree().process_frame
 
