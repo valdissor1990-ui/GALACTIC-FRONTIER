@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -15,6 +15,7 @@
 [ext_resource type="Shader" path="res://assets/shaders/hull_fresnel.gdshader" id="13"]
 [ext_resource type="Shader" path="res://assets/shaders/engine_plume.gdshader" id="14"]
 [ext_resource type="Script" path="res://scripts/vfx/engine_thrust_fx.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="16"]
 
 [sub_resource type="ShaderMaterial" id="Material_hull"]
 render_priority = 0
@@ -130,7 +131,6 @@ surface_material_override/0 = SubResource("Material_accent")
 
 [node name="EngineThrustFx" type="Node3D" parent="PlayerShip"]
 script = ExtResource("15")
-ship_path = NodePath("..")
 
 [node name="LeftPlume" type="MeshInstance3D" parent="PlayerShip/EngineThrustFx"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38, 0, 2.25)
@@ -185,7 +185,13 @@ muzzle_path = NodePath("Muzzle")
 [node name="Muzzle" type="Marker3D" parent="PlayerShip/WeaponSystem"]
 position = Vector3(0, 0, -2.8)
 
+[node name="ScreenPostFx" type="CanvasLayer" parent="."]
+script = ExtResource("16")
+vignette_strength = 0.48
+chroma_strength = 0.0018
+
 [node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
 script = ExtResource("3")
 ship_path = NodePath("../PlayerShip")
 
@@ -253,6 +259,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CombatHUD" type="CanvasLayer" parent="."]
+layer = 11
 script = ExtResource("9")
 targeting_system_path = NodePath("../PlayerShip/TargetingSystem")
 damageable_path = NodePath("../PlayerShip/Damageable")
