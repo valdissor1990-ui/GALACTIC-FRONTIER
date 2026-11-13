@@ -77,8 +77,7 @@ func _collect_hull_mats() -> void:
 
 
 func _spawn_default_trails() -> void:
-	# Trails aligned with existing plume offsets if present
-	offset_list := [Vector3(-0.38, 0, 2.2), Vector3(0.38, 0, 2.2)]
+	var offset_list: Array[Vector3] = [Vector3(-0.38, 0, 2.2), Vector3(0.38, 0, 2.2)]
 	for i in offset_list.size():
 		var gp := GPUParticles3D.new()
 		gp.name = "Trail%d" % i
@@ -142,14 +141,12 @@ func _process(delta: float) -> void:
 			(mat as ParticleProcessMaterial).initial_velocity_max = 6.0 + _intensity * 10.0
 	for m in _plume_mats:
 		m.set_shader_parameter("intensity", _intensity)
-	# Boost trails
 	for t in _trail_particles:
 		t.emitting = _boosting and _intensity > 1.0
 		if t.emitting:
 			var pm := t.process_material
 			if pm is ParticleProcessMaterial:
 				(pm as ParticleProcessMaterial).initial_velocity_max = 10.0 + _intensity * 14.0
-	# Hull heat (engines / re-entry look)
 	var heat := clampf((_intensity - idle_intensity) / (boost_intensity - idle_intensity), 0.0, 1.0)
 	heat = heat * heat
 	for hm in _hull_mats:
