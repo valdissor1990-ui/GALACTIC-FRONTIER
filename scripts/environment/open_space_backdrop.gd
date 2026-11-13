@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space visual stack with quality-aware HDR bloom / tonemap / shadows.
+## Open-space visual stack. Tonemap locked to ACES for cinematic HDR engines.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -36,9 +36,13 @@ func apply_quality(gq: Node) -> void:
 	enable_ssao = gq.ssao_enabled()
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
-		env.ssao_enabled = enable_ssao
+		# Always ACES — do not drift to Reinhard/Filmic on preset switch
+		env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
+		if gq.has_method("tonemap_mode"):
+			env.tonemap_mode = gq.tonemap_mode()
 		env.tonemap_exposure = gq.tonemap_exposure()
 		env.tonemap_white = gq.tonemap_white()
+		env.ssao_enabled = enable_ssao
 		env.glow_enabled = gq.glow_enabled()
 		env.glow_intensity = gq.glow_intensity()
 		env.glow_bloom = gq.glow_bloom()
@@ -85,10 +89,12 @@ func _setup_sky_environment() -> void:
 	env.ambient_light_energy = 0.26
 
 	var gq := _gq()
-	# ACES: filmic contrast; keeps engine plumes readable in dark space
+	# --- ACES tone mapping (locked) ------------------------------------------
+	# High contrast film curve; bright engine/projectile values desaturate
+	# instead of clipping to pure white. Exposure keeps the void dark.
 	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
-	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.95
-	env.tonemap_white = gq.tonemap_white() if gq else 6.5
+	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.94
+	env.tonemap_white = gq.tonemap_white() if gq else 7.5
 
 	env.glow_enabled = true
 	env.glow_levels[1] = 0.0
@@ -105,9 +111,10 @@ func _setup_sky_environment() -> void:
 	env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap() if gq else 12.0
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 
+	# Mild grade after tonemap (ACES already sets contrast character)
 	env.adjustment_enabled = true
-	env.adjustment_contrast = 1.05
-	env.adjustment_saturation = 1.06
+	env.adjustment_contrast = 1.04
+	env.adjustment_saturation = 1.05
 	env.ssr_enabled = false
 	env.ssao_enabled = enable_ssao
 	if enable_ssao:
