@@ -8,6 +8,7 @@
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
 #include "GFTargetingComponent.h"
+#include "GFMissionDirector.h"
 #include "Kismet/GameplayStatics.h"
 
 void AGFSpaceHUD::DrawTextLine(const FString& Text, const float X, const float Y, const FLinearColor& Color, const float Scale)
@@ -56,6 +57,28 @@ void AGFSpaceHUD::DrawHUD()
         const AActor* Target = Ship->Targeting->GetCurrentTarget();
         const FString TargetName = IsValid(Target) ? Target->GetName() : TEXT("NO TARGET");
         DrawTextLine(TEXT("TARGET  ") + TargetName, Canvas->ClipX - 270.0f, 36.0f, IsValid(Target) ? FLinearColor(1.0f, 0.55f, 0.25f) : Cyan, 1.1f);
+    }
+
+    TArray<AActor*> MissionActors;
+    UGameplayStatics::GetAllActorsOfClass(this, AGFMissionDirector::StaticClass(), MissionActors);
+    if (MissionActors.Num() > 0)
+    {
+        const AGFMissionDirector* Mission = Cast<AGFMissionDirector>(MissionActors[0]);
+        if (Mission)
+        {
+            static const TCHAR* StageLabels[] = {
+                TEXT("FLY TO RELAY"), TEXT("SCAN RELAY"), TEXT("DEFEND RELAY"),
+                TEXT("INVESTIGATE WRECK"), TEXT("SCAN WRECK"), TEXT("DEFEND WRECK"),
+                TEXT("RETURN TO CARRIER"), TEXT("CONTRACT COMPLETE"), TEXT("SHIP LOST")
+            };
+            const int32 StageIndex = static_cast<int32>(Mission->GetMissionStage());
+            const int32 SafeIndex = FMath::Clamp(StageIndex, 0, UE_ARRAY_COUNT(StageLabels) - 1);
+            DrawTextLine(FString::Printf(TEXT("CONTRACT  THE SILENT RELAY  /  %s"), StageLabels[SafeIndex]), Canvas->ClipX - 500.0f, 68.0f, FLinearColor(0.3f, 0.85f, 1.0f), 1.0f);
+            if (Mission->GetEnemiesRemaining() > 0)
+            {
+                DrawTextLine(FString::Printf(TEXT("HOSTILES  %d"), Mission->GetEnemiesRemaining()), Canvas->ClipX - 270.0f, 96.0f, FLinearColor(1.0f, 0.4f, 0.2f), 1.0f);
+            }
+        }
     }
 
     DrawTextLine(TEXT("WASD MOVE  |  ARROWS ROTATE  |  SHIFT BOOST  |  SPACE BRAKE"), 36.0f, 28.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
