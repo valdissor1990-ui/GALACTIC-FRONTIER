@@ -4,11 +4,11 @@ extends Node3D
 const SHOTS: Array[Dictionary] = [
 	{"name": "01-nebula-field", "camera": Vector3(0.0, 0.0, 0.0), "target": Vector3(-138.0, 54.0, -465.0), "fov": 60.0},
 	{"name": "02-aurelia-planet", "camera": Vector3(-160.0, 26.0, -105.0), "target": Vector3(-160.0, 26.0, -285.0), "fov": 52.0},
-	{"name": "03-ringed-gas-giant", "camera": Vector3(670.0, 48.0, -900.0), "target": Vector3(430.0, -92.0, -1320.0), "fov": 50.0},
+	{"name": "03-ringed-gas-giant", "camera": Vector3(670.0, 48.0, -900.0), "target": Vector3(430.0, -92.0, -1320.0), "fov": 55.0},
 	{"name": "04-spiral-galaxy", "camera": Vector3(115.0, 168.0, -620.0), "target": Vector3(35.0, 148.0, -920.0), "fov": 54.0},
-	{"name": "05-comet-landmark", "camera": Vector3(-440.0, 285.0, -1580.0), "target": Vector3(-520.0, 205.0, -1880.0), "fov": 52.0},
+	{"name": "05-comet-landmark", "camera": Vector3(-400.0, 365.0, -1460.0), "target": Vector3(-520.0, 205.0, -1880.0), "fov": 58.0},
 	{"name": "06-derelict-wreck", "camera": Vector3(405.0, -48.0, -500.0), "target": Vector3(285.0, -118.0, -690.0), "fov": 48.0},
-	{"name": "07-asteroid-corridor", "camera": Vector3.ZERO, "target": Vector3.ZERO, "fov": 55.0}
+	{"name": "07-asteroid-corridor", "camera": Vector3.ZERO, "target": Vector3.ZERO, "fov": 64.0}
 ]
 
 @onready var _camera: Camera3D = $ShowcaseCamera
@@ -53,7 +53,7 @@ func _capture_sequence() -> void:
 						densest_neighbors = neighbor_count
 						densest_center = candidate
 				target_position = densest_center
-				camera_position = target_position + Vector3(250.0, 160.0, 460.0)
+				camera_position = target_position + Vector3(320.0, 260.0, 1350.0)
 		_camera.global_position = camera_position
 		_camera.look_at(target_position, Vector3.UP)
 		await get_tree().process_frame
