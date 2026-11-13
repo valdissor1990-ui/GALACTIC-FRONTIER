@@ -121,18 +121,18 @@ func _make_mouse_motion(relative: Vector2) -> InputEventMouseMotion:
 func _test_mouse_not_accumulated_while_paused() -> void:
 	print("\n[mouse not accumulated while paused]")
 	var ship := _make_ship()
-	get_tree().paused = true
+	paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	ship._unhandled_input(_make_mouse_motion(Vector2(100.0, 50.0)))
 	_assert_true(ship._mouse_delta.length_squared() <= EPSILON, "paused: mouse delta stays zero")
-	get_tree().paused = false
+	paused = false
 	ship.queue_free()
 
 
 func _test_mouse_delta_is_capped_single_event() -> void:
 	print("\n[mouse delta capped on single large event]")
 	var ship := _make_ship()
-	get_tree().paused = false
+	paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	ship._unhandled_input(_make_mouse_motion(Vector2(1000.0, 1000.0)))
 	var max_len: float = ShipController.MAX_MOUSE_DELTA_PER_PHYSICS_TICK
@@ -143,7 +143,7 @@ func _test_mouse_delta_is_capped_single_event() -> void:
 func _test_mouse_delta_capped_across_multiple_events() -> void:
 	print("\n[mouse delta capped across multiple sequential events]")
 	var ship := _make_ship()
-	get_tree().paused = false
+	paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	var max_len: float = ShipController.MAX_MOUSE_DELTA_PER_PHYSICS_TICK
 	# Several medium moves that would exceed the cap if unbounded.
@@ -167,7 +167,7 @@ func _test_focus_out_clears_mouse_delta() -> void:
 func _test_focus_in_clears_mouse_delta() -> void:
 	print("\n[focus in clears mouse delta]")
 	var ship := _make_ship()
-	get_tree().paused = false
+	paused = false
 	ship._mouse_delta = Vector2(15.0, 15.0)
 	ship._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	_assert_true(ship._mouse_delta.length_squared() <= EPSILON, "focus in zeroes old delta")
@@ -177,7 +177,7 @@ func _test_focus_in_clears_mouse_delta() -> void:
 func _test_focus_in_captures_mouse_when_not_paused() -> void:
 	print("\n[focus in captures mouse when not paused]")
 	var ship := _make_ship()
-	get_tree().paused = false
+	paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	ship._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "focus in captures mouse when not paused")
@@ -187,11 +187,11 @@ func _test_focus_in_captures_mouse_when_not_paused() -> void:
 func _test_focus_in_does_not_capture_mouse_when_paused() -> void:
 	print("\n[focus in does not capture mouse when paused]")
 	var ship := _make_ship()
-	get_tree().paused = true
+	paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	ship._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
 	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "focus in while paused leaves mouse visible")
-	get_tree().paused = false
+	paused = false
 	ship.queue_free()
 
 
@@ -202,19 +202,19 @@ func _test_hud_toggle_pause_cycle() -> void:
 	var pause_panel: Control = hud.get_node("PausePanel") as Control
 
 	# Start unpaused.
-	get_tree().paused = false
+	paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	pause_panel.visible = false
 
 	# Pause via real production method.
 	hud._toggle_pause()
-	_assert_true(get_tree().paused, "pause enabled")
+	_assert_true(paused, "pause enabled")
 	_assert_true(pause_panel.visible, "PausePanel visible while paused")
 	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "mouse released while paused")
 
 	# Resume via real production method.
 	hud._toggle_pause()
-	_assert_true(not get_tree().paused, "pause disabled")
+	_assert_true(not paused, "pause disabled")
 	_assert_true(not pause_panel.visible, "PausePanel hidden after resume")
 	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "mouse captured after resume")
 
