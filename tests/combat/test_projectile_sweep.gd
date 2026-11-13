@@ -1,5 +1,7 @@
 extends SceneTree
 ## Regression test: a 180 m/s projectile must not tunnel through a thin target.
+## Target at -1.5 m: the discrete end-of-tick position (-3 m) is past it,
+## so this test can pass only when the swept collision query detects the crossing.
 ## Run: godot --headless --path . --script res://tests/combat/test_projectile_sweep.gd
 
 var _failed := false
@@ -22,7 +24,7 @@ func _run() -> void:
 	box.size = Vector3(1.0, 1.0, 0.10)
 	target_shape.shape = box
 	target.add_child(target_shape)
-	target.position = Vector3(0.0, 0.0, -3.0)
+	target.position = Vector3(0.0, 0.0, -1.5)
 	world.add_child(target)
 
 	var projectile_scene := load("res://scenes/combat/projectile.tscn") as PackedScene
