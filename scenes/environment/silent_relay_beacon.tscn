@@ -1,0 +1,51 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/relay_pulse.gdshader" id="1"]
+
+[sub_resource type="ShaderMaterial" id="Material_pulse"]
+render_priority = 0
+shader = ExtResource("1")
+shader_parameter/pulse_color = Color(0.45, 0.85, 1, 1)
+shader_parameter/pulse_speed = 1.15
+shader_parameter/pulse_width = 0.09
+shader_parameter/base_glow = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Material_core"]
+albedo_color = Color(0.08, 0.12, 0.18, 1)
+metallic = 0.85
+roughness = 0.25
+emission_enabled = true
+emission = Color(0.15, 0.45, 0.75, 1)
+emission_energy_multiplier = 2.2
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 6.5
+outer_radius = 8.0
+rings = 24
+ring_segments = 48
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_core"]
+top_radius = 1.2
+bottom_radius = 1.2
+height = 4.0
+radial_segments = 16
+
+[sub_resource type="SphereMesh" id="SphereMesh_glow"]
+radius = 1.6
+height = 3.2
+radial_segments = 16
+rings = 8
+
+[node name="SilentRelayBeacon" type="Node3D"]
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+mesh = SubResource("TorusMesh_ring")
+surface_material_override/0 = SubResource("Material_pulse")
+
+[node name="Core" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_core")
+surface_material_override/0 = SubResource("Material_core")
+
+[node name="Glow" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_glow")
+surface_material_override/0 = SubResource("Material_pulse")
