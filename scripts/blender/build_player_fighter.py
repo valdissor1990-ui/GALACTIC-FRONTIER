@@ -18,6 +18,7 @@ from array import array
 import math
 import os
 import sys
+import tempfile
 from mathutils import Vector
 
 # Ubuntu's packaged Blender may use the system Python package directory for
@@ -25,6 +26,37 @@ from mathutils import Vector
 SYSTEM_PYTHON_PACKAGES = "/usr/lib/python3/dist-packages"
 if os.path.isdir(SYSTEM_PYTHON_PACKAGES) and SYSTEM_PYTHON_PACKAGES not in sys.path:
     sys.path.append(SYSTEM_PYTHON_PACKAGES)
+
+
+
+def ensure_glb_file_image(image):
+    """Make generated/packed images visible to Blender's glTF image exporter.
+
+    Blender's glTF exporter expects file-backed image sources. A generated image
+    can be packed in a .blend yet still be omitted from the GLB. Save a temporary
+    PNG, reload it as a FILE image, preserve its color space and pack it again.
+    """
+    if image is None:
+        return None
+    export_name = image.name + "_GLTF"
+    existing = bpy.data.images.get(export_name)
+    if existing is not None and existing.source == "FILE" and existing.has_data:
+        return existing
+
+    temp_dir = bpy.app.tempdir or tempfile.gettempdir()
+    os.makedirs(temp_dir, exist_ok=True)
+    safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
+    image_path = os.path.join(temp_dir, safe_name + ".png")
+
+    image.filepath_raw = image_path
+    image.file_format = "PNG"
+    image.save()
+
+    file_image = bpy.data.images.load(image_path, check_existing=False)
+    file_image.name = export_name
+    file_image.colorspace_settings.name = image.colorspace_settings.name
+    file_image.pack()
+    return file_image
 
 
 def output_dir_from_args():
@@ -148,6 +180,9 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
         links.new(texcoord.outputs["UV"], node.inputs["Vector"])
         return node
 
+    albedo_image = ensure_glb_file_image(albedo_image)
+    roughness_image = ensure_glb_file_image(roughness_image)
+    normal_image = ensure_glb_file_image(normal_image)
     albedo_node = image_node(albedo_image, "Baked aerospace albedo")
     roughness_node = image_node(roughness_image, "Baked roughness breakup")
     normal_node = image_node(normal_image, "Baked aerospace micro-normal")
@@ -1008,6 +1043,8 @@ def main():
         use_selection=True,
         export_apply=True,
         export_materials="EXPORT",
+        export_image_format="PNG",
+        export_image_quality=100,
         export_cameras=False,
         export_lights=False,
     )
