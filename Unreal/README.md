@@ -26,6 +26,10 @@ See **`docs/NIAGARA_VFX.md`**. Setup script creates `/Game/GF/VFX/NS_*` placehol
 
 ## Automated asset production
 
+After all seven source builders finish, the cloud pipeline keeps the editable multi-part `.blend` files intact and consolidates each exported ship GLB into **one complete StaticMesh with all material slots preserved**. This makes each ship easier to import and assign in Unreal without losing the editable source parts. The validator rejects any ship GLB that does not contain exactly one mesh and one mesh node.
+
+
+
 The repository now contains a sequential production/import pipeline:
 
 1. Blender rebuilds the complete seven-ship fleet in sequence using the existing original builders: Player Fighter, Raider Interceptor, Heavy Fighter, Bomber, Cargo Hauler, Frigate and Cruiser. The generated files pass a structural integrity check (mesh geometry, UVs, materials, bounds, GLB structure and preview files) before they replace the tracked source/export files. This is not a visual-quality acceptance test.
