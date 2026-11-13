@@ -7,7 +7,6 @@ on:
       - chatgpt/unreal-migration-ue5.8
     paths:
       - "scripts/blender/**"
-      - ".github/workflows/build-3d-assets.yml"
 
 permissions:
   contents: write
@@ -174,6 +173,8 @@ jobs:
             echo "Generated models are identical to the current branch; no asset commit needed."
           else
             git commit -m "Build validated ship fleet, space backdrop and planets"
+            git fetch origin "${GITHUB_REF_NAME}"
+            git rebase "origin/${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
