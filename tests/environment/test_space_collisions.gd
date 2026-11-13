@@ -20,6 +20,7 @@ func _run() -> void:
 	_check(obstacles.size() >= 100, "planet and asteroid collision proxies must be registered")
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
+	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
 	if asteroid_field != null:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
@@ -44,12 +45,32 @@ func _run() -> void:
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
+	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
+	_check(cratered_moon != null and cratered_moon.mesh.material is ShaderMaterial, "the distant moon has procedural crater and regolith shading")
+	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
+	var cloud_layer := environment.get_node_or_null("AureliaCloudLayer") as MeshInstance3D
+	_check(cloud_layer != null and cloud_layer.mesh.material is ShaderMaterial, "the nearby planet has a separate procedural cloud shell")
+	var star_clusters := environment.get_node_or_null("ChromaticStarClusters") as MultiMeshInstance3D
+	_check(star_clusters != null and star_clusters.multimesh.instance_count == 552 and star_clusters.multimesh.use_custom_data, "six chromatic star clusters use one custom-data MultiMesh")
+	_check(environment.has_node("PrimaryNebula") and environment.has_node("SecondaryNebula") and environment.has_node("TertiaryNebula") and environment.has_node("FarNebula"), "four nebula layers are generated at different depths")
+	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
+	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
+	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
+	_check(dust_field != null and dust_field.multimesh.instance_count == 1800, "1800 interplanetary dust flakes are populated in one batched MultiMesh")
+	_check(dust_field != null and dust_field.multimesh.use_custom_data, "interplanetary dust uses per-instance spectral tint and shimmer data")
+	_check(dust_field != null and dust_field.multimesh.mesh.material is ShaderMaterial, "interplanetary dust uses one shared shader material rather than per-particle nodes")
 	var sky_camera := Camera3D.new()
 	sky_camera.position = Vector3(120.0, 34.0, -240.0)
 	sky_camera.current = true
 	root.add_child(sky_camera)
 	sky_camera.make_current()
 	await process_frame
+	await process_frame
+	environment.call("_process", 0.0)
+	var tracked_clusters := environment.get_node("ChromaticStarClusters") as MultiMeshInstance3D
+	_check(tracked_clusters.global_position.distance_to(sky_camera.global_position) < 0.01, "chromatic star clusters remain camera-relative during long flights")
+	var tracked_clouds := environment.get_node("AureliaCloudLayer") as MeshInstance3D
+	_check(tracked_clouds.global_position.distance_to(sky_camera.global_position + sky_camera.global_basis * Vector3(-160.0, 26.0, -285.0)) < 1.0, "planet cloud shell tracks the planet during long flights")
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
