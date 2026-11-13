@@ -69,7 +69,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Install Godot 4.7.2 and import the seven GLBs
+      - name: Install Godot 4.7.2 and import Player Fighter Mk.I
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
@@ -95,10 +95,8 @@ jobs:
         run: |
           test -f art_source/.gdignore
           test -s art_source/README.md
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            test -s "art_source/ships/${ship}.blend"
-            test ! -e "assets/models/ships/${ship}.blend"
-          done
+          test -s art_source/ships/player_fighter.blend
+          test ! -e assets/models/ships/player_fighter.blend
 
       - name: Publish validated GLBs and previews to the production branch
         if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'github-actions[bot]' }}
@@ -124,17 +122,15 @@ jobs:
           if git diff --cached --quiet; then
             echo "Generated fleet assets are already current."
           else
-            git commit -m "Publish validated seven-class fleet assets"
+            git commit -m "Publish validated Player Fighter Mk.I asset"
             git push origin "HEAD:$BRANCH"
           fi
           git fetch origin "$BRANCH"
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            git cat-file -e "origin/$BRANCH:art_source/ships/${ship}.blend"
-            if git cat-file -e "origin/$BRANCH:assets/models/ships/${ship}.blend" 2>/dev/null; then
-              echo "Blender source was incorrectly left inside Godot resources: ${ship}.blend"
-              exit 1
-            fi
-          done
+          git cat-file -e "origin/$BRANCH:art_source/ships/player_fighter.blend"
+          if git cat-file -e "origin/$BRANCH:assets/models/ships/player_fighter.blend" 2>/dev/null; then
+            echo "Blender source was incorrectly left inside Godot resources: player_fighter.blend"
+            exit 1
+          fi
 
       - name: Upload complete fleet build and validation report
         uses: actions/upload-artifact@v4
@@ -148,4 +144,4 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-# CI bootstrap: workflow entry point enabled from main; branch push intentionally runs fleet, Godot and visual QA.
+# Focused production gate for the existing Player Fighter Mk.I; other ship classes stay untouched.
