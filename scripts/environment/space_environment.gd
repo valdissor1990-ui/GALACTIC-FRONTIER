@@ -573,17 +573,23 @@ float noise21(vec2 p) {
 void fragment() {
 	vec2 p = (UV - vec2(0.5)) * vec2(2.0, 1.35);
 	float radius = length(p);
-	float disk = exp(-pow(abs(p.y) * 4.2, 1.35)) * exp(-radius * 1.55);
+	float angle = atan(p.y, p.x);
+	float spiral_phase = angle * 2.0 + radius * 13.5;
+	float arm_a = pow(max(cos(spiral_phase), 0.0), 7.0);
+	float arm_b = pow(max(cos(spiral_phase + 3.14159), 0.0), 7.0);
+	float spiral_arms = (arm_a + arm_b) * exp(-radius * 1.55);
+	float disk = exp(-pow(abs(p.y) * 3.8, 1.35)) * exp(-radius * 1.35);
 	float clouds = noise21(UV * vec2(32.0, 18.0)) * 0.52
 		+ noise21(UV * vec2(78.0, 43.0)) * 0.30
 		+ noise21(UV * vec2(154.0, 86.0)) * 0.18;
 	float dust_lane = smoothstep(0.42, 0.72, clouds) * 0.34;
-	float core = exp(-radius * 8.0) * 0.72;
-	float edge = 1.0 - smoothstep(0.46, 1.0, radius);
-	float intensity = max(0.0, disk * (0.34 + clouds * 0.92 - dust_lane) + core) * edge;
+	float core = exp(-radius * 8.0) * 0.82;
+	float edge = 1.0 - smoothstep(0.62, 1.0, radius);
+	float arm_detail = spiral_arms * (0.34 + clouds * 0.66) * (1.0 - dust_lane * 0.72);
+	float intensity = max(0.0, disk * (0.12 + clouds * 0.30) + arm_detail * 0.88 + core) * edge;
 	ALBEDO = galaxy_tint.rgb;
-	EMISSION = galaxy_tint.rgb * (0.10 + intensity * 1.05);
-	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.22);
+	EMISSION = galaxy_tint.rgb * (0.06 + intensity * 1.15);
+	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.28);
 }
 """
 	var material := ShaderMaterial.new()
