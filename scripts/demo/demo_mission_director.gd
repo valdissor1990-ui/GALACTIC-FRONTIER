@@ -9,7 +9,7 @@ const RELAY_POSITION := Vector3(0.0, 18.0, -13500.0)
 const WRECK_POSITION := Vector3(520.0, -28.0, -33000.0)
 const HOME_POSITION := Vector3(0.0, 0.0, 90.0)
 
-enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED, DOCKING, DOCKED }
+enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED, DOCKING, DOCKED, RECOVER_SALVAGE, PATROL_SWEEP }
 
 @onready var world: Node3D = get_parent()
 @onready var player: ShipController = world.get_node("PlayerShip") as ShipController
@@ -36,6 +36,11 @@ var _system_name: String = "Aurelia Reach"
 var _mission_reward: int = 5000
 var _waves_per_encounter: int = 3
 var _enemy_health_multiplier: float = 1.0
+var _salvage_positions: Array[Vector3] = []
+var _salvage_pods: Array[Node3D] = []
+var _salvage_index: int = 0
+var _patrol_positions: Array[Vector3] = []
+var _patrol_index: int = 0
 var _mission_label: Label
 var _objective_label: Label
 var _radio_label: Label
@@ -61,6 +66,7 @@ func _initialize_mission() -> void:
 		encounter.set_physics_process(false)
 	_build_station()
 	_build_navigation_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
+	_build_contract_objectives()
 	_build_mission_hud()
 	_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
 	print("MISSION_READY: ", _contract_name, " | SYSTEM: ", _system_name, " | WAVES: ", _waves_per_encounter * 2)
@@ -142,6 +148,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_complete_relay_scan()
 	elif stage == MissionStage.SCAN_WRECK and _distance_to_objective() <= 95.0:
 		_complete_wreck_scan()
+	elif stage == MissionStage.RECOVER_SALVAGE:
+		_recover_salvage()
 
 func _update_mission(delta: float) -> void:
 	match stage:
@@ -159,6 +167,12 @@ func _update_mission(delta: float) -> void:
 			if _distance_to_objective() <= 105.0:
 				stage = MissionStage.SCAN_WRECK
 				_set_radio("ORBITAL CONTROL", "The wreck is broadcasting a data pulse. Scan it with F.")
+		MissionStage.RECOVER_SALVAGE:
+			if _distance_to_objective() <= 55.0:
+				_set_radio("SALVAGE CONTROL", "Cargo pod in range. Press F to secure the recovered container.")
+		MissionStage.PATROL_SWEEP:
+			if _distance_to_objective() <= 85.0:
+				_advance_patrol_waypoint()
 		MissionStage.RETURN_HOME:
 			if _distance_to_objective() <= 120.0:
 				stage = MissionStage.DOCKING
@@ -170,6 +184,107 @@ func _update_mission(delta: float) -> void:
 					_complete_docking(true)
 		MissionStage.DOCKING:
 			pass
+
+
+func _build_contract_objectives() -> void:
+	_salvage_positions.clear()
+	_salvage_pods.clear()
+	_patrol_positions.clear()
+	_salvage_index = 0
+	_patrol_index = 0
+	if _contract_id == "vesper_salvage":
+		_salvage_positions = [
+			WRECK_POSITION + Vector3(58.0, 8.0, -34.0),
+			WRECK_POSITION + Vector3(-46.0, -12.0, 28.0),
+			WRECK_POSITION + Vector3(22.0, 26.0, 62.0)
+		]
+		var pod_material := StandardMaterial3D.new()
+		pod_material.albedo_color = Color(0.48, 0.27, 0.10)
+		pod_material.metallic = 0.68
+		pod_material.roughness = 0.46
+		pod_material.emission_enabled = true
+		pod_material.emission = Color(0.72, 0.28, 0.055)
+		pod_material.emission_energy_multiplier = 0.55
+		for index in range(_salvage_positions.size()):
+			var pod := MeshInstance3D.new()
+			pod.name = "SalvagePod_%02d" % (index + 1)
+			var mesh := BoxMesh.new()
+			mesh.size = Vector3(6.0, 3.0, 4.0)
+			pod.mesh = mesh
+			pod.material_override = pod_material
+			pod.position = _salvage_positions[index]
+			world.add_child(pod)
+			var light := OmniLight3D.new()
+			light.light_color = Color(1.0, 0.42, 0.10)
+			light.light_energy = 1.2
+			light.omni_range = 18.0
+			pod.add_child(light)
+			_salvage_pods.append(pod)
+	elif _contract_id == "kestrel_patrol":
+		_patrol_positions = [
+			Vector3(280.0, 48.0, -9200.0),
+			Vector3(-360.0, -34.0, -18100.0),
+			Vector3(540.0, 62.0, -27800.0)
+		]
+
+
+func _begin_contract_epilogue() -> void:
+	if _contract_id == "vesper_salvage" and not _salvage_positions.is_empty():
+		stage = MissionStage.RECOVER_SALVAGE
+		_salvage_index = 0
+		_objective_position = _salvage_positions[0]
+		_move_beacon(_objective_position, Color(1.0, 0.62, 0.18))
+		_set_radio("SALVAGE CONTROL", "Three marked cargo pods remain in the debris field. Recover each pod with F.")
+		_save_checkpoint("salvage recovery")
+	elif _contract_id == "kestrel_patrol" and not _patrol_positions.is_empty():
+		stage = MissionStage.PATROL_SWEEP
+		_patrol_index = 0
+		_objective_position = _patrol_positions[0]
+		_move_beacon(_objective_position, Color(0.18, 0.88, 1.0))
+		_set_radio("FRONTIER CONTROL", "Hostiles cleared. Sweep the three patrol markers to secure the Kestrel corridor.")
+		_save_checkpoint("patrol sweep")
+	else:
+		_begin_return_home("All hostiles eliminated. Return to the carrier for debriefing.")
+
+
+func _recover_salvage() -> void:
+	if stage != MissionStage.RECOVER_SALVAGE:
+		return
+	if _distance_to_objective() > 55.0:
+		_set_radio("SALVAGE CONTROL", "Move closer to the highlighted cargo pod before recovery.")
+		return
+	if _salvage_index < _salvage_pods.size() and is_instance_valid(_salvage_pods[_salvage_index]):
+		_salvage_pods[_salvage_index].queue_free()
+	_salvage_index += 1
+	if _salvage_index < _salvage_positions.size():
+		_objective_position = _salvage_positions[_salvage_index]
+		_move_beacon(_objective_position, Color(1.0, 0.62, 0.18))
+		_set_radio("SALVAGE CONTROL", "Cargo pod secured. Proceed to salvage marker %d of 3." % (_salvage_index + 1))
+		_save_checkpoint("salvage pod %d" % _salvage_index)
+	else:
+		_begin_return_home("All three cargo pods recovered. Return to the carrier for payout.")
+
+
+func _advance_patrol_waypoint() -> void:
+	if stage != MissionStage.PATROL_SWEEP:
+		return
+	_patrol_index += 1
+	if _patrol_index < _patrol_positions.size():
+		_objective_position = _patrol_positions[_patrol_index]
+		_move_beacon(_objective_position, Color(0.18, 0.88, 1.0))
+		_set_radio("FRONTIER CONTROL", "Patrol marker %d of 3 secured. Proceed to the next sector." % (_patrol_index + 1))
+		_save_checkpoint("patrol marker %d" % _patrol_index)
+	else:
+		_begin_return_home("All three patrol markers confirmed. Kestrel corridor is secure. Return to the carrier.")
+
+
+func _begin_return_home(message: String) -> void:
+	stage = MissionStage.RETURN_HOME
+	_objective_position = HOME_POSITION
+	_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
+	_set_radio("ORBITAL CONTROL", message)
+	_save_checkpoint("contract objectives complete")
+
 
 func _complete_relay_scan() -> void:
 	stage = MissionStage.DEFEND_RELAY
@@ -232,11 +347,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 	elif stage == MissionStage.DEFEND_WRECK and wave_index < _waves_per_encounter:
 		_next_wave_timer = 18.0
 	elif stage == MissionStage.DEFEND_WRECK:
-		stage = MissionStage.RETURN_HOME
-		_objective_position = HOME_POSITION
-		_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
-		_set_radio("ORBITAL CONTROL", "All hostiles eliminated. Return to the carrier for debriefing.")
-		_save_checkpoint("wreck secured")
+		_begin_contract_epilogue()
 
 func _distance_to_objective() -> float:
 	return player.global_position.distance_to(_objective_position)
@@ -256,6 +367,8 @@ func _update_hud() -> void:
 		MissionStage.RETURN_HOME: objective = "RETURN TO THE ORBITAL CARRIER"
 		MissionStage.DOCKING: objective = "DOCK WITH THE CARRIER  [E]"
 		MissionStage.DOCKED: objective = "CARRIER MAINTENANCE SERVICES"
+		MissionStage.RECOVER_SALVAGE: objective = "RECOVER SALVAGE POD  %d/3  [F]" % mini(_salvage_index + 1, 3)
+		MissionStage.PATROL_SWEEP: objective = "PATROL WAYPOINT  %d/3" % mini(_patrol_index + 1, 3)
 		MissionStage.COMPLETE: objective = "MISSION COMPLETE"
 		MissionStage.FAILED: objective = "MISSION FAILED"
 	_objective_label.text = objective
@@ -269,7 +382,7 @@ func _update_hud() -> void:
 		completed_waves = _waves_per_encounter
 	elif stage == MissionStage.DEFEND_WRECK:
 		completed_waves = _waves_per_encounter + wave_index - 1
-	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.DOCKING or stage == MissionStage.DOCKED or stage == MissionStage.COMPLETE:
+	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.DOCKING or stage == MissionStage.DOCKED or stage == MissionStage.RECOVER_SALVAGE or stage == MissionStage.PATROL_SWEEP or stage == MissionStage.COMPLETE:
 		completed_waves = total_waves
 	if stage == MissionStage.DOCKING:
 		var alignment := (-player.global_transform.basis.z).normalized().dot(Vector3.BACK)
@@ -785,6 +898,8 @@ func _save_checkpoint(reason: String = "manual") -> bool:
 		"wave_index": wave_index,
 		"mission_seconds": mission_seconds,
 		"enemies_destroyed": enemies_destroyed,
+		"salvage_index": _salvage_index,
+		"patrol_index": _patrol_index,
 		"player_position": [player.global_position.x, player.global_position.y, player.global_position.z],
 		"player_rotation": [player.global_rotation.x, player.global_rotation.y, player.global_rotation.z],
 		"player_velocity": [player.velocity.x, player.velocity.y, player.velocity.z],
@@ -823,12 +938,14 @@ func restore_from_save(payload: Dictionary) -> bool:
 	if str(payload.get("contract_id", _contract_id)) != _contract_id:
 		return false
 	var saved_stage := int(payload.get("stage", -1))
-	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.DOCKING:
+	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.PATROL_SWEEP:
 		return false
 	stage = saved_stage
 	wave_index = maxi(0, int(payload.get("wave_index", 0)))
 	mission_seconds = maxf(0.0, float(payload.get("mission_seconds", 0.0)))
 	enemies_destroyed = clampi(int(payload.get("enemies_destroyed", 0)), 0, 100)
+	_salvage_index = clampi(int(payload.get("salvage_index", 0)), 0, _salvage_positions.size())
+	_patrol_index = clampi(int(payload.get("patrol_index", 0)), 0, maxi(0, _patrol_positions.size() - 1))
 	player.global_position = _vector_from_payload(payload.get("player_position", []), player.global_position)
 	player.global_rotation = _vector_from_payload(payload.get("player_rotation", []), player.global_rotation)
 	player.velocity = _vector_from_payload(payload.get("player_velocity", []), Vector3.ZERO)
@@ -850,6 +967,17 @@ func restore_from_save(payload: Dictionary) -> bool:
 			_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
 		MissionStage.DOCKING:
 			_move_beacon(_dock_position, Color(0.18, 1.0, 0.72))
+		MissionStage.RECOVER_SALVAGE:
+			for index in range(_salvage_pods.size()):
+				if index < _salvage_index and is_instance_valid(_salvage_pods[index]):
+					_salvage_pods[index].visible = false
+			if _salvage_index < _salvage_positions.size():
+				_objective_position = _salvage_positions[_salvage_index]
+				_move_beacon(_objective_position, Color(1.0, 0.62, 0.18))
+		MissionStage.PATROL_SWEEP:
+			if _patrol_index < _patrol_positions.size():
+				_objective_position = _patrol_positions[_patrol_index]
+				_move_beacon(_objective_position, Color(0.18, 0.88, 1.0))
 	if stage == MissionStage.DEFEND_RELAY or stage == MissionStage.DEFEND_WRECK:
 		wave_index = maxi(0, wave_index - 1)
 		_spawn_wave()
@@ -949,15 +1077,15 @@ func _show_mission_result(success: bool) -> void:
 
 func _get_waves_cleared(success: bool) -> int:
 	if success:
-		return 6
+		return _waves_per_encounter * 2
 	match stage:
 		MissionStage.DEFEND_RELAY:
 			return maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
 		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK:
-			return 3
+			return _waves_per_encounter
 		MissionStage.DEFEND_WRECK:
 			return _waves_per_encounter + maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
-		MissionStage.RETURN_HOME:
-			return 6
+		MissionStage.RETURN_HOME, MissionStage.RECOVER_SALVAGE, MissionStage.PATROL_SWEEP:
+			return _waves_per_encounter * 2
 		_:
 			return 0
