@@ -44,6 +44,8 @@ var _patrol_index: int = 0
 var _mission_label: Label
 var _objective_label: Label
 var _radio_label: Label
+var _dialogue_layer: CanvasLayer
+var _dialogue_column: VBoxContainer
 var _distance_label: Label
 var _timer_label: Label
 var _progress_label: Label
@@ -75,6 +77,7 @@ func _initialize_mission() -> void:
 		_set_radio("SERA QUINN", str(line.get("en", "Contract accepted. Approach the relay beacon and scan its core.")))
 		_report_story_event("talk")
 		_report_story_event("undock")
+		call_deferred("_show_story_dialogue", "m01_quinn_intro")
 	else:
 		_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
 	print("MISSION_READY: ", _contract_name, " | SYSTEM: ", _system_name, " | WAVES: ", _waves_per_encounter * 2)
@@ -490,6 +493,79 @@ func _build_mission_hud() -> void:
 	_progress_label.add_theme_font_size_override("font_size", 11)
 	_progress_label.add_theme_color_override("font_color", Color(0.42, 0.58, 0.72))
 	column.add_child(_progress_label)
+
+
+
+func _show_story_dialogue(node_id: String) -> void:
+	var dialogue: Dictionary = DialogueM01M05.get_node(node_id)
+	if dialogue.is_empty():
+		_close_story_dialogue()
+		return
+	if not is_instance_valid(_dialogue_layer):
+		_dialogue_layer = CanvasLayer.new()
+		_dialogue_layer.name = "StoryDialogue"
+		_dialogue_layer.layer = 16
+		_dialogue_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+		world.add_child(_dialogue_layer)
+		var shade := ColorRect.new()
+		shade.color = Color(0.003, 0.012, 0.025, 0.72)
+		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_dialogue_layer.add_child(shade)
+		var center := CenterContainer.new()
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_dialogue_layer.add_child(center)
+		var panel := PanelContainer.new()
+		panel.custom_minimum_size = Vector2(560.0, 260.0)
+		center.add_child(panel)
+		_dialogue_column = VBoxContainer.new()
+		_dialogue_column.add_theme_constant_override("separation", 12)
+		panel.add_child(_dialogue_column)
+	else:
+		for child in _dialogue_column.get_children():
+			child.queue_free()
+	var speaker := Label.new()
+	speaker.text = str(dialogue.get("speaker", "COMMS")).replace("_", " ").to_upper()
+	speaker.add_theme_color_override("font_color", Color(0.24, 0.78, 1.0))
+	speaker.add_theme_font_size_override("font_size", 18)
+	_dialogue_column.add_child(speaker)
+	var text_data: Dictionary = dialogue.get("text", {})
+	var language := "ru" if OS.get_locale().begins_with("ru") else "en"
+	var message := Label.new()
+	message.text = str(text_data.get(language, text_data.get("en", "")))
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.custom_minimum_size = Vector2(500.0, 76.0)
+	message.add_theme_font_size_override("font_size", 17)
+	_dialogue_column.add_child(message)
+	var choices: Array = dialogue.get("choices", [])
+	if choices.is_empty():
+		var close_button := Button.new()
+		close_button.text = "ПРОДОЛЖИТЬ" if language == "ru" else "CONTINUE"
+		close_button.custom_minimum_size.y = 42.0
+		close_button.pressed.connect(_close_story_dialogue)
+		_dialogue_column.add_child(close_button)
+		return
+	for choice_variant in choices:
+		var choice: Dictionary = choice_variant
+		var choice_text: Dictionary = choice.get("text", {})
+		var button := Button.new()
+		button.text = str(choice_text.get(language, choice_text.get("en", choice.get("id", ""))))
+		button.custom_minimum_size.y = 38.0
+		var next_node := str(choice.get("next", ""))
+		button.pressed.connect(func() -> void:
+			if next_node.is_empty():
+				_close_story_dialogue()
+			else:
+				_show_story_dialogue(next_node)
+		)
+		_dialogue_column.add_child(button)
+
+
+func _close_story_dialogue() -> void:
+	if is_instance_valid(_dialogue_layer):
+		_dialogue_layer.queue_free()
+	_dialogue_layer = null
+	_dialogue_column = null
+
 
 func _set_radio(source: String, message: String) -> void:
 	if is_instance_valid(_radio_label):
