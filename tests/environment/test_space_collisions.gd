@@ -71,6 +71,9 @@ func _run() -> void:
 	var stellar_primary := environment.get_node("StellarPrimary") as MeshInstance3D
 	var expected_star_position := sky_camera.global_position + sky_camera.global_basis * Vector3(-620.0, 285.0, -3200.0)
 	_check(stellar_primary.global_position.distance_to(expected_star_position) < 1.0, "the primary star remains a camera-relative sky landmark during long flights")
+	var stellar_key_light := environment.get_node("StellarKeyLight") as DirectionalLight3D
+	var expected_light_direction := sky_camera.global_basis * Vector3(620.0, -285.0, 3200.0).normalized()
+	_check((-stellar_key_light.global_basis.z).dot(expected_light_direction) > 0.98, "the directional key light points away from the visible primary star")
 	var tracked_clusters := environment.get_node("ChromaticStarClusters") as MultiMeshInstance3D
 	_check(tracked_clusters.global_position.distance_to(sky_camera.global_position) < 0.01, "chromatic star clusters remain camera-relative during long flights")
 	var tracked_clouds := environment.get_node("AureliaCloudLayer") as MeshInstance3D
