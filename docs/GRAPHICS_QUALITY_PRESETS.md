@@ -1,61 +1,46 @@
-# Graphics quality, dynamic resolution, bloom
+# Graphics quality, dynamic resolution and post-processing
 
-**Autoload:** `GraphicsQuality` (`scripts/graphics/graphics_quality.gd`)  
-**FPS adaptive:** `scripts/graphics/dynamic_resolution.gd`  
-**Persist:** `user://graphics.cfg`  
-**Cycle:** F10 → `cycle_graphics_quality`
+**Autoload:** GraphicsQuality (scripts/graphics/graphics_quality.gd)  
+**FPS governor:** DynamicResolution (scripts/graphics/dynamic_resolution.gd)  
+**Persisted in:** user://graphics.cfg  
+**Controls:** main-menu GRAPHICS QUALITY button; F10 during flight.
 
 ## Presets
 
-| | Low | Medium | High |
-|--|-----|--------|------|
-| 3D scale | 0.59 | 0.77 | 1.0 |
+| Setting | Low | Medium | High |
+|---|---:|---:|---:|
+| Base 3D scale | 0.59 | 0.77 | 1.0 |
 | Upscale mode | Bilinear | FSR 1.0 | FSR 1.0 |
-| Shadows | OFF | 160 m, 1 split | 280 m, 2 splits |
-| SSAO | OFF | OFF | ON |
+| Shadows | Off | 160 m / 1 split | 280 m / 2 splits |
+| SSAO | Off | Off | On |
 | Glow intensity | 0.32 | 0.50 | 0.62 |
 | Glow bloom | 0.12 | 0.22 | 0.32 |
-| HDR threshold | 1.0 | 0.85 | 0.70 |
-| Screen post | OFF | ON | ON |
-
-Default: **Medium** (scale 0.77 ≈ FSR “Ultra Quality”).
+| Screen post | Off | On | On |
+| Asteroids | 80 | 160 | 240 |
+| Primary stars | ~2,020 | ~3,074 | 3,800 |
+| Dust particles | 840 | 1,680 | 2,400 |
+| Planet segments | 48 | 80 | 96 |
+| Gravitational lens | Off | On | On |
 
 ## Dynamic resolution
 
-1. **Preset base scale** — `Viewport.scaling_3d_scale` from table above.  
-2. **Optional FPS loop** — attach `DynamicResolution`:
+The DynamicResolution node is part of the inherited flight scene. It adjusts only internal 3D scale, never the Full HD UI/window resolution. On Low/Medium it lowers scale when measured FPS is below 92% of target and raises it above 108%, with a cooldown to prevent oscillation. High stays at native scale.
 
-```gdscript
-# e.g. under TestFlight
-var dr := DynamicResolution.new()
-dr.target_fps = 60.0
-add_child(dr)
-```
+Effective scale is clamped to 0.4–1.25. Current max multiplier is 1.0, so the governor does not supersample.
 
-On Low/Medium, if FPS < 90% of target → lower `dynamic_scale_mul` (floor 0.65).  
-If FPS > 108% → raise toward 1.0. High stays at full internal scale.
+## Runtime consumers
 
-Effective scale = `clamp(base_scale * dynamic_scale_mul, 0.4, 1.25)`.
-
-## Bloom (Environment glow)
-
-Built-in Forward+ glow (not a second fullscreen blur):
-
-- Levels 2–6 weighted for soft engine/projectile halo  
-- `glow_bloom` + `glow_hdr_threshold` drive HDR spill  
-- Blend: Softlight; strength ~1.05  
-
-Tuned via `OpenSpaceBackdrop.apply_quality()`.
+- SpaceEnvironment rebuilds starfield, asteroid MultiMesh/collision proxies, cosmic dust, nebula and galaxy detail, and adjusts planet tessellation.
+- ShipVFX scales exhaust particle counts.
+- ScreenPostFx enables the cinematic overlay.
+- GravitationalLensFx controls lens enablement, strength, chroma and ring boost.
+- WorldEnvironment and key light receive tonemapping, glow, SSAO and shadow settings.
 
 ## API
 
-```gdscript
 GraphicsQuality.set_preset(GraphicsQuality.Preset.HIGH)
 GraphicsQuality.cycle_preset()
 GraphicsQuality.set_dynamic_scale_mul(0.85)
 print(GraphicsQuality.effective_scale_3d())
-```
 
-## NOT RUN
-
-Measure FPS / 3D resolution on target GPU before locking defaults.
+Godot CI checks the preset table and scene imports. Interactive FPS profiling and image-quality review on the target PC remain pending.
