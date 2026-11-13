@@ -77,8 +77,8 @@ func _build_canopy_frame() -> void:
 	# structure farther forward so its side rails frame the view instead of
 	# intersecting the camera or disappearing behind it.
 	for side in [-1.0, 1.0]:
-		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -2.62), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
-		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.55), Vector3(0.09, 0.12, 4.15), _canopy_frame, Vector3(0.0, 0.0, side * 4.0))
+		_box("Forward canopy pillar %s" % side, Vector3(side * 0.82, 0.28, -2.62), Vector3(0.052, 0.92, 0.065), _canopy_frame, Vector3(-13.0, side * -7.0, 0.0))
+		_box("Side canopy rail %s" % side, Vector3(side * 1.14, 0.36, -0.55), Vector3(0.045, 0.09, 4.15), _canopy_frame, Vector3(0.0, 0.0, side * 3.0))
 		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.82, -2.28), Vector3(0.055, 0.055, 0.78), _canopy_frame, Vector3(-8.0, side * 12.0, 0.0))
 	_box("Canopy cross member", Vector3(0.0, 0.88, -2.55), Vector3(1.55, 0.05, 0.07), _canopy_frame)
 	_box("Rear canopy arch", Vector3(0.0, 0.46, 0.42), Vector3(1.72, 0.12, 0.10), _panel)
@@ -116,9 +116,9 @@ func _build_holographic_hud() -> void:
 	_box("HUD vertical line", Vector3(0.0, 0.10, -3.1), Vector3(0.008, 0.48, 0.008), _white)
 	var target_label := Label3D.new()
 	target_label.text = "TARGET  /  NAV  /  SYSTEMS"
-	target_label.position = Vector3(-0.78, 0.40, -3.05)
-	target_label.font_size = 28
-	target_label.pixel_size = 0.0024
+	target_label.position = Vector3(-0.50, 0.38, -3.05)
+	target_label.font_size = 18
+	target_label.pixel_size = 0.0018
 	target_label.modulate = Color(0.28, 0.78, 1.0)
 	target_label.outline_size = 0
 	add_child(target_label)
