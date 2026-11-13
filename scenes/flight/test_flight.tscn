@@ -88,13 +88,13 @@ glow_hdr_threshold = 1.35
 glow_hdr_scale = 1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_cockpit_dashboard"]
-size = Vector3(1.65, 0.2, 0.78)
+size = Vector3(1.35, 0.12, 0.42)
 
 [sub_resource type="BoxMesh" id="BoxMesh_cockpit_screen"]
-size = Vector3(0.78, 0.035, 0.32)
+size = Vector3(0.52, 0.025, 0.2)
 
 [sub_resource type="BoxMesh" id="BoxMesh_cockpit_frame"]
-size = Vector3(0.09, 0.78, 0.1)
+size = Vector3(0.06, 0.58, 0.07)
 
 [sub_resource type="StandardMaterial3D" id="Material_cockpit"]
 albedo_color = Color(0.018, 0.032, 0.052, 1)
@@ -133,9 +133,12 @@ radial_segments = 48
 rings = 24
 
 [sub_resource type="StandardMaterial3D" id="Material_planet"]
-albedo_color = Color(0.055, 0.16, 0.29, 1)
-metallic = 0.12
-roughness = 0.88
+albedo_color = Color(0.075, 0.19, 0.34, 1)
+metallic = 0.08
+roughness = 0.86
+emission_enabled = true
+emission = Color(0.018, 0.042, 0.082, 1)
+emission_energy_multiplier = 0.72
 
 [sub_resource type="StandardMaterial3D" id="Material_hull"]
 albedo_color = Color(0.16, 0.25, 0.36, 1)
@@ -281,22 +284,22 @@ surface_material_override/0 = SubResource("Material_accent")
 visible = false
 
 [node name="Dashboard" type="MeshInstance3D" parent="PlayerShip/CockpitInterior"]
-position = Vector3(0, 0.02, -1.12)
+position = Vector3(0, -0.12, -1.85)
 mesh = SubResource("BoxMesh_cockpit_dashboard")
 surface_material_override/0 = SubResource("Material_cockpit")
 
 [node name="NavigationScreen" type="MeshInstance3D" parent="PlayerShip/CockpitInterior"]
-position = Vector3(0, 0.145, -1.19)
+position = Vector3(0, -0.03, -1.9)
 mesh = SubResource("BoxMesh_cockpit_screen")
 surface_material_override/0 = SubResource("Material_cockpit_screen")
 
 [node name="LeftCockpitFrame" type="MeshInstance3D" parent="PlayerShip/CockpitInterior"]
-position = Vector3(-0.92, 0.52, -1.45)
+position = Vector3(-1.0, 0.48, -2.45)
 mesh = SubResource("BoxMesh_cockpit_frame")
 surface_material_override/0 = SubResource("Material_secondary")
 
 [node name="RightCockpitFrame" type="MeshInstance3D" parent="PlayerShip/CockpitInterior"]
-position = Vector3(0.92, 0.52, -1.45)
+position = Vector3(1.0, 0.48, -2.45)
 mesh = SubResource("BoxMesh_cockpit_frame")
 surface_material_override/0 = SubResource("Material_secondary")
 

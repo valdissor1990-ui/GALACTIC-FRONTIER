@@ -36,7 +36,17 @@ func _run() -> void:
 		push_error("TEST_FLIGHT_VISUAL_QA: combat encounter did not spawn its enemy")
 		quit(1)
 		return
-	await create_timer(1.0).timeout
+	var enemy := encounter.get("_current_enemy") as Node3D
+	var player := scene.get_node("PlayerShip") as ShipController
+	var targeting := player.get_node("TargetingSystem") as TargetingSystem
+	if enemy != null:
+		enemy.global_position = player.global_position + Vector3(0.0, 1.0, -32.0)
+		enemy.look_at(player.global_position, Vector3.UP)
+		targeting.set_target(enemy)
+	await create_timer(0.35).timeout
+	Input.action_press("fire_primary")
+	await create_timer(0.2).timeout
+	Input.action_release("fire_primary")
 	await _capture(scene, "test-flight-combat.png")
 	print("TEST_FLIGHT_VISUAL_QA_COMPLETE cameras=2 combat_enemy=true resolution=", get_root().size)
 	quit(0)
