@@ -49,6 +49,8 @@ func _run() -> void:
 	_check(is_equal_approx(player.flight_config.boost_capacity, 12.5), "boost injector increases boost capacity")
 	_check(is_equal_approx(player.flight_config.boost_recharge_rate, 2.36), "boost injector increases recharge rate")
 	_check(profile.get_installed_modules("player_fighter").size() == 4, "installed modules persist on the selected ship")
+	profile.call("_load_profile")
+	_check(profile.get_installed_modules("player_fighter").size() == 4, "installed modules survive a profile reload")
 	_check(profile.purchase_module("raider_interceptor", "ion_thrusters"), "the same module slot can be upgraded independently on another ship")
 	profile.selected_ship_id = "raider_interceptor"
 	player.refresh_profile_upgrades()
@@ -74,7 +76,7 @@ func _run() -> void:
 	await process_frame
 
 	if _failures.is_empty():
-		print("SHIP_MODULES_TEST_PASS assertions=18")
+		print("SHIP_MODULES_TEST_PASS assertions=19")
 		quit(0)
 	else:
 		for failure in _failures:
