@@ -18,6 +18,7 @@ public:
 
     virtual void Tick(float DeltaSeconds) override;
 
+    UFUNCTION(BlueprintCallable, Category="Enemy|AI")
     void SetCombatTarget(AActor* Target);
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy")
