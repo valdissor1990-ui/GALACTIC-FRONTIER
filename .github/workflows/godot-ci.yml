@@ -14,6 +14,7 @@ on:
       - chatgpt/campaign-story-integration
       - chatgpt/open-world-space-environment
       - chatgpt/deep-space-detail-pass
+      - chatgpt/star-clusters-nebula-depth
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
   pull_request:
