@@ -38,7 +38,7 @@ func _process(_delta: float) -> void:
 		violet.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
 
 	# Aurelia is a distant sky landmark, not a nearby world object. Keep its
-	# visual shell and collision proxy together relative to the active camera
+	# visual shell camera-relative; its physical collision proxy remains fixed
 	# so long-range mission shots retain a readable planetary horizon.
 	var planet_position := camera.global_position + camera.global_basis * Vector3(-160.0, 26.0, -285.0)
 	for landmark_name in ["Aurelia", "AureliaAtmosphere"]:
