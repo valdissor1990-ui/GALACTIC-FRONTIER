@@ -20,8 +20,8 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 
 [autoload]
-Campaign="*res://scripts/story/campaign_manager.gd"
 GameSave="*res://scripts/save/save_manager.gd"
+Campaign="*res://scripts/story/campaign_manager.gd"
 GameProfile="*res://scripts/core/player_profile.gd"
 AudioManager="*res://scripts/audio/audio_manager.gd"
 UpdateManager="*res://scripts/update/update_manager.gd"
