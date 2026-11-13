@@ -12,7 +12,7 @@ var _cockpit_active: bool = false
 
 func _ready() -> void:
 	if ship_visual == null:
-		push_error(
+		push_warning(
 			"CameraRig expected a Node3D named 'Visual' under its parent ship. "
 			+ "The camera can still switch, but the placeholder hull cannot be hidden."
 		)
