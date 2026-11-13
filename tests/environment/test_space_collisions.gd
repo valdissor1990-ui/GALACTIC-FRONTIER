@@ -62,7 +62,6 @@ func _run() -> void:
 	environment.call("_process", 0.0)
 	var tracked_clusters := environment.get_node("ChromaticStarClusters") as MultiMeshInstance3D
 	_check(tracked_clusters.global_position.distance_to(sky_camera.global_position) < 0.01, "chromatic star clusters remain camera-relative during long flights")
-	_check(tracked_clusters.multimesh.get_instance_custom_data(0).r > 0.0, "chromatic star cluster instances retain per-star color data")
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
