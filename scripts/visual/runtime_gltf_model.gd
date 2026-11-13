@@ -7,14 +7,14 @@ extends Node3D
 
 static var _packed_scene_cache: Dictionary = {}
 static var _surface_albedo_noise: NoiseTexture2D
-static var _surface_normal_noise: NoiseTexture2D
+static var _surface_roughness_noise: NoiseTexture2D
 
 
 static func apply_surface_finish(root: Node) -> int:
 	# GLB only carries standard PBR maps; add a lightweight Godot-side detail
 	# layer after import so procedural Blender materials also read correctly
 	# in the actual game, not just in the Blender preview renders.
-	if _surface_albedo_noise == null or _surface_normal_noise == null:
+	if _surface_albedo_noise == null or _surface_roughness_noise == null:
 		_create_surface_noise()
 	return _apply_surface_finish_recursive(root)
 
@@ -27,29 +27,27 @@ static func _create_surface_noise() -> void:
 	noise.fractal_octaves = 4
 	noise.frequency = 0.085
 
-	var subtle_ramp := Gradient.new()
-	subtle_ramp.set_color(0, Color(0.88, 0.88, 0.88, 1.0))
-	subtle_ramp.set_color(1, Color(1.0, 1.0, 1.0, 1.0))
-	var ramp_texture := GradientTexture1D.new()
-	ramp_texture.gradient = subtle_ramp
-
+	var albedo_ramp := Gradient.new()
+	albedo_ramp.set_color(0, Color(0.88, 0.88, 0.88, 1.0))
+	albedo_ramp.set_color(1, Color(1.0, 1.0, 1.0, 1.0))
 	_surface_albedo_noise = NoiseTexture2D.new()
 	_surface_albedo_noise.noise = noise
-	_surface_albedo_noise.color_ramp = ramp_texture
+	_surface_albedo_noise.color_ramp = albedo_ramp
 	_surface_albedo_noise.width = 256
 	_surface_albedo_noise.height = 256
 	_surface_albedo_noise.seamless = true
 	_surface_albedo_noise.generate_mipmaps = true
 
-	var normal_noise := NoiseTexture2D.new()
-	normal_noise.noise = noise
-	normal_noise.width = 256
-	normal_noise.height = 256
-	normal_noise.seamless = true
-	normal_noise.generate_mipmaps = true
-	normal_noise.as_normal_map = true
-	normal_noise.bump_strength = 0.28
-	_surface_normal_noise = normal_noise
+	var roughness_ramp := Gradient.new()
+	roughness_ramp.set_color(0, Color(0.72, 0.72, 0.72, 1.0))
+	roughness_ramp.set_color(1, Color(1.0, 1.0, 1.0, 1.0))
+	_surface_roughness_noise = NoiseTexture2D.new()
+	_surface_roughness_noise.noise = noise
+	_surface_roughness_noise.color_ramp = roughness_ramp
+	_surface_roughness_noise.width = 256
+	_surface_roughness_noise.height = 256
+	_surface_roughness_noise.seamless = true
+	_surface_roughness_noise.generate_mipmaps = true
 
 
 static func _apply_surface_finish_recursive(node: Node) -> int:
@@ -75,9 +73,10 @@ static func _finished_material(source: StandardMaterial3D) -> StandardMaterial3D
 	var material := source.duplicate(true) as StandardMaterial3D
 	material.detail_enabled = true
 	material.detail_albedo = _surface_albedo_noise
-	material.detail_blend_mode = BaseMaterial3D.DETAIL_BLEND_MODE_MUL
-	material.detail_uv = BaseMaterial3D.DETAIL_UV_1
-	material.detail_normal = _surface_normal_noise
+	material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+	material.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
+	material.roughness_texture = _surface_roughness_noise
+	material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	material.roughness = clampf(material.roughness, 0.24, 0.88)
 	return material
 
