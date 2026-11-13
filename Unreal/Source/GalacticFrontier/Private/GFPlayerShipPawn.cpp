@@ -52,6 +52,7 @@ void AGFPlayerShipPawn::BeginPlay()
     bCockpitCameraActive = false;
     if (ChaseCamera) ChaseCamera->SetActive(true);
     if (CockpitCamera) CockpitCamera->SetActive(false);
+    if (Damageable) Damageable->OnDestroyed.AddDynamic(this, &AGFPlayerShipPawn::HandleShipDestroyed);
 
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
@@ -116,3 +117,10 @@ void AGFPlayerShipPawn::SetFireReleased() { if (Weapon) Weapon->StopFiring(); }
 void AGFPlayerShipPawn::SetCameraTogglePressed() { ToggleCameraMode(); }
 void AGFPlayerShipPawn::SetTargetLockPressed() { if (Targeting) Targeting->AcquireBestTarget(); }
 void AGFPlayerShipPawn::SetTargetClearPressed() { if (Targeting) Targeting->ClearTarget(); }
+
+void AGFPlayerShipPawn::HandleShipDestroyed()
+{
+    if (Flight) Flight->SetFlightDisabled(true);
+    if (Weapon) Weapon->StopFiring();
+    SetActorTickEnabled(false);
+}
