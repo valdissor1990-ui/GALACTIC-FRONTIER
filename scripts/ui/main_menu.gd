@@ -33,9 +33,9 @@ func _build_menu() -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "MainMenuLayout"
 	layout.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	layout.position = Vector2(90, -210)
+	layout.position = Vector2(90, -350)
 	layout.custom_minimum_size = Vector2(520, 450)
-	layout.add_theme_constant_override("separation", 14)
+	layout.add_theme_constant_override("separation", 10)
 	add_child(layout)
 	var eyebrow := Label.new()
 	eyebrow.text = "FRONTIER COMMAND  /  SINGLE-PILOT ACCESS"
@@ -47,7 +47,7 @@ func _build_menu() -> void:
 	title.add_theme_color_override("font_color", Color("#e8f4fb"))
 	layout.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "THE SILENT RELAY"
+	subtitle.text = "FRONTIER CONTRACT NETWORK"
 	subtitle.add_theme_font_size_override("font_size", 18)
 	subtitle.add_theme_color_override("font_color", Color("#43c2e1"))
 	layout.add_child(subtitle)
