@@ -4,9 +4,32 @@ heavy fighter, bomber, cargo hauler, frigate and cruiser.
 Run with Blender 4.5:
   blender --background --python scripts/blender/build_fleet_expansion.py -- --output-dir build/blender
 """
-import bpy, math, os, sys
+import bpy, math, os, sys, tempfile
 from array import array
 from mathutils import Vector
+
+
+def ensure_glb_file_image(image):
+    """Make generated/packed images visible to Blender's glTF image exporter."""
+    if image is None:
+        return None
+    export_name = image.name + "_GLTF"
+    existing = bpy.data.images.get(export_name)
+    if existing is not None and existing.source == "FILE" and existing.has_data:
+        return existing
+    temp_dir = bpy.app.tempdir or tempfile.gettempdir()
+    os.makedirs(temp_dir, exist_ok=True)
+    safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
+    image_path = os.path.join(temp_dir, safe_name + ".png")
+    image.filepath_raw = image_path
+    image.file_format = "PNG"
+    image.save()
+    file_image = bpy.data.images.load(image_path, check_existing=False)
+    file_image.name = export_name
+    file_image.colorspace_settings.name = image.colorspace_settings.name
+    file_image.pack()
+    return file_image
+
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -115,6 +138,9 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
         links.new(texcoord.outputs["UV"], node.inputs["Vector"])
         return node
 
+    albedo_image = ensure_glb_file_image(albedo_image)
+    roughness_image = ensure_glb_file_image(roughness_image)
+    normal_image = ensure_glb_file_image(normal_image)
     albedo_node = image_node(albedo_image, "Baked aerospace albedo")
     roughness_node = image_node(roughness_image, "Baked roughness breakup")
     normal_node = image_node(normal_image, "Baked aerospace micro-normal")
@@ -614,7 +640,7 @@ def main():
         base=os.path.join(dest,slug)
         bpy.ops.wm.save_as_mainfile(filepath=base+".blend")
         bpy.ops.export_scene.gltf(filepath=base+".glb",export_format="GLB",use_selection=True,
-            export_apply=True,export_materials="EXPORT",export_cameras=False,export_lights=False)
+            export_apply=True,export_materials="EXPORT",export_image_format="PNG",export_image_quality=100,export_cameras=False,export_lights=False)
         cam=render_setup(center,extent)
         bpy.context.scene.camera=cam
         bpy.context.scene.render.filepath=base+"_preview.png"
