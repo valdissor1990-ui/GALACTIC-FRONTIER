@@ -11,15 +11,26 @@ var _passed: int = 0
 
 
 func _initialize() -> void:
+	call_deferred("_run_tests")
+
+
+func _run_tests() -> void:
 	print("=== GALACTIC FRONTIER — CameraRig tests ===")
 
 	_test_initial_mode_is_chase()
+	await process_frame
 	_test_toggle_chase_to_cockpit()
+	await process_frame
 	_test_toggle_cockpit_to_chase()
+	await process_frame
 	_test_toggle_does_not_change_ship_transform()
+	await process_frame
 	_test_toggle_does_not_change_ship_velocity()
+	await process_frame
 	_test_missing_visual_does_not_crash()
+	await process_frame
 	_test_cameras_still_switch_without_visual()
+	await process_frame
 
 	print("")
 	if _failed == 0:
