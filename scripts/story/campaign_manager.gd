@@ -174,7 +174,9 @@ func _all_required_objectives_complete(definition: Dictionary) -> bool:
 		if bool(objective.get("optional", false)):
 			continue
 		var objective_id := str(objective.get("id", ""))
-		if not bool(objective_progress.get(objective_id, false)):
+		var required_count := maxi(1, int(objective.get("count", 1)))
+		var current_progress := int(objective_progress.get(objective_id, 0)) if required_count > 1 else (1 if bool(objective_progress.get(objective_id, false)) else 0)
+		if current_progress < required_count:
 			return false
 	return true
 
