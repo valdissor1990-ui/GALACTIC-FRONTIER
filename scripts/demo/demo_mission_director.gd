@@ -956,7 +956,7 @@ func _get_waves_cleared(success: bool) -> int:
 		MissionStage.INVESTIGATE_WRECK, MissionStage.SCAN_WRECK:
 			return 3
 		MissionStage.DEFEND_WRECK:
-			return 3 + maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
+			return _waves_per_encounter + maxi(0, wave_index - (1 if enemies_remaining > 0 else 0))
 		MissionStage.RETURN_HOME:
 			return 6
 		_:
