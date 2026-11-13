@@ -63,8 +63,10 @@ func _run() -> void:
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	var gas_giant := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
-	var gas_material := gas_giant.mesh.surface_get_material(0) as StandardMaterial3D if gas_giant != null else null
-	_check(gas_material != null and gas_material.albedo_texture != null, "authored 2K gas-giant texture loads through Image API")
+	var gas_material := gas_giant.mesh.surface_get_material(0) as ShaderMaterial if gas_giant != null else null
+	var gas_albedo := gas_material.get_shader_parameter("gas_albedo_texture") as Texture2D if gas_material != null else null
+	_check(gas_material != null and gas_material.shader != null, "gas giant uses its layered procedural surface shader")
+	_check(gas_albedo != null and gas_albedo.get_width() >= 2048 and gas_albedo.get_height() >= 1024, "authored 2K gas-giant texture is bound to the surface shader")
 	_check(asteroid_field != null and not (asteroid_field.multimesh.mesh is SphereMesh), "NASA asteroid GLB geometry is used instead of sphere fallback")
 	_check(environment.has_node("OrbitalStationLandmark/NASA_ISS_Visual") or environment.has_node("OrbitalStationLandmark/ProceduralISS"), "orbital station uses NASA GLB or the stock-Godot procedural fallback")
 	_check(environment.has_node("CivilianCargoA") and environment.has_node("CivilianMiner") and environment.has_node("CivilianCourier"), "Kenney civilian traffic GLBs are loaded")
