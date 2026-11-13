@@ -156,7 +156,7 @@ func _build_showroom() -> void:
 
 	var panel := PanelContainer.new()
 	panel.position = Vector2(38, 78)
-	panel.custom_minimum_size = Vector2(430, 260)
+	panel.custom_minimum_size = Vector2(430, 310)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.008, 0.020, 0.042, 0.88)
 	panel_style.border_color = Color(0.08, 0.48, 0.72, 0.82)
@@ -194,6 +194,7 @@ func _build_showroom() -> void:
 	column.add_child(_description_label)
 
 	_specs_label = Label.new()
+	_specs_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_specs_label.add_theme_font_size_override("font_size", 12)
 	_specs_label.add_theme_color_override("font_color", Color(0.35, 0.65, 0.82))
 	column.add_child(_specs_label)
@@ -285,9 +286,29 @@ func _show_ship(index: int) -> void:
 	_name_label.text = SHIPS[_ship_index].name
 	_role_label.text = SHIPS[_ship_index].role
 	_description_label.text = SHIPS[_ship_index].description
-	_specs_label.text = SHIPS[_ship_index].specs
+	_specs_label.text = _get_ship_specs_with_modules(SHIPS[_ship_index])
 	_counter_label.text = "HULL REGISTRY  /  %02d OF %02d" % [_ship_index + 1, SHIPS.size()]
 	_update_selection_controls()
+
+
+
+func _get_ship_specs_with_modules(ship_data: Dictionary) -> String:
+	var specs := str(ship_data.get("specs", ""))
+	if not bool(ship_data.get("flyable", false)):
+		return specs
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null or not bool(profile.call("is_ship_unlocked", str(ship_data.get("id", "")))):
+		return specs
+	var installed: Array = profile.call("get_installed_modules", str(ship_data.get("id", "")))
+	var catalog: Array = profile.call("get_module_catalog")
+	var names: Array[String] = []
+	for module_id in installed:
+		for module in catalog:
+			if str(module.get("id", "")) == str(module_id):
+				names.append(str(module.get("name", module_id)))
+				break
+	var installed_text := ", ".join(names) if not names.is_empty() else "NONE"
+	return specs + "\nINSTALLED SYSTEMS  /  " + installed_text
 
 
 func _update_selection_controls() -> void:
