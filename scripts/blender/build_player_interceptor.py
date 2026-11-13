@@ -35,7 +35,7 @@ def mat(name, color, metallic=0.0, rough=0.4, emission=None, emission_strength=0
 hull = mat("Titanium | blue-grey ceramic coat", (0.19,0.27,0.34), .78, .29)
 armor = mat("Armor | dark graphite", (.035,.065,.085), .72, .34)
 edge = mat("Machined titanium edges", (.42,.52,.58), .86, .24)
-accent = mat("Identification amber", (.95,. thirty if False else .34,.075), .48, .3)
+accent = mat("Identification amber", (.95,.34,.075), .48, .3)
 glass = mat("Cockpit | smoked sapphire", (.012,.075,.12), .72, .12)
 glow = mat("Engine | ion cyan", (.08,.48,.72), .35, .2, (.04,.48,1.0), 3.5)
 white = mat("Navigation | cool white", (.6,.82,.95), .2, .22, (.3,.7,1), 2.0)
