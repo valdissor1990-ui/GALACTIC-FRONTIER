@@ -85,6 +85,21 @@ def _matrix_to_gltf_column_major(matrix):
     return [matrix[row][column] for column in range(4) for row in range(4)]
 
 
+def _run_transform_self_check():
+    """Fail early if parent/child transform composition regresses."""
+    parent = _node_local_matrix({
+        "translation": [10.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.7071067811865475, 0.7071067811865476],
+    })
+    child = _node_local_matrix({"translation": [1.0, 0.0, 0.0]})
+    world = _multiply_matrix(parent, child)
+    actual = (world[0][3], world[1][3], world[2][3])
+    expected = (10.0, 1.0, 0.0)
+    if any(abs(actual[i] - expected[i]) > 1e-5 for i in range(3)):
+        raise AssertionError("GLB transform self-check failed: " + str(actual))
+    log("GLB transform self-check passed: nested translation + parent rotation")
+
+
 def inspect_glb_scene(source_path: Path):
     """Inventory GLB nodes and calculate each mesh node's composed world matrix.
 
@@ -195,7 +210,7 @@ def inspect_glb_scene(source_path: Path):
         }
         manifest_dir = PROJECT_ROOT / "Saved" / "GFAssetManifests"
         manifest_dir.mkdir(parents=True, exist_ok=True)
-        manifest_path = manifest_dir / (source_path.stem + ".json")
+        manifest_path = manifest_dir / (source_path.parent.name + "_" + source_path.stem + ".json")
         manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
         log("GLB source inventory " + source_path.name +
@@ -326,6 +341,7 @@ def create_flight_test_level(imported):
 
 
 def main():
+    _run_transform_self_check()
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Ships")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
