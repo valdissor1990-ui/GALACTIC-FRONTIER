@@ -48,6 +48,9 @@ def ensure_glb_file_image(image):
     safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
     image_path = os.path.join(temp_dir, safe_name + ".png")
 
+    image.update()
+    if not image.has_data:
+        raise RuntimeError("Source PBR image has no pixel data: " + image.name)
     original_path = image.filepath_raw
     try:
         image.filepath_raw = image_path
@@ -67,7 +70,10 @@ def ensure_glb_file_image(image):
                            (export_name, file_image.source))
     if not file_image.has_data:
         file_image.reload()
-    if not file_image.has_data:
+    file_image.update()
+    print("GF_GLTF_IMAGE_RELOAD", export_name, file_image.source,
+          tuple(file_image.size), file_image.has_data, os.path.getsize(image_path))
+    if not file_image.has_data or file_image.size[0] < 1 or file_image.size[1] < 1:
         raise RuntimeError("GLB texture reload has no pixel data: " + export_name)
     file_image.name = export_name
     file_image.colorspace_settings.name = image.colorspace_settings.name
