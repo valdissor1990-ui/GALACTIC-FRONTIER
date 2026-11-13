@@ -44,6 +44,10 @@ func _run() -> void:
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
+	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
+	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
+	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
+	_check(dust_field != null and dust_field.multimesh.instance_count >= 1000, "interplanetary dust is populated in one batched MultiMesh")
 	var sky_camera := Camera3D.new()
 	sky_camera.position = Vector3(120.0, 34.0, -240.0)
 	sky_camera.current = true
