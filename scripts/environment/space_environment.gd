@@ -354,6 +354,14 @@ func _build_world_environment() -> void:
 	environment.sdfgi_min_cell_size = 0.2
 	world.environment = environment
 	add_child(world)
+	# Explicitly bind the active viewport world as well; nested WorldEnvironment
+	# nodes can otherwise lose precedence when this scene is instanced by a showcase.
+	var viewport := get_viewport()
+	if viewport != null and viewport.world_3d != null:
+		viewport.world_3d.environment = environment
+	print("SPACE_ENVIRONMENT_ACTIVE=", viewport != null and viewport.world_3d != null and viewport.world_3d.environment == environment,
+		" background_mode=", environment.background_mode,
+		" background_color=", environment.background_color)
 
 	var key_light := DirectionalLight3D.new()
 	key_light.name = "StellarKeyLight"
