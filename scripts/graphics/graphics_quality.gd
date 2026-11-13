@@ -58,11 +58,11 @@ func get_preset_name() -> String:
 
 func get_tonemap_name() -> String:
 	match tonemap_mode():
-		Environment.TONE_MAP_MODE_FILMIC:
+		Environment.TONE_MAPPER_FILMIC:
 			return "Filmic"
-		Environment.TONE_MAP_MODE_ACES:
+		Environment.TONE_MAPPER_ACES:
 			return "ACES"
-		Environment.TONE_MAP_MODE_AGX:
+		Environment.TONE_MAPPER_AGX:
 			return "AgX"
 		_:
 			return "Other"
@@ -124,12 +124,12 @@ func _apply_viewport_scale() -> void:
 func tonemap_mode() -> int:
 	match current:
 		Preset.LOW:
-			return Environment.TONE_MAP_MODE_FILMIC
+			return Environment.TONE_MAPPER_FILMIC
 		Preset.MEDIUM:
-			return Environment.TONE_MAP_MODE_ACES
+			return Environment.TONE_MAPPER_ACES
 		Preset.HIGH:
-			return Environment.TONE_MAP_MODE_AGX
-	return Environment.TONE_MAP_MODE_ACES
+			return Environment.TONE_MAPPER_AGX
+	return Environment.TONE_MAPPER_ACES
 
 
 func tonemap_exposure() -> float:
@@ -165,7 +165,7 @@ func agx_contrast() -> float:
 func apply_tonemap_extras(env: Environment) -> void:
 	if env == null:
 		return
-	if tonemap_mode() != Environment.TONE_MAP_MODE_AGX:
+	if tonemap_mode() != Environment.TONE_MAPPER_AGX:
 		return
 	if "tonemap_agx_white" in env:
 		env.tonemap_agx_white = agx_white()
@@ -295,6 +295,26 @@ func lens_ring_boost() -> float:
 
 # --- HDR glow ---------------------------------------------------------------
 
+## Keep the star disc on every preset; only the soft flare is quality-scaled.
+func sun_disc_energy() -> float:
+	return 1.8
+
+
+func sun_flare_enabled() -> bool:
+	return current != Preset.LOW
+
+
+func sun_flare_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.16
+		Preset.HIGH:
+			return 0.25
+	return 0.16
+
+
 func glow_enabled() -> bool:
 	return true
 
@@ -370,26 +390,26 @@ func apply_glow_levels(env: Environment) -> void:
 		return
 	match current:
 		Preset.LOW:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.7
-			env.glow_levels[3] = 0.9
-			env.glow_levels[4] = 0.35
-			env.glow_levels[5] = 0.0
-			env.glow_levels[6] = 0.0
+			env.set_glow_level(1, 0.0)
+			env.set_glow_level(2, 0.7)
+			env.set_glow_level(3, 0.9)
+			env.set_glow_level(4, 0.35)
+			env.set_glow_level(5, 0.0)
+			env.set_glow_level(6, 0.0)
 		Preset.MEDIUM:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.6
-			env.glow_levels[3] = 1.0
-			env.glow_levels[4] = 0.7
-			env.glow_levels[5] = 0.35
-			env.glow_levels[6] = 0.0
+			env.set_glow_level(1, 0.0)
+			env.set_glow_level(2, 0.6)
+			env.set_glow_level(3, 1.0)
+			env.set_glow_level(4, 0.7)
+			env.set_glow_level(5, 0.35)
+			env.set_glow_level(6, 0.0)
 		Preset.HIGH:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.6
-			env.glow_levels[3] = 1.0
-			env.glow_levels[4] = 0.7
-			env.glow_levels[5] = 0.35
-			env.glow_levels[6] = 0.15
+			env.set_glow_level(1, 0.0)
+			env.set_glow_level(2, 0.6)
+			env.set_glow_level(3, 1.0)
+			env.set_glow_level(4, 0.7)
+			env.set_glow_level(5, 0.35)
+			env.set_glow_level(6, 0.15)
 
 
 # --- World density ----------------------------------------------------------

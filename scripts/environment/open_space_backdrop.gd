@@ -14,6 +14,9 @@ var _rng := RandomNumberGenerator.new()
 var _world_env: WorldEnvironment
 var _key_light: DirectionalLight3D
 var _sky_mat: ShaderMaterial
+var _sun_disc_root: Node3D
+var _sun_disc: MeshInstance3D
+var _sun_flare: MeshInstance3D
 
 
 func _ready() -> void:
@@ -24,6 +27,7 @@ func _ready() -> void:
 		enable_ssao = gq.ssao_enabled()
 	_setup_sky_environment()
 	_setup_lights()
+	_setup_sun_disc()
 	_setup_planets()
 	_setup_asteroid_belt()
 	_setup_outer_debris()
@@ -66,6 +70,15 @@ func apply_quality(gq: Node) -> void:
 		env.glow_strength = gq.glow_strength()
 		if gq.has_method("apply_glow_levels"):
 			gq.apply_glow_levels(env)
+	if _sun_disc:
+		var disc_material := _sun_disc.material_override as ShaderMaterial
+		if disc_material:
+			disc_material.set_shader_parameter("disc_energy", gq.sun_disc_energy())
+	if _sun_flare:
+		_sun_flare.visible = gq.sun_flare_enabled()
+		var flare_material := _sun_flare.material_override as ShaderMaterial
+		if flare_material:
+			flare_material.set_shader_parameter("flare_strength", gq.sun_flare_strength())
 	if _key_light:
 		_key_light.shadow_enabled = gq.shadow_enabled()
 		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
@@ -115,7 +128,7 @@ func _setup_sky_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.28
-	env.tonemap_mode = gq.tonemap_mode() if gq else Environment.TONE_MAP_MODE_ACES
+	env.tonemap_mode = gq.tonemap_mode() if gq else Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.94
 	env.tonemap_white = gq.tonemap_white() if gq else 7.5
 	if gq and gq.has_method("apply_tonemap_extras"):
@@ -124,10 +137,10 @@ func _setup_sky_environment() -> void:
 	if gq and gq.has_method("apply_glow_levels"):
 		gq.apply_glow_levels(env)
 	else:
-		env.glow_levels[2] = 0.6
-		env.glow_levels[3] = 1.0
-		env.glow_levels[4] = 0.7
-		env.glow_levels[5] = 0.35
+		env.set_glow_level(2, 0.6)
+		env.set_glow_level(3, 1.0)
+		env.set_glow_level(4, 0.7)
+		env.set_glow_level(5, 0.35)
 	env.glow_intensity = gq.glow_intensity() if gq else 0.55
 	env.glow_strength = gq.glow_strength() if gq else 1.05
 	env.glow_bloom = gq.glow_bloom() if gq else 0.25
@@ -151,7 +164,8 @@ func _setup_sky_environment() -> void:
 func _setup_lights() -> void:
 	_key_light = DirectionalLight3D.new()
 	_key_light.name = "StarKeyLight"
-	_key_light.rotation_degrees = Vector3(-24, 40, 0)
+	# Keep the star source inside the forward hemisphere of the initial chase camera.
+	_key_light.rotation_degrees = Vector3(-12, 140, 0)
 	_key_light.light_color = Color(1.0, 0.96, 0.88)
 	_key_light.light_energy = 1.55
 	var gq := _gq()
@@ -171,6 +185,65 @@ func _setup_lights() -> void:
 	fill.light_energy = 0.28
 	fill.shadow_enabled = false
 	add_child(fill)
+
+
+func _setup_sun_disc() -> void:
+	# The disc is a world-space object aligned with the source direction of the
+	# directional key light. Its angular diameter is deliberately restrained.
+	var source_direction := _key_light.global_transform.basis.z.normalized()
+	_sun_disc_root = Node3D.new()
+	_sun_disc_root.name = "SunDiscRoot"
+	_sun_disc_root.position = source_direction * 1400.0
+	add_child(_sun_disc_root)
+
+	var flare_mesh := QuadMesh.new()
+	flare_mesh.size = Vector2(112.0, 112.0)
+	_sun_flare = MeshInstance3D.new()
+	_sun_flare.name = "SunFlare"
+	_sun_flare.mesh = flare_mesh
+	var flare_shader := load("res://assets/shaders/sun_flare.gdshader") as Shader
+	if flare_shader:
+		var flare_material := ShaderMaterial.new()
+		flare_material.shader = flare_shader
+		flare_material.render_priority = -1
+		flare_material.set_shader_parameter("flare_color", Color(1.0, 0.58, 0.28))
+		_sun_flare.material_override = flare_material
+	_sun_flare.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sun_flare.visibility_range_end = 5000.0
+	_sun_disc_root.add_child(_sun_flare)
+
+	var disc_mesh := QuadMesh.new()
+	disc_mesh.size = Vector2(18.0, 18.0)
+	_sun_disc = MeshInstance3D.new()
+	_sun_disc.name = "SunDisc"
+	_sun_disc.mesh = disc_mesh
+	var disc_shader := load("res://assets/shaders/sun_disc.gdshader") as Shader
+	if disc_shader:
+		var disc_material := ShaderMaterial.new()
+		disc_material.shader = disc_shader
+		disc_material.set_shader_parameter("disc_color", Color(1.0, 0.82, 0.58))
+		disc_material.set_shader_parameter("disc_energy", 1.8)
+		_sun_disc.material_override = disc_material
+	_sun_disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sun_disc.visibility_range_end = 5000.0
+	_sun_disc_root.add_child(_sun_disc)
+	_face_sun_disc_to_camera()
+
+
+func _process(_delta: float) -> void:
+	_face_sun_disc_to_camera()
+
+
+func _face_sun_disc_to_camera() -> void:
+	if _sun_disc_root == null:
+		return
+	var camera := get_viewport().get_camera_3d()
+	var target := camera.global_position if camera else Vector3.ZERO
+	if _sun_disc_root.global_position.distance_squared_to(target) < 0.001:
+		return
+	var view_direction := (target - _sun_disc_root.global_position).normalized()
+	var up := Vector3.RIGHT if absf(view_direction.dot(Vector3.UP)) > 0.98 else Vector3.UP
+	_sun_disc_root.look_at(target, up)
 
 
 func _setup_planets() -> void:
@@ -203,16 +276,17 @@ func _add_gas_giant(planet_name: String, pos: Vector3, radius: float, segments: 
 	mesh.radial_segments = segments
 	mesh.rings = maxi(segments / 2, 8)
 	mi.mesh = mesh
-	var mat := ShaderMaterial.new()
+	var shader_material := ShaderMaterial.new()
+	var mat: Material = shader_material
 	var shader := load("res://assets/shaders/planet_gas.gdshader") as Shader
 	if shader:
-		mat.shader = shader
-		mat.set_shader_parameter("band_color_a", Color(0.12, 0.22, 0.38))
-		mat.set_shader_parameter("band_color_b", Color(0.22, 0.35, 0.48))
-		mat.set_shader_parameter("band_color_c", Color(0.4, 0.3, 0.2))
-		mat.set_shader_parameter("storm_color", Color(0.55, 0.32, 0.18))
-		mat.set_shader_parameter("band_scale", 11.0)
-		mat.set_shader_parameter("storm_amount", 0.4)
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("band_color_a", Color(0.12, 0.22, 0.38))
+		shader_material.set_shader_parameter("band_color_b", Color(0.22, 0.35, 0.48))
+		shader_material.set_shader_parameter("band_color_c", Color(0.4, 0.3, 0.2))
+		shader_material.set_shader_parameter("storm_color", Color(0.55, 0.32, 0.18))
+		shader_material.set_shader_parameter("band_scale", 11.0)
+		shader_material.set_shader_parameter("storm_amount", 0.4)
 	else:
 		var fallback := StandardMaterial3D.new()
 		fallback.albedo_color = Color(0.15, 0.28, 0.42)
@@ -237,14 +311,15 @@ func _add_rocky_planet(
 	mesh.radial_segments = segments
 	mesh.rings = maxi(segments / 2, 8)
 	mi.mesh = mesh
-	var mat := ShaderMaterial.new()
+	var shader_material := ShaderMaterial.new()
+	var mat: Material = shader_material
 	var shader := load("res://assets/shaders/planet_rocky.gdshader") as Shader
 	if shader:
-		mat.shader = shader
-		mat.set_shader_parameter("low_color", low_c)
-		mat.set_shader_parameter("mid_color", mid_c)
-		mat.set_shader_parameter("high_color", high_c)
-		mat.set_shader_parameter("ice_caps", ice_caps)
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("low_color", low_c)
+		shader_material.set_shader_parameter("mid_color", mid_c)
+		shader_material.set_shader_parameter("high_color", high_c)
+		shader_material.set_shader_parameter("ice_caps", ice_caps)
 	else:
 		var fallback := StandardMaterial3D.new()
 		fallback.albedo_color = mid_c
@@ -347,14 +422,15 @@ func _spawn_rock_field(
 	rock.radial_segments = 7
 	rock.rings = 4
 	mm.mesh = rock
-	var mat := ShaderMaterial.new()
+	var shader_material := ShaderMaterial.new()
+	var mat: Material = shader_material
 	var shader := load("res://assets/shaders/rock_surface.gdshader") as Shader
 	if shader:
-		mat.shader = shader
-		mat.set_shader_parameter("base_color", albedo)
-		mat.set_shader_parameter("dark_color", albedo.darkened(0.45))
-		mat.set_shader_parameter("highlight_color", albedo.lightened(0.25))
-		mat.set_shader_parameter("noise_scale", 6.5)
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("base_color", albedo)
+		shader_material.set_shader_parameter("dark_color", albedo.darkened(0.45))
+		shader_material.set_shader_parameter("highlight_color", albedo.lightened(0.25))
+		shader_material.set_shader_parameter("noise_scale", 6.5)
 	else:
 		var fallback := StandardMaterial3D.new()
 		fallback.albedo_color = albedo

@@ -5,6 +5,7 @@ on:
     branches:
       - phase-1/flight-prototype
       - chatgpt/phase2-combat-integration
+      - grok/graphics-open-world-2025
   pull_request:
     branches:
       - main
@@ -49,6 +50,9 @@ jobs:
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
+
+      - name: Run sun disc and flare regression tests
+        run: godot --headless --path . --script res://tests/graphics/test_sun_disc.gd
 
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
