@@ -79,8 +79,8 @@ void AGFMissionDirector::Tick(const float DeltaSeconds)
     if (Stage == EGFMissionStage::ScanRelay || Stage == EGFMissionStage::ScanWreck)
     {
         const FVector ScanTarget = Stage == EGFMissionStage::ScanRelay ? RelayPosition : WreckPosition;
-        if (FVector::Dist(PlayerPawn.IsValid() ? PlayerPawn->GetActorLocation() : FVector::ZeroVector,
-                          ScanTarget) <= InteractionRange)
+        if (PlayerPawn.IsValid() &&
+            FVector::Dist(PlayerPawn->GetActorLocation(), ScanTarget) <= InteractionRange)
         {
             ScanProgressSeconds += DeltaSeconds;
             if (ScanProgressSeconds >= FMath::Max(0.1f, ScanDurationSeconds))
