@@ -492,47 +492,57 @@ func _build_nebulae() -> void:
 
 
 func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint: Color, seed_value: int) -> void:
-	var noise := FastNoiseLite.new()
-	noise.seed = seed_value
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	noise.fractal_octaves = 6
-	noise.fractal_lacunarity = 2.1
-	noise.fractal_gain = 0.52
-	noise.frequency = 0.72
-
-	var noise_texture := NoiseTexture2D.new()
-	noise_texture.noise = noise
-	noise_texture.width = 768
-	noise_texture.height = 768
-	noise_texture.seamless = true
-	noise_texture.generate_mipmaps = true
-
+	# Procedural shader noise avoids asynchronous NoiseTexture2D generation:
+	# the nebula is fully detailed on the first rendered frame and in exports.
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
-uniform sampler2D nebula_noise : repeat_enable, filter_linear_mipmap;
-uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.2);
+uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.16);
+uniform float nebula_seed = 1.0;
+
+float hash21(vec2 p) {
+	p += nebula_seed * vec2(17.17, 31.73);
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+
+float noise21(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+float fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int octave = 0; octave < 5; octave++) {
+		value += noise21(p) * amplitude;
+		p = p * 2.03 + vec2(13.7, 7.1);
+		amplitude *= 0.5;
+	}
+	return value;
+}
 
 void fragment() {
 	vec2 drift = vec2(TIME * 0.0015, -TIME * 0.0007);
-	vec2 uv_a = UV * vec2(2.3, 1.8) + drift;
-	vec2 uv_b = UV * vec2(4.1, 3.2) - drift * 0.7 + vec2(0.23, 0.41);
-	float broad = texture(nebula_noise, uv_a).r;
-	float detail = texture(nebula_noise, uv_b).r;
-	float micro = texture(nebula_noise, UV * vec2(8.2, 6.5) + drift * 1.7 + vec2(0.17, 0.63)).r;
-	float cloud = broad * 0.60 + detail * 0.27 + micro * 0.13;
-	float ridges = 1.0 - abs(cloud * 2.0 - 1.0);
-	float filaments = smoothstep(0.34, 0.72, cloud) * (0.78 + ridges * 0.34);
-	float wisps = smoothstep(0.49, 0.82, detail) * 0.22 + smoothstep(0.72, 0.91, micro) * 0.12;
+	float broad = fbm(UV * vec2(3.8, 2.7) + drift);
+	float detail = fbm(UV * vec2(9.4, 6.8) - drift * 0.7 + vec2(0.23, 0.41));
+	float micro = fbm(UV * vec2(21.0, 15.0) + drift * 1.4 + vec2(0.17, 0.63));
+	float cloud = broad * 0.58 + detail * 0.29 + micro * 0.13;
+	float filaments = smoothstep(0.48, 0.76, cloud);
+	float wisps = smoothstep(0.58, 0.84, detail) * 0.16
+		+ smoothstep(0.70, 0.92, micro) * 0.10;
 	vec2 centered = UV * 2.0 - 1.0;
-	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
-	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.12);
-	ALBEDO = nebula_tint.rgb;
-	EMISSION = nebula_tint.rgb * (0.05 + filaments * 0.24);
-	ALPHA = alpha;
+	float edge_fade = 1.0 - smoothstep(0.60, 1.0, length(centered));
+	float density = clamp((filaments + wisps) * edge_fade, 0.0, 0.82);
+	ALBEDO = nebula_tint.rgb * (0.72 + filaments * 0.28);
+	EMISSION = nebula_tint.rgb * (0.04 + filaments * 0.18);
+	ALPHA = density * nebula_tint.a;
 }
 """
 	var quality := get_node_or_null("/root/GraphicsQuality")
@@ -540,8 +550,8 @@ void fragment() {
 		tint.a *= float(quality.sky_nebula_strength()) / 0.58
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("nebula_noise", noise_texture)
 	material.set_shader_parameter("nebula_tint", tint)
+	material.set_shader_parameter("nebula_seed", float(seed_value))
 
 	var quad := QuadMesh.new()
 	quad.size = dimensions
