@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name ScreenPostFx
 ## Fullscreen single-pass post (vignette + soft chroma).
-## Disable on low-end via enabled export or quality preset later.
+## Layer 1 — keep gameplay HUD on layer 10+ so UI stays sharp.
 
 @export var enabled_fx: bool = true
 @export_range(0.0, 1.5, 0.01) var vignette_strength: float = 0.5
@@ -14,7 +14,7 @@ var _mat: ShaderMaterial
 
 
 func _ready() -> void:
-	layer = 100
+	layer = 1
 	_rect = ColorRect.new()
 	_rect.name = "PostRect"
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
