@@ -7,6 +7,36 @@ Run with Blender 4.5:
 import bpy, math, os, sys
 from mathutils import Vector
 
+def ensure_uvs(root):
+    """Create a smart UV layout for every mesh that lacks a UV layer."""
+    meshes = [obj for obj in root.children_recursive if obj.type == "MESH" and len(obj.data.polygons) > 0]
+    missing = [obj for obj in meshes if len(obj.data.uv_layers) == 0]
+    if not missing:
+        return
+    active = bpy.context.view_layer.objects.active
+    if active is not None and active.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in missing:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = missing[0]
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(
+        angle_limit=math.radians(66.0),
+        island_margin=0.018,
+        area_weight=0.0,
+        correct_aspect=True,
+        scale_to_bounds=False,
+    )
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    if active is not None and active.name in bpy.data.objects:
+        bpy.context.view_layer.objects.active = active
+    print("UV_UNWRAP_COMPLETE", len(missing), "of", len(meshes), "mesh objects")
+
+
+
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
     return os.path.abspath(args[args.index("--output-dir")+1]) if "--output-dir" in args else os.path.abspath("build/blender")
