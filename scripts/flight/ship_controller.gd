@@ -95,10 +95,20 @@ func _update_rotation(delta: float) -> void:
 	var roll: float = Input.get_axis("roll_left", "roll_right")
 	var desired_angular_velocity := Vector3(pitch, yaw, roll) * flight_config.rotation_speed
 
-	_angular_velocity = _angular_velocity.move_toward(
-		desired_angular_velocity,
-		flight_config.rotation_acceleration * delta
-	)
+	# Use one angular-velocity response per physics tick:
+	# accelerate toward the requested rate while a key is held, or stabilize
+	# toward zero after release. Applying both in the same tick would stack
+	# two damping steps and make rotation_acceleration affect release behavior.
+	if desired_angular_velocity == Vector3.ZERO:
+		_angular_velocity = _angular_velocity.move_toward(
+			Vector3.ZERO,
+			flight_config.rotation_stabilization * delta
+		)
+	else:
+		_angular_velocity = _angular_velocity.move_toward(
+			desired_angular_velocity,
+			flight_config.rotation_acceleration * delta
+		)
 
 	# Keyboard rotation is rate-based and accelerates/decelerates smoothly.
 	rotate_object_local(Vector3.RIGHT, _angular_velocity.x * delta)
@@ -112,13 +122,6 @@ func _update_rotation(delta: float) -> void:
 		rotate_object_local(Vector3.UP, -_mouse_delta.x * mouse_scale)
 		rotate_object_local(Vector3.RIGHT, -_mouse_delta.y * mouse_scale)
 		_mouse_delta = Vector2.ZERO
-
-	# Release damping applies after keyboard rotation input is released.
-	if desired_angular_velocity == Vector3.ZERO:
-		_angular_velocity = _angular_velocity.move_toward(
-			Vector3.ZERO,
-			flight_config.rotation_stabilization * delta
-		)
 
 
 func set_mouse_sensitivity(value: float) -> void:
