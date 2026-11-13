@@ -2,6 +2,7 @@ extends SceneTree
 
 const DEMO_SCENE: PackedScene = preload("res://scenes/demo/ten_minute_demo.tscn")
 var _finished := false
+var _profile_backup: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -24,6 +25,13 @@ func _run_test() -> void:
 	await process_frame
 	var director: Node = demo.get_node("DemoMissionDirector")
 	var player: Node3D = demo.get_node("PlayerShip")
+	var profile := root.get_node("GameProfile") as PlayerProfile
+	_profile_backup = {
+		"credits": profile.credits,
+		"selected_ship_id": profile.selected_ship_id,
+		"unlocked_ship_ids": profile.unlocked_ship_ids.duplicate(),
+		"completed_mission_ids": profile.completed_mission_ids.duplicate()
+	}
 	var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
 	var cockpit: Node3D = player.get_node("CockpitInterior") as Node3D
 	_check(cockpit != null and not cockpit.visible, "Cockpit interior must start hidden in chase-camera mode")
@@ -55,8 +63,7 @@ func _run_test() -> void:
 	damageable.current_hull = damageable.max_hull * 0.5
 	damageable.current_shield = damageable.max_shield * 0.25
 	player.boost_amount = 0.0
-	var profile := root.get_node("GameProfile") as PlayerProfile
-	profile.credits = maxi(profile.credits, 10000)
+	profile.credits = 10000
 	profile.call("_save_profile")
 	demo.remove_from_group("qa_demo_driver")
 	player.global_position = director._objective_position
@@ -77,9 +84,23 @@ func _run_test() -> void:
 	director._service_weapons()
 	_check(profile.get_credits() < credits_before, "Maintenance services must deduct persistent pilot credits")
 	_check(director._service_layer != null and is_instance_valid(director._service_layer), "Docking must present the carrier maintenance panel")
+	_restore_profile(profile)
 	_finished = true
 	print("DEMO_DOCKING_SERVICE_TEST_PASS")
 	quit(0)
+
+
+
+func _restore_profile(profile: PlayerProfile) -> void:
+	profile.credits = int(_profile_backup.get("credits", PlayerProfile.STARTING_CREDITS))
+	profile.selected_ship_id = str(_profile_backup.get("selected_ship_id", "player_fighter"))
+	profile.unlocked_ship_ids.clear()
+	for ship_id in _profile_backup.get("unlocked_ship_ids", ["player_fighter"]):
+		profile.unlocked_ship_ids.append(str(ship_id))
+	profile.completed_mission_ids.clear()
+	for mission_id in _profile_backup.get("completed_mission_ids", []):
+		profile.completed_mission_ids.append(str(mission_id))
+	profile.call("_save_profile")
 
 
 func _clear_three_waves(director: Node) -> void:
