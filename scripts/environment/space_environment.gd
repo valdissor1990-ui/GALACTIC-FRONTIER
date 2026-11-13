@@ -862,17 +862,64 @@ render_mode unshaded;
 uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
 uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
 uniform vec4 band_highlight = vec4(0.76, 0.62, 0.46, 1.0);
+uniform int noise_octaves = 4;
+
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+
+float value_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+float fbm(vec2 p) {
+	float sum = 0.0;
+	float amp = 0.5;
+	float weight = 0.0;
+	for (int octave = 0; octave < 5; octave++) {
+		if (octave >= noise_octaves) { break; }
+		sum += value_noise(p) * amp;
+		weight += amp;
+		p = p * 2.07 + vec2(11.3, 7.9);
+		amp *= 0.5;
+	}
+	return sum / max(weight, 0.001);
+}
+
+float ridged_fbm(vec2 p) {
+	float sum = 0.0;
+	float amp = 0.5;
+	float weight = 0.0;
+	for (int octave = 0; octave < 5; octave++) {
+		if (octave >= noise_octaves) { break; }
+		float ridge = 1.0 - abs(value_noise(p) * 2.0 - 1.0);
+		sum += ridge * ridge * amp;
+		weight += amp;
+		p = p * 2.07 + vec2(5.7, 17.1);
+		amp *= 0.5;
+	}
+	return sum / max(weight, 0.001);
+}
 
 void fragment() {
 	float latitude = UV.y;
-	float warp = sin(UV.x * 18.0 + sin(latitude * 21.0) * 1.8) * 0.012;
+	float warp = (fbm(UV * vec2(5.0, 2.4)) - 0.5) * 0.018;
+	float storm_noise = fbm(UV * vec2(18.0, 8.0));
+	float storm_ridges = ridged_fbm(UV * vec2(28.0, 13.0));
 	float broad_bands = sin((latitude + warp) * 92.0);
 	float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
-	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands);
+	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands + (storm_noise - 0.5) * 0.24);
 	vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
 	float storm_distance = length(vec2((UV.x - 0.63) * 1.8, UV.y - 0.43));
 	float storm_edge = 1.0 - smoothstep(0.025, 0.105, storm_distance);
-	float storm_swirl = sin(atan(UV.y - 0.43, (UV.x - 0.63) * 1.8) * 7.0 + storm_distance * 210.0);
+	float storm_angle = atan(UV.y - 0.43, (UV.x - 0.63) * 1.8);
+	float storm_swirl = sin(storm_angle * 7.0 + storm_distance * 210.0 + storm_ridges * 3.0);
 	vec3 storm_color = mix(band_highlight.rgb, band_dark.rgb, smoothstep(-0.4, 0.65, storm_swirl));
 	band_color = mix(band_color, storm_color, storm_edge * 0.82);
 	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
@@ -887,6 +934,9 @@ void fragment() {
 	fallback_giant_material.set_shader_parameter("band_dark", _theme.get("gas_dark", Color(0.19, 0.105, 0.075)))
 	fallback_giant_material.set_shader_parameter("band_light", _theme.get("gas_light", Color(0.58, 0.39, 0.27)))
 	fallback_giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
+	var graphics_quality := get_node_or_null("/root/GraphicsQuality")
+	if graphics_quality != null:
+		fallback_giant_material.set_shader_parameter("noise_octaves", graphics_quality.procedural_noise_octaves())
 	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
 	# banding and storm detail; keep the procedural shader as an offline fallback.
 	var gas_giant_texture: Texture2D = JUPITER_SURFACE_TEXTURE
@@ -1024,6 +1074,26 @@ func _create_planet_texture() -> Texture2D:
 	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	detail_noise.fractal_octaves = 3
 	detail_noise.frequency = 5.8
+
+	var ridged_noise := FastNoiseLite.new()
+	ridged_noise.seed = 73191
+	ridged_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	ridged_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
+	ridged_noise.fractal_octaves = 4
+	ridged_noise.fractal_lacunarity = 2.0
+	ridged_noise.fractal_gain = 0.5
+	ridged_noise.frequency = 2.4
+
+	var cellular_noise := FastNoiseLite.new()
+	cellular_noise.seed = 91827
+	cellular_noise.noise_type = FastNoiseLite.TYPE_CELLULAR
+	cellular_noise.frequency = 3.6
+
+	var graphics_quality := get_node_or_null("/root/GraphicsQuality")
+	if graphics_quality != null:
+		noise.fractal_octaves = graphics_quality.procedural_noise_octaves()
+		noise.fractal_lacunarity = graphics_quality.procedural_noise_lacunarity()
+		noise.fractal_gain = graphics_quality.procedural_noise_gain()
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
 	# Precompute spherical coordinates once; avoid trigonometric calls and Vector3
 	# allocations for every texel. Fine surface noise is reserved for land and shelf water.
@@ -1050,9 +1120,14 @@ func _create_planet_texture() -> Texture2D:
 			var direction_x := latitude_cos * cos_longitudes[x]
 			var direction_y := latitude_sin
 			var direction_z := latitude_cos * sin_longitudes[x]
-			var value := noise.get_noise_3d(direction_x * 2.8, direction_y * 2.8, direction_z * 2.8)
+			var sample := Vector3(direction_x, direction_y, direction_z)
+			var value := noise.get_noise_3d(sample.x * 2.8, sample.y * 2.8, sample.z * 2.8)
+			var ridges := ridged_noise.get_noise_3d(sample.x * 2.8, sample.y * 2.8, sample.z * 2.8)
+			var cells := cellular_noise.get_noise_3d(sample.x * 3.6, sample.y * 3.6, sample.z * 3.6)
+			# Ridged strata sharpen mountain ranges; cellular modulation breaks up coastlines.
+			value += ridges * 0.075 + cells * 0.022
 			if value > -0.42:
-				value += detail_noise.get_noise_3d(direction_x * 5.8, direction_y * 5.8, direction_z * 5.8) * 0.075
+				value += detail_noise.get_noise_3d(sample.x * 5.8, sample.y * 5.8, sample.z * 5.8) * 0.075
 			var color: Color
 			if value < -0.18:
 				color = water_dark.lerp(water_light, clampf((value + 1.0) / 0.82, 0.0, 1.0))
