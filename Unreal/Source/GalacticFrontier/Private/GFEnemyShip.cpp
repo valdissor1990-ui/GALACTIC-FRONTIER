@@ -115,7 +115,7 @@ void AGFEnemyShip::UpdateMovement(const float DeltaSeconds, const FVector& ToTar
                 StrafeTimer = FMath::FRandRange(1.2f, 2.4f);
             }
             const FVector Side = GetActorRightVector() * StrafeSign;
-            const FVector Hold = DirectDirection * FMath::Clamp((Distance - StrafeDistance) * 0.000015f, -1.0f, 1.0f);
+            const FVector Hold = DirectDirection * FMath::Clamp((Distance - StrafeDistance) * 0.0015f, -1.0f, 1.0f);
             const FVector Vertical = FVector::UpVector * FMath::Sin(EvasionPhase) * 0.28f;
             DesiredDirection = (Side + Hold + Vertical).GetSafeNormal();
             break;
