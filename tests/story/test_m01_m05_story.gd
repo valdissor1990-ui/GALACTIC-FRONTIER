@@ -94,3 +94,9 @@ func _test_dialogue_nodes_exist() -> void:
 		var text: Dictionary = node["text"]
 		_assert_true(str(text.get("ru", "")) != "", "%s ru" % node_id)
 		_assert_true(str(text.get("en", "")) != "", "%s en" % node_id)
+		for choice_variant in node.get("choices", []):
+			var choice: Dictionary = choice_variant
+			var next_node := str(choice.get("next", ""))
+			_assert_true(choice.has("id"), "%s choice has stable id" % node_id)
+			_assert_true(choice.has("text"), "%s choice has localized label" % node_id)
+			_assert_true(next_node.is_empty() or not DialogueM01M05.get_node(next_node).is_empty(), "%s choice target resolves" % node_id)
