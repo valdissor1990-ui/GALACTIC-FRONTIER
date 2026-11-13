@@ -8,6 +8,7 @@ on:
       - chatgpt/fullhd-visual-polish
       - chatgpt/player-fighter-hero-detail
       - chatgpt/ship-uv-quality-fix
+      - chatgpt/player-fighter-cockpit-geometry
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
