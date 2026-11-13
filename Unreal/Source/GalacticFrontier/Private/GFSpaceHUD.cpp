@@ -16,7 +16,7 @@ void AGFSpaceHUD::DrawTextLine(const FString& Text, const float X, const float Y
     if (!Canvas || !GEngine) return;
     FCanvasTextItem Item(FVector2D(X, Y), FText::FromString(Text), GEngine->GetSmallFont(), Color);
     Item.Scale = FVector2D(Scale, Scale);
-    Item.EnableShadow(FLinearColor::Black);
+    Item.EnableShadow(FLinearColor::Black, FVector2D(1.0f, 1.0f));
     Canvas->DrawItem(Item);
 }
 
