@@ -672,20 +672,35 @@ void fragment() {
 
 	var ring := MeshInstance3D.new()
 	ring.name = "NacreonRings"
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 1.48
-	ring_mesh.outer_radius = 1.66
-	ring_mesh.rings = 128
-	ring_mesh.ring_segments = 18
-	var ring_material := StandardMaterial3D.new()
-	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var ring_mesh := QuadMesh.new()
+	ring_mesh.size = Vector2(3.6, 3.6)
+	var ring_shader := Shader.new()
+	ring_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, cull_disabled;
+uniform vec4 ring_tint : source_color = vec4(0.68, 0.54, 0.38, 1.0);
+void fragment() {
+	vec2 centered = (UV - vec2(0.5)) * 2.0;
+	float radius = length(centered);
+	if (radius < 0.48 || radius > 0.985) {
+		discard;
+	}
+	float radial = (radius - 0.48) / 0.505;
+	float broad = sin(radial * 188.0 + sin(radial * 29.0) * 1.2);
+	float fine = sin(radial * 760.0 + sin(radial * 91.0)) * 0.24;
+	float bands = smoothstep(-0.12, 0.24, broad + fine);
+	float variation = 0.72 + 0.28 * sin(radial * 43.0);
+	vec3 color = ring_tint.rgb * variation * mix(0.56, 1.22, bands);
+	float edge_fade = 1.0 - smoothstep(0.94, 0.99, radius);
+	ALBEDO = color;
+	EMISSION = color * 0.10;
+	ALPHA = mix(0.12, 0.72, bands) * edge_fade;
+}
+"""
+	var ring_material := ShaderMaterial.new()
+	ring_material.shader = ring_shader
 	var ring_tint: Color = _theme.get("ring_tint", Color(0.68, 0.54, 0.38))
-	ring_material.albedo_color = Color(ring_tint.r, ring_tint.g, ring_tint.b, 0.42)
-	ring_material.emission_enabled = true
-	ring_material.emission = ring_tint * 0.12
-	ring_material.emission_energy_multiplier = 0.16
-	ring_material.roughness = 0.9
+	ring_material.set_shader_parameter("ring_tint", ring_tint)
 	ring_mesh.material = ring_material
 	ring.mesh = ring_mesh
 	ring.scale = Vector3.ONE * 100.0
@@ -1102,12 +1117,12 @@ func _build_comet_landmark() -> void:
 	nucleus_mesh.radial_segments = 24
 	nucleus_mesh.rings = 16
 	var nucleus_material := StandardMaterial3D.new()
-	nucleus_material.albedo_color = Color(0.46, 0.50, 0.54)
+	nucleus_material.albedo_color = Color(0.40, 0.34, 0.27)
 	nucleus_material.roughness = 0.98
 	nucleus_material.metallic = 0.04
 	nucleus_material.emission_enabled = true
-	nucleus_material.emission = Color(0.28, 0.34, 0.44)
-	nucleus_material.emission_energy_multiplier = 0.34
+	nucleus_material.emission = Color(0.18, 0.12, 0.07)
+	nucleus_material.emission_energy_multiplier = 0.18
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
 	nucleus.scale = Vector3(24.0, 17.0, 22.0)
@@ -1124,18 +1139,19 @@ func _build_comet_landmark() -> void:
 	coma_shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 coma_tint : source_color = vec4(0.36, 0.72, 1.0, 0.22);
+uniform vec4 coma_tint : source_color = vec4(0.42, 0.76, 1.0, 0.28);
 void fragment() {
-	float edge = 1.0 - smoothstep(0.08, 0.98, length((UV - vec2(0.5)) * vec2(1.0, 0.82)));
-	float turbulence = 0.78 + 0.22 * sin(UV.x * 48.0 + TIME * 0.7) * sin(UV.y * 35.0 - TIME * 0.4);
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float rim = pow(1.0 - facing, 1.45);
+	float turbulence = 0.82 + 0.18 * sin(UV.x * 52.0 + TIME * 0.7) * sin(UV.y * 39.0 - TIME * 0.4);
 	ALBEDO = coma_tint.rgb;
-	EMISSION = coma_tint.rgb * (0.25 + edge * turbulence * 1.8);
-	ALPHA = edge * coma_tint.a * turbulence;
+	EMISSION = coma_tint.rgb * (0.28 + rim * 1.45) * turbulence;
+	ALPHA = (0.07 + rim * 0.24) * coma_tint.a * turbulence;
 }
 """
 	var coma_material := ShaderMaterial.new()
 	coma_material.shader = coma_shader
-	coma_material.set_shader_parameter("coma_tint", Color(0.42, 0.76, 1.0, 0.34))
+	coma_material.set_shader_parameter("coma_tint", Color(0.42, 0.76, 1.0, 0.28))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
 	coma.scale = Vector3(54.0, 42.0, 48.0)
