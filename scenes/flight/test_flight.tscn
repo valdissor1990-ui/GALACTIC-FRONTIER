@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -14,6 +14,11 @@
 [ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
 [ext_resource type="Script" path="res://scripts/graphics/dynamic_resolution.gd" id="12"]
 [ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/environment/open_space_backdrop.tscn" id="14"]
+[ext_resource type="Script" path="res://scripts/graphics/ship_visual_builder.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/vfx/hit_flash_fx.gd" id="16"]
+[ext_resource type="Script" path="res://scripts/vfx/engine_thrust_fx.gd" id="17"]
+[ext_resource type="Shader" path="res://assets/shaders/engine_plume.gdshader" id="18"]
 
 [sub_resource type="Environment" id="Environment_space"]
 background_mode = 1
@@ -70,19 +75,7 @@ script = ExtResource("12")
 [node name="ScreenPostFx" type="CanvasLayer" parent="."]
 script = ExtResource("13")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_space")
-
-[node name="KeyLight" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-28, 32, 0)
-light_energy = 1.2
-shadow_enabled = true
-
-[node name="DistantPlanet" type="MeshInstance3D" parent="."]
-position = Vector3(0, 18, -190)
-scale = Vector3(28, 28, 28)
-mesh = SubResource("SphereMesh_planet")
-surface_material_override/0 = SubResource("Material_planet")
+[node name="OpenSpaceBackdrop" parent="." instance=ExtResource("14")]
 
 [node name="PlayerShip" type="CharacterBody3D" parent="."]
 script = ExtResource("1")
@@ -92,30 +85,7 @@ flight_config = ExtResource("4")
 shape = SubResource("SphereShape3D_ship")
 
 [node name="Visual" type="Node3D" parent="PlayerShip"]
-
-[node name="Hull" type="MeshInstance3D" parent="PlayerShip/Visual"]
-mesh = SubResource("BoxMesh_hull")
-surface_material_override/0 = SubResource("Material_hull")
-
-[node name="Nose" type="MeshInstance3D" parent="PlayerShip/Visual"]
-position = Vector3(0, 0.02, -2.1)
-mesh = SubResource("BoxMesh_nose")
-surface_material_override/0 = SubResource("Material_accent")
-
-[node name="Wings" type="MeshInstance3D" parent="PlayerShip/Visual"]
-position = Vector3(0, -0.08, 0.25)
-mesh = SubResource("BoxMesh_wings")
-surface_material_override/0 = SubResource("Material_hull")
-
-[node name="LeftEngine" type="MeshInstance3D" parent="PlayerShip/Visual"]
-position = Vector3(-0.38, 0, 1.72)
-mesh = SubResource("BoxMesh_engine")
-surface_material_override/0 = SubResource("Material_accent")
-
-[node name="RightEngine" type="MeshInstance3D" parent="PlayerShip/Visual"]
-position = Vector3(0.38, 0, 1.72)
-mesh = SubResource("BoxMesh_engine")
-surface_material_override/0 = SubResource("Material_accent")
+script = ExtResource("15")
 
 [node name="CameraRig" type="Node3D" parent="PlayerShip"]
 script = ExtResource("2")
@@ -132,6 +102,41 @@ fov = 88.0
 
 [node name="Damageable" type="Node" parent="PlayerShip"]
 script = ExtResource("8")
+
+[node name="HitFlashFx" type="Node" parent="PlayerShip"]
+script = ExtResource("16")
+damageable_path = NodePath("../Damageable")
+visual_root_path = NodePath("../Visual")
+
+[node name="EngineThrustFx" type="Node3D" parent="PlayerShip"]
+script = ExtResource("17")
+ship_path = NodePath("..")
+
+[sub_resource type="ShaderMaterial" id="Material_engine_plume"]
+shader = ExtResource("18")
+shader_parameter/plume_color = Color(0.22, 0.68, 1, 1)
+shader_parameter/intensity = 0.8
+shader_parameter/core_boost = 0.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_engine_plume"]
+radius = 0.32
+height = 2.0
+radial_segments = 12
+rings = 8
+
+[node name="LeftPlume" type="MeshInstance3D" parent="PlayerShip/EngineThrustFx"]
+position = Vector3(-1.12, -0.04, 2.55)
+rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(0.8, 1.5, 0.8)
+mesh = SubResource("SphereMesh_engine_plume")
+material_override = SubResource("Material_engine_plume")
+
+[node name="RightPlume" type="MeshInstance3D" parent="PlayerShip/EngineThrustFx"]
+position = Vector3(1.12, -0.04, 2.55)
+rotation_degrees = Vector3(90, 0, 0)
+scale = Vector3(0.8, 1.5, 0.8)
+mesh = SubResource("SphereMesh_engine_plume")
+material_override = SubResource("Material_engine_plume")
 
 [node name="TargetingSystem" type="Node3D" parent="PlayerShip"]
 script = ExtResource("7")
