@@ -514,7 +514,7 @@ func _build_docking_services() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_service_layer.add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(560.0, 520.0)
+	panel.custom_minimum_size = Vector2(620.0, 760.0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.012, 0.035, 0.062, 0.98)
 	style.border_color = Color(0.08, 0.82, 0.72, 0.95)
@@ -543,6 +543,7 @@ func _build_docking_services() -> void:
 	column.add_child(subtitle)
 	_service_stats_label = Label.new()
 	_service_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_service_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_service_stats_label.add_theme_color_override("font_color", Color(0.84, 0.92, 0.98))
 	column.add_child(_service_stats_label)
 	var separator := HSeparator.new()
@@ -558,11 +559,80 @@ func _build_docking_services() -> void:
 	_add_service_button(column, "shields", "RECHARGE SHIELDS", _service_shields)
 	_add_service_button(column, "boost", "REFILL BOOST CELLS", _service_boost)
 	_add_service_button(column, "weapons", "REARM WEAPON CAPACITORS", _service_weapons)
+
+	var module_separator := HSeparator.new()
+	column.add_child(module_separator)
+	var module_heading := Label.new()
+	module_heading.text = "HARDPOINT MODULES  /  ONE MODULE PER SLOT"
+	module_heading.add_theme_color_override("font_color", Color(0.38, 0.94, 0.86))
+	column.add_child(module_heading)
+	var profile := get_node_or_null("/root/GameProfile")
+	var module_catalog: Array = profile.call("get_module_catalog") if profile != null else []
+	for module in module_catalog:
+		var module_id := str(module.get("id", ""))
+		var module_name := str(module.get("name", module_id))
+		var module_price := int(module.get("price", 0))
+		var module_button_key := "module_" + module_id
+		_add_service_button(column, module_button_key, "INSTALL %s  •  %d CR" % [module_name.to_upper(), module_price], _install_module.bind(module_id))
+		var module_button := _service_buttons.get(module_button_key) as Button
+		if module_button != null:
+			module_button.tooltip_text = str(module.get("description", ""))
+
 	var debrief := Button.new()
 	debrief.text = "COMPLETE DEBRIEF"
 	debrief.custom_minimum_size.y = 46.0
 	debrief.pressed.connect(_finish_docking_services)
 	column.add_child(debrief)
+	_refresh_docking_services()
+
+
+
+func _refresh_module_buttons() -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		return
+	var ship_id := str(profile.call("get_selected_ship_id"))
+	var installed: Array = profile.call("get_installed_modules", ship_id)
+	var credits := int(profile.call("get_credits"))
+	var catalog: Array = profile.call("get_module_catalog")
+	for module in catalog:
+		var module_id := str(module.get("id", ""))
+		var module_name := str(module.get("name", module_id)).to_upper()
+		var price := int(module.get("price", 0))
+		var key := "module_" + module_id
+		var button := _service_buttons.get(key) as Button
+		if button == null:
+			continue
+		button.tooltip_text = str(module.get("description", ""))
+		if installed.has(module_id):
+			button.text = "INSTALLED  •  " + module_name
+			button.disabled = true
+		elif not bool(profile.call("is_module_slot_available", ship_id, module_id)):
+			button.text = "SLOT OCCUPIED  •  " + module_name
+			button.disabled = true
+		else:
+			button.text = "INSTALL %s  •  %d CR" % [module_name, price]
+			button.disabled = credits < price
+
+
+func _install_module(module_id: String) -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		return
+	var ship_id := str(profile.call("get_selected_ship_id"))
+	if not bool(profile.call("purchase_module", ship_id, module_id)):
+		_service_status_label.text = "MODULE NOT INSTALLED — check available credits and the occupied slot."
+		_refresh_docking_services()
+		return
+	if is_instance_valid(player) and player.has_method("refresh_profile_upgrades"):
+		player.call("refresh_profile_upgrades")
+	var catalog: Array = profile.call("get_module_catalog")
+	var module_name := module_id
+	for module in catalog:
+		if str(module.get("id", "")) == module_id:
+			module_name = str(module.get("name", module_id))
+			break
+	_service_status_label.text = "%s installed on %s. Ship performance has been recalculated." % [module_name, ship_id.replace("_", " ").to_upper()]
 	_refresh_docking_services()
 
 
@@ -603,6 +673,7 @@ func _refresh_docking_services() -> void:
 	_set_service_button("shields", "RECHARGE SHIELDS  •  %d CR" % shield_cost, shield_cost, shield_cost > 0)
 	_set_service_button("boost", "REFILL BOOST CELLS  •  %d CR" % boost_cost, boost_cost, boost_cost > 0)
 	_set_service_button("weapons", "REARM WEAPON CAPACITORS  •  150 CR", 150, weapon != null)
+	_refresh_module_buttons()
 
 
 func _set_service_button(key: String, label: String, cost: int, needed: bool) -> void:
