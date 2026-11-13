@@ -209,7 +209,7 @@ def inspect_glb_scene(source_path: Path):
             "scene_roots": roots,
             "mesh_instances": mesh_instances,
         }
-        manifest_dir = PROJECT_ROOT / "Saved" / "GFAssetManifests"
+        manifest_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
         manifest_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = manifest_dir / (source_path.parent.name + "_" + source_path.stem + ".json")
         manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -311,7 +311,7 @@ def import_existing_fleet():
 
 
 def save_pipeline_report():
-    report_dir = PROJECT_ROOT / "Saved" / "GFAssetManifests"
+    report_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / "asset_pipeline_report.json"
     report_path.write_text(json.dumps({
