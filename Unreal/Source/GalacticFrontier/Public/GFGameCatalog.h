@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/SoftObjectPath.h"
 #include "GFGameCatalog.generated.h"
 
 USTRUCT(BlueprintType)
