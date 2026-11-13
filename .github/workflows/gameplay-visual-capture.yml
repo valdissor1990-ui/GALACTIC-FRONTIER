@@ -7,6 +7,7 @@ on:
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
       - chatgpt/fullhd-showcase-qa
+      - chatgpt/grok-completion-full-2026-11
       - chatgpt/cockpit-camera-polish
     paths:
       - "scenes/**"
@@ -23,6 +24,7 @@ on:
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
       - chatgpt/campaign-story-integration
+      - chatgpt/space-visual-art-pass
     paths:
       - "scenes/**"
       - "scripts/**"
