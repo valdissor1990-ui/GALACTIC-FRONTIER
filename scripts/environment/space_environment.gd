@@ -209,8 +209,8 @@ func _build_world_environment() -> void:
 	var sky_material := ProceduralSkyMaterial.new()
 	sky_material.sky_top_color = _theme.get("sky_top", Color(0.004, 0.009, 0.028))
 	sky_material.sky_horizon_color = _theme.get("sky_horizon", Color(0.025, 0.045, 0.09))
-	sky_material.ground_bottom_color = Color(0.002, 0.004, 0.012)
-	sky_material.ground_horizon_color = Color(0.012, 0.022, 0.05)
+	sky_material.ground_bottom_color = sky_material.sky_top_color
+	sky_material.ground_horizon_color = sky_material.sky_horizon_color
 	sky_material.sun_angle_max = 8.0
 	sky.sky_material = sky_material
 	environment.sky = sky
@@ -653,6 +653,7 @@ void fragment() {
 	vec3 storm_color = mix(band_highlight.rgb, band_dark.rgb, smoothstep(-0.4, 0.65, storm_swirl));
 	band_color = mix(band_color, storm_color, storm_edge * 0.82);
 	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
+	EMISSION = band_color * 0.24;
 	ROUGHNESS = 0.91;
 	METALLIC = 0.0;
 }
@@ -668,22 +669,65 @@ void fragment() {
 	_companion_planet = giant
 	add_child(giant)
 
+	var giant_atmosphere := MeshInstance3D.new()
+	giant_atmosphere.name = "NacreonAtmosphere"
+	var giant_atmosphere_mesh := SphereMesh.new()
+	giant_atmosphere_mesh.radius = 1.0
+	giant_atmosphere_mesh.height = 2.0
+	giant_atmosphere_mesh.radial_segments = 80
+	giant_atmosphere_mesh.rings = 40
+	var giant_atmosphere_shader := Shader.new()
+	giant_atmosphere_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform vec4 atmosphere_tint : source_color = vec4(0.42, 0.66, 1.0, 0.20);
+void fragment() {
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float rim = pow(1.0 - facing, 2.45);
+	ALBEDO = atmosphere_tint.rgb;
+	EMISSION = atmosphere_tint.rgb * (0.24 + rim * 0.9);
+	ALPHA = rim * atmosphere_tint.a;
+}
+"""
+	var giant_atmosphere_material := ShaderMaterial.new()
+	giant_atmosphere_material.shader = giant_atmosphere_shader
+	giant_atmosphere_material.set_shader_parameter("atmosphere_tint", Color(0.42, 0.66, 1.0, 0.20))
+	giant_atmosphere_mesh.material = giant_atmosphere_material
+	giant_atmosphere.mesh = giant_atmosphere_mesh
+	giant_atmosphere.scale = Vector3.ONE * 1.035
+	giant.add_child(giant_atmosphere)
+
 	var ring := MeshInstance3D.new()
 	ring.name = "NacreonRings"
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 1.24
-	ring_mesh.outer_radius = 1.86
-	ring_mesh.rings = 96
-	ring_mesh.ring_segments = 12
-	var ring_material := StandardMaterial3D.new()
-	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var ring_mesh := QuadMesh.new()
+	ring_mesh.size = Vector2(3.6, 3.6)
+	var ring_shader := Shader.new()
+	ring_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_alpha_prepass, cull_disabled;
+uniform vec4 ring_tint : source_color = vec4(0.68, 0.54, 0.38, 1.0);
+void fragment() {
+	vec2 centered = (UV - vec2(0.5)) * 2.0;
+	float radius = length(centered);
+	if (radius < 0.34 || radius > 0.985) {
+		discard;
+	}
+	float radial = (radius - 0.34) / 0.645;
+	float broad_bands = sin(radial * 184.0 + sin(radial * 31.0) * 1.35);
+	float fine_bands = sin(radial * 710.0 + sin(radial * 97.0)) * 0.22;
+	float gaps = smoothstep(-0.12, 0.22, broad_bands + fine_bands);
+	float variation = 0.72 + 0.28 * sin(radial * 47.0);
+	vec3 color = ring_tint.rgb * variation * mix(0.58, 1.18, gaps);
+	float edge_fade = 1.0 - smoothstep(0.91, 0.99, radius);
+	ALBEDO = color;
+	EMISSION = color * 0.16;
+	ALPHA = mix(0.12, 0.66, gaps) * edge_fade;
+}
+"""
+	var ring_material := ShaderMaterial.new()
+	ring_material.shader = ring_shader
 	var ring_tint: Color = _theme.get("ring_tint", Color(0.68, 0.54, 0.38))
-	ring_material.albedo_color = Color(ring_tint.r, ring_tint.g, ring_tint.b, 0.58)
-	ring_material.emission_enabled = true
-	ring_material.emission = Color(0.12, 0.075, 0.035)
-	ring_material.emission_energy_multiplier = 0.18
-	ring_material.roughness = 0.88
+	ring_material.set_shader_parameter("ring_tint", ring_tint)
 	ring_mesh.material = ring_material
 	ring.mesh = ring_mesh
 	ring.scale = Vector3.ONE * 100.0
