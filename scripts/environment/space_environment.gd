@@ -313,7 +313,8 @@ void fragment() {
 	add_child(_distant_galaxy)
 
 func _build_star_clusters() -> void:
-	# A second, lower-count star layer creates visible stellar concentrations and color diversity.
+	# Camera-relative clusters add foreground depth; per-instance color and phase
+	# keep spectral types distinct while the shader adds restrained scintillation.
 	const CLUSTER_COUNT := 6
 	const STARS_PER_CLUSTER := 92
 	var star_mesh := SphereMesh.new()
