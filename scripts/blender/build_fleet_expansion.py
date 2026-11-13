@@ -381,8 +381,14 @@ def clear():
             if b.users==0: blocks.remove(b)
 
 def render_setup(target, extent):
-    scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE_NEXT"
-    scene.render.resolution_x=1500; scene.render.resolution_y=1000; scene.render.resolution_percentage=100
+    scene=bpy.context.scene
+    fast_preview = os.environ.get("GF_CI_FAST_PREVIEW") == "1"
+    scene.render.engine = "BLENDER_WORKBENCH" if fast_preview else "BLENDER_EEVEE_NEXT"
+    scene.render.resolution_x=1500; scene.render.resolution_y=1000
+    scene.render.resolution_percentage=50 if fast_preview else 100
+    if fast_preview:
+        scene.display.shading.light="STUDIO";scene.display.shading.color_type="MATERIAL"
+        scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.color=(.026,.034,.052)
