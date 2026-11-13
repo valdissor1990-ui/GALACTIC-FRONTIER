@@ -182,13 +182,13 @@ func _process(delta: float) -> void:
 		primary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
 	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
 	if secondary_nebula != null:
-		secondary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+		secondary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(430.0, -165.0, -860.0))
 	var tertiary_nebula := get_node_or_null("TertiaryNebula") as Node3D
 	if tertiary_nebula != null:
-		tertiary_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-265.0, -112.0, -760.0))
+		tertiary_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-650.0, -210.0, -1180.0))
 	var far_nebula := get_node_or_null("FarNebula") as Node3D
 	if far_nebula != null:
-		far_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(285.0, 185.0, -1120.0))
+		far_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(200.0, 420.0, -1680.0))
 	if is_instance_valid(_distant_galaxy):
 		_distant_galaxy.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
 
@@ -247,13 +247,13 @@ func _update_showcase_landmarks() -> void:
 		primary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
 	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
 	if secondary_nebula != null:
-		secondary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+		secondary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(430.0, -165.0, -860.0))
 	var tertiary_nebula := get_node_or_null("TertiaryNebula") as Node3D
 	if tertiary_nebula != null:
-		tertiary_nebula.global_transform = Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-265.0, -112.0, -760.0))
+		tertiary_nebula.global_transform = Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-650.0, -210.0, -1180.0))
 	var far_nebula := get_node_or_null("FarNebula") as Node3D
 	if far_nebula != null:
-		far_nebula.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(285.0, 185.0, -1120.0))
+		far_nebula.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(200.0, 420.0, -1680.0))
 	if is_instance_valid(_distant_galaxy):
 		_distant_galaxy.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
 	if is_instance_valid(_planet_visual):
@@ -482,13 +482,13 @@ func _build_nebulae() -> void:
 	)
 	_add_nebula(
 		"SecondaryNebula",
-		Vector3(158.0, -42.0, -520.0),
-		Vector2(190.0, 110.0),
+		Vector3(430.0, -165.0, -860.0),
+		Vector2(170.0, 100.0),
 		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)),
 		8821
 	)
-	_add_nebula("TertiaryNebula", Vector3(-265.0, -112.0, -760.0), Vector2(250.0, 152.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
-	_add_nebula("FarNebula", Vector3(285.0, 185.0, -1120.0), Vector2(300.0, 188.0), _theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)) * Color(1.0, 1.0, 1.0, 0.44), 77291)
+	_add_nebula("TertiaryNebula", Vector3(-650.0, -210.0, -1180.0), Vector2(190.0, 115.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
+	_add_nebula("FarNebula", Vector3(200.0, 420.0, -1680.0), Vector2(220.0, 140.0), _theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)) * Color(1.0, 1.0, 1.0, 0.44), 77291)
 
 
 func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint: Color, seed_value: int) -> void:
