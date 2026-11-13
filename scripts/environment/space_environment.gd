@@ -1452,14 +1452,8 @@ func _build_orbital_station_landmark() -> void:
 	# landmarks, so it never changes flight physics or mission collision.
 	_orbital_station_root = Node3D.new()
 	_orbital_station_root.name = "OrbitalStationLandmark"
-	var station := _load_glb_scene("res://assets/models/environment/nasa_iss_station.glb")
-	if station == null:
-		station = _build_procedural_orbital_station()
-		station.name = "ProceduralISS"
-	else:
-		station.name = "NASA_ISS_Visual"
-		station.scale = Vector3.ONE * 0.62
-		station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
+	var station := _build_procedural_orbital_station()
+	station.name = "ProceduralISS"
 	_orbital_station_root.add_child(station)
 	add_child(_orbital_station_root)
 
