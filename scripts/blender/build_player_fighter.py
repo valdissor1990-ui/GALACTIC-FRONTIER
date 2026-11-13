@@ -84,7 +84,11 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                     pixels.append(linear_to_srgb(base_color[channel] * variation))
                 pixels.append(1.0)
         albedo_image.pixels.foreach_set(pixels)
+        albedo_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), albedo_image.name + ".png")
+        albedo_image.file_format = "PNG"
+        albedo_image.save()
         albedo_image.pack()
+        print("GF_PBR_IMAGE_PACKED", albedo_image.name, "size=", tuple(albedo_image.size), "has_data=", albedo_image.has_data)
 
     roughness_image = bpy.data.images.get(roughness_name)
     if roughness_image is None:
@@ -100,7 +104,11 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                 value = max(0.08, min(0.96, base_roughness + broad * 0.055 + fine * 0.022))
                 pixels.extend((value, value, value, 1.0))
         roughness_image.pixels.foreach_set(pixels)
+        roughness_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), roughness_image.name + ".png")
+        roughness_image.file_format = "PNG"
+        roughness_image.save()
         roughness_image.pack()
+        print("GF_PBR_IMAGE_PACKED", roughness_image.name, "size=", tuple(roughness_image.size), "has_data=", roughness_image.has_data)
 
     normal_image = bpy.data.images.get(normal_name)
     if normal_image is None:
@@ -132,7 +140,11 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                                ny / length * 0.5 + 0.5,
                                nz / length * 0.5 + 0.5, 1.0))
         normal_image.pixels.foreach_set(pixels)
+        normal_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), normal_image.name + ".png")
+        normal_image.file_format = "PNG"
+        normal_image.save()
         normal_image.pack()
+        print("GF_PBR_IMAGE_PACKED", normal_image.name, "size=", tuple(normal_image.size), "has_data=", normal_image.has_data)
 
     nodes = material.node_tree.nodes
     links = material.node_tree.links
