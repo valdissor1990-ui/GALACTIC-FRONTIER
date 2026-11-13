@@ -7,6 +7,7 @@ extends Node3D
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
+var _star_clusters: MultiMeshInstance3D
 var _system_id: String = "aurelia"
 var _theme: Dictionary = {}
 var _planet_visual: MeshInstance3D
@@ -23,6 +24,7 @@ func _ready() -> void:
 	_load_system_theme()
 	_build_world_environment()
 	_build_starfield()
+	_build_star_clusters()
 	_build_nebulae()
 	_build_distant_galaxy()
 	_build_planet()
@@ -49,6 +51,12 @@ func _process(delta: float) -> void:
 	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
 	if secondary_nebula != null:
 		secondary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	var tertiary_nebula := get_node_or_null("TertiaryNebula") as Node3D
+	if tertiary_nebula != null:
+		tertiary_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-265.0, -112.0, -760.0))
+	var far_nebula := get_node_or_null("FarNebula") as Node3D
+	if far_nebula != null:
+		far_nebula.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(285.0, 185.0, -1120.0))
 	if is_instance_valid(_distant_galaxy):
 		_distant_galaxy.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
 
@@ -204,6 +212,8 @@ func _build_nebulae() -> void:
 		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)),
 		8821
 	)
+	_add_nebula("TertiaryNebula", Vector3(-265.0, -112.0, -760.0), Vector2(360.0, 220.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
+	_add_nebula("FarNebula", Vector3(285.0, 185.0, -1120.0), Vector2(430.0, 270.0), _theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)) * Color(1.0, 1.0, 1.0, 0.44), 77291)
 
 
 func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint: Color, seed_value: int) -> void:
@@ -299,6 +309,45 @@ void fragment() {
 	_distant_galaxy.name = "DistantSpiralGalaxy"
 	_distant_galaxy.mesh = quad
 	add_child(_distant_galaxy)
+
+func _build_star_clusters() -> void:
+	# A second, lower-count star layer creates visible stellar concentrations and color diversity.
+	const CLUSTER_COUNT := 6
+	const STARS_PER_CLUSTER := 92
+	var star_mesh := SphereMesh.new()
+	star_mesh.radius = 0.52
+	star_mesh.height = 1.04
+	star_mesh.radial_segments = 6
+	star_mesh.rings = 4
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded;
+void fragment() {
+	vec4 tint = INSTANCE_CUSTOM;
+	ALBEDO = tint.rgb;
+	EMISSION = tint.rgb * (1.2 + tint.a * 2.8);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	star_mesh.material = material
+	_star_clusters = _make_multimesh("ChromaticStarClusters", star_mesh, CLUSTER_COUNT * STARS_PER_CLUSTER)
+	_star_clusters.multimesh.use_custom_data = true
+	var cluster_directions: Array[Vector3] = [Vector3(-0.72, 0.28, -0.63), Vector3(0.56, 0.48, -0.67), Vector3(-0.12, -0.62, -0.77), Vector3(0.82, -0.18, -0.54), Vector3(-0.88, -0.22, -0.41), Vector3(0.18, 0.82, -0.54)]
+	var palettes: Array[Color] = [Color(0.58, 0.76, 1.0), Color(1.0, 0.76, 0.52), Color(0.72, 0.62, 1.0), Color(0.56, 0.94, 0.88), Color(1.0, 0.88, 0.72), Color(0.72, 0.82, 1.0)]
+	for cluster_index in range(CLUSTER_COUNT):
+		var center := cluster_directions[cluster_index].normalized() * _rng.randf_range(700.0, 1040.0)
+		var palette: Color = palettes[cluster_index]
+		for star_index in range(STARS_PER_CLUSTER):
+			var index := cluster_index * STARS_PER_CLUSTER + star_index
+			var position := center + Vector3(_rng.randfn(0.0, 42.0), _rng.randfn(0.0, 42.0), _rng.randfn(0.0, 42.0))
+			var size := _rng.randf_range(0.8, 2.6)
+			var basis := Basis.from_euler(Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), 0.0)).scaled(Vector3.ONE * size)
+			_star_clusters.multimesh.set_instance_transform(index, Transform3D(basis, position))
+			var brightness := _rng.randf_range(0.35, 1.0)
+			_star_clusters.multimesh.set_instance_custom_data(index, Color(palette.r * brightness, palette.g * brightness, palette.b * brightness, _rng.randf_range(0.0, 1.0)))
+	add_child(_star_clusters)
 
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
