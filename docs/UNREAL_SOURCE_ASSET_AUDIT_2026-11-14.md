@@ -11,7 +11,9 @@ Scope: static review of the Unreal migration branch `chatgpt/unreal-migration-ue
 - It creates `/Game/GF/Maps/L_FlightTest`, lighting, a PlayerStart and a GFMissionDirector.
 - It attempts to assign an enemy mesh only when the imported-path token lookup yields exactly one StaticMesh.
 - It logs a Player Fighter candidate but does not assign that mesh to the player pawn.
-- It does not reconstruct the GLB scene hierarchy, attach every mesh node with its source-relative transform, or validate materials, pivots, scale, axis and collision.
+- It does not yet reconstruct the GLB scene hierarchy automatically, attach every mesh node with its source-relative transform, or validate materials, pivots, scale, axis and collision.
+- A reusable C++ `AGFShipAssemblyActor` has now been added. It accepts an explicit list of source-node mesh assets, composed root-relative transforms and optional material overrides, then builds one `UStaticMeshComponent` per part. Missing mesh references are logged rather than silently skipped.
+- This actor is an assembly primitive, not a completed asset pipeline: the Editor script does not yet populate its `Parts` array from the GLB manifest, and no actual imported GLB has been reconstructed or visually checked.
 
 ## P0 — Unreal compile and UHT gate remains open
 
@@ -24,7 +26,7 @@ The current import script inventories StaticMesh outputs but does not create a r
 Required implementation:
 1. Inspect actual GLB node hierarchy, mesh references, transforms and material bindings from source files.
 2. Import every node and preserve source-relative transforms.
-3. Generate a reusable ship assembly asset (prefer a Blueprint actor with one StaticMeshComponent per source mesh node unless a validated merge preserves all transforms/material slots).
+3. Populate a Blueprint subclass of `AGFShipAssemblyActor` with one part descriptor per source mesh node, using composed root-relative transforms and preserved material slots.
 4. Verify all expected source nodes are represented exactly once.
 5. Verify materials, scale, forward axis, pivots and collision in Unreal Editor.
 
