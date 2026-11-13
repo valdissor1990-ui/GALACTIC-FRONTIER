@@ -6,6 +6,7 @@
 #include "GFShipFlightComponent.h"
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
+#include "GFTargetingComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/PlayerController.h"
 
@@ -22,6 +23,7 @@ AGFPlayerShipPawn::AGFPlayerShipPawn()
     Flight = CreateDefaultSubobject<UGFShipFlightComponent>(TEXT("Flight"));
     Damageable = CreateDefaultSubobject<UGFDamageableComponent>(TEXT("Damageable"));
     Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
+    Targeting = CreateDefaultSubobject<UGFTargetingComponent>(TEXT("Targeting"));
 
     ChaseArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm"));
     ChaseArm->SetupAttachment(ShipMesh);
@@ -86,6 +88,8 @@ void AGFPlayerShipPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
     PlayerInputComponent->BindAction(TEXT("ShipFire"), IE_Pressed, this, &AGFPlayerShipPawn::SetFirePressed);
     PlayerInputComponent->BindAction(TEXT("ShipFire"), IE_Released, this, &AGFPlayerShipPawn::SetFireReleased);
     PlayerInputComponent->BindAction(TEXT("ToggleShipCamera"), IE_Pressed, this, &AGFPlayerShipPawn::SetCameraTogglePressed);
+    PlayerInputComponent->BindAction(TEXT("TargetLock"), IE_Pressed, this, &AGFPlayerShipPawn::SetTargetLockPressed);
+    PlayerInputComponent->BindAction(TEXT("TargetClear"), IE_Pressed, this, &AGFPlayerShipPawn::SetTargetClearPressed);
 }
 
 void AGFPlayerShipPawn::ToggleCameraMode()
@@ -110,3 +114,5 @@ void AGFPlayerShipPawn::SetBrakeReleased() { if (Flight) Flight->SetBrakeRequest
 void AGFPlayerShipPawn::SetFirePressed() { if (Weapon) Weapon->StartFiring(); }
 void AGFPlayerShipPawn::SetFireReleased() { if (Weapon) Weapon->StopFiring(); }
 void AGFPlayerShipPawn::SetCameraTogglePressed() { ToggleCameraMode(); }
+void AGFPlayerShipPawn::SetTargetLockPressed() { if (Targeting) Targeting->AcquireBestTarget(); }
+void AGFPlayerShipPawn::SetTargetClearPressed() { if (Targeting) Targeting->ClearTarget(); }
