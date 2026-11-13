@@ -34,6 +34,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Flight|Input")
     void SetBoostRequested(bool bRequested);
 
+    UFUNCTION(BlueprintCallable, Category="Flight|Input")
+    void SetBrakeRequested(bool bRequested);
+
     UFUNCTION(BlueprintCallable, Category="Flight|State")
     void SetFlightDisabled(bool bDisabled);
 
@@ -96,5 +99,6 @@ private:
     FVector AngularVelocity = FVector::ZeroVector;
     FVector2D PendingMouseDelta = FVector2D::ZeroVector;
     bool bBoostRequested = false;
+    bool bBrakeRequested = false;
     bool bFlightDisabled = false;
 };
