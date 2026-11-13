@@ -19,6 +19,29 @@ def mat(name, color, metallic=.65, rough=.34, emission=None, strength=0):
     if emission:
         p.inputs["Emission Color"].default_value=(*emission,1)
         p.inputs["Emission Strength"].default_value=strength
+    # Shared aerospace PBR finish: subtle fine grain and restrained roughness
+    # breakup stop large armor plates reading as flat plastic in the showroom.
+    if any(token in name.lower() for token in ("hull", "armor", "graphite", "ceramic", "titanium")):
+        nodes=m.node_tree.nodes; links=m.node_tree.links
+        texcoord=nodes.new("ShaderNodeTexCoord")
+        noise=nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value=46.0
+        noise.inputs["Detail"].default_value=3.6
+        noise.inputs["Roughness"].default_value=0.72
+        noise.inputs["Distortion"].default_value=0.12
+        bump=nodes.new("ShaderNodeBump")
+        bump.inputs["Strength"].default_value=0.11
+        bump.inputs["Distance"].default_value=0.012
+        rough_map=nodes.new("ShaderNodeMapRange")
+        rough_map.inputs["From Min"].default_value=0.0
+        rough_map.inputs["From Max"].default_value=1.0
+        rough_map.inputs["To Min"].default_value=max(0.18,rough-0.07)
+        rough_map.inputs["To Max"].default_value=min(0.78,rough+0.10)
+        links.new(texcoord.outputs["Generated"],noise.inputs["Vector"])
+        links.new(noise.outputs["Fac"],bump.inputs["Height"])
+        links.new(bump.outputs["Normal"],p.inputs["Normal"])
+        links.new(noise.outputs["Fac"],rough_map.inputs["Value"])
+        links.new(rough_map.outputs["Result"],p.inputs["Roughness"])
     return m
 
 def finish(o, material, bevel=.05):
