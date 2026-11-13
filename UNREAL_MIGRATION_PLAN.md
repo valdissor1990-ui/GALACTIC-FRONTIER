@@ -99,7 +99,7 @@ Implemented in C++ source (not yet compiled in the Unreal toolchain):
 - Relay and wreck interactions now enter explicit scan stages; scan progress advances only while the player remains within interaction range, is displayed as a percentage in the native HUD, and launches the encounter after the configurable scan duration. This is source-level implementation only; timing and gameplay behavior still require an Unreal playtest.
 - Local pilot SaveGame data with schema field, migration hook and backup slot.
 - Native HUD with velocity, hull, shields, boost, target and mission stage.
-- Editor Python setup script imports existing ship/environment GLBs, inventories every imported StaticMesh path, flags multi-mesh sources, creates a flight-test map and spawns PlayerStart plus a mission director. It may assign a uniquely identified enemy mesh to the director. It does not yet assemble complete multi-node ships, assign the Player Fighter to the pawn, or verify imported asset paths/materials/transforms in the Editor.
+- Editor Python setup script parses each source GLB JSON chunk and logs its scene roots, node hierarchy, node-to-mesh references, local matrix/TRS and primitive material names; it also inventories imported StaticMesh paths and flags multi-mesh sources. This is source-side inspection only: it does not yet compose parent transforms, generate ship assembly actors, or verify imported asset paths/materials/transforms in the Editor.
 
 Not yet verified:
 - C++ compilation against the installed Unreal Engine 5.8 toolchain.
