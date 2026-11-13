@@ -975,7 +975,7 @@ func _create_planet_texture() -> Texture2D:
 	noise.seed = 19073
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	noise.fractal_octaves = 6
+	noise.fractal_octaves = 5
 	noise.fractal_lacunarity = 2.05
 	noise.fractal_gain = 0.48
 	noise.frequency = 1.32
@@ -989,21 +989,37 @@ func _create_planet_texture() -> Texture2D:
 	detail_noise.seed = 48291
 	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	detail_noise.fractal_octaves = 4
+	detail_noise.fractal_octaves = 3
 	detail_noise.frequency = 5.8
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
+	# Precompute spherical coordinates once; avoid trigonometric calls and Vector3
+	# allocations for every texel. Fine surface noise is reserved for land and shelf water.
+	var sin_latitudes := PackedFloat32Array()
+	var cos_latitudes := PackedFloat32Array()
+	var sin_longitudes := PackedFloat32Array()
+	var cos_longitudes := PackedFloat32Array()
+	sin_latitudes.resize(HEIGHT)
+	cos_latitudes.resize(HEIGHT)
+	sin_longitudes.resize(WIDTH)
+	cos_longitudes.resize(WIDTH)
 	for y in range(HEIGHT):
 		var latitude := (float(y) / float(HEIGHT - 1) - 0.5) * PI
+		sin_latitudes[y] = sin(latitude)
+		cos_latitudes[y] = cos(latitude)
+	for x in range(WIDTH):
+		var longitude := (float(x) / float(WIDTH - 1) - 0.5) * TAU
+		sin_longitudes[x] = sin(longitude)
+		cos_longitudes[x] = cos(longitude)
+	for y in range(HEIGHT):
+		var latitude_sin := sin_latitudes[y]
+		var latitude_cos := cos_latitudes[y]
 		for x in range(WIDTH):
-			var longitude := (float(x) / float(WIDTH - 1) - 0.5) * TAU
-			var direction := Vector3(
-				cos(latitude) * cos(longitude),
-				sin(latitude),
-				cos(latitude) * sin(longitude)
-			)
-			var value := noise.get_noise_3d(direction.x * 2.8, direction.y * 2.8, direction.z * 2.8)
-			var surface_detail := detail_noise.get_noise_3d(direction.x * 5.8, direction.y * 5.8, direction.z * 5.8)
-			value += surface_detail * 0.075
+			var direction_x := latitude_cos * cos_longitudes[x]
+			var direction_y := latitude_sin
+			var direction_z := latitude_cos * sin_longitudes[x]
+			var value := noise.get_noise_3d(direction_x * 2.8, direction_y * 2.8, direction_z * 2.8)
+			if value > -0.42:
+				value += detail_noise.get_noise_3d(direction_x * 5.8, direction_y * 5.8, direction_z * 5.8) * 0.075
 			var color: Color
 			if value < -0.18:
 				color = water_dark.lerp(water_light, clampf((value + 1.0) / 0.82, 0.0, 1.0))
