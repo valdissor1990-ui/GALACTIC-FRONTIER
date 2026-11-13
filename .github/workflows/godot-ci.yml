@@ -21,6 +21,7 @@ on:
       - chatgpt/audit-fixes-pr24
       - chatgpt/ship-art-production
       - chatgpt/mission-save-integration
+      - chatgpt/campaign-objectives
   workflow_dispatch:
 
 permissions:
