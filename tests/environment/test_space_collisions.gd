@@ -56,6 +56,13 @@ func _run() -> void:
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
+	var gas_giant := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
+	var gas_material := gas_giant.mesh.surface_get_material(0) as StandardMaterial3D if gas_giant != null else null
+	_check(gas_material != null and gas_material.albedo_texture != null, "authored 2K gas-giant texture loads through Image API")
+	_check(asteroid_field != null and not (asteroid_field.multimesh.mesh is SphereMesh), "NASA asteroid GLB geometry is used instead of sphere fallback")
+	_check(environment.has_node("OrbitalStationLandmark/NASA_ISS_Visual"), "NASA orbital station GLB is loaded")
+	_check(environment.has_node("CivilianCargoA") and environment.has_node("CivilianMiner") and environment.has_node("CivilianCourier"), "Kenney civilian traffic GLBs are loaded")
+	_check(environment.has_node("DerelictWreckLandmark/KenneyDerelictTurret"), "Kenney derelict turret GLB is loaded")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
