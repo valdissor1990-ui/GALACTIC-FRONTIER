@@ -640,6 +640,7 @@ void fragment() {
 	float shimmer = 0.82 + 0.18 * sin(TIME * 0.65 + dust_custom.a * 6.28318);
 	ALBEDO = dust_custom.rgb * shimmer;
 	EMISSION = dust_custom.rgb * (0.22 + shimmer * 0.72);
+	ALPHA = clamp(dust_custom.a * 0.30, 0.035, 0.24);
 }
 """
 	var dust_material := ShaderMaterial.new()
