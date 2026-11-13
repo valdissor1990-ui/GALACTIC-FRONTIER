@@ -51,11 +51,34 @@ func _run_test() -> void:
 	await _clear_three_waves(director)
 
 	_check(director.stage == 6, "Six waves must unlock return to carrier")
+	var damageable := player.get_node("Damageable") as Damageable
+	damageable.current_hull = damageable.max_hull * 0.5
+	damageable.current_shield = damageable.max_shield * 0.25
+	player.boost_amount = 0.0
+	var profile := root.get_node("GameProfile") as PlayerProfile
+	profile.credits = maxi(profile.credits, 10000)
+	profile.call("_save_profile")
+	demo.remove_from_group("qa_demo_driver")
 	player.global_position = director._objective_position
 	await process_frame
-	_check(director.stage == 7, "Returning to carrier must complete the mission")
+	_check(director.stage == 9, "Returning to carrier must enter the docking approach, not auto-complete")
+	player.global_position = director._dock_position
+	player.global_rotation = Vector3(0.0, PI, 0.0)
+	player.velocity = Vector3.ZERO
+	_check(director._attempt_docking(), "Aligned, stationary craft inside the port must dock")
+	_check(director.stage == 10, "Successful docking must open carrier maintenance")
+	var credits_before := profile.get_credits()
+	director._service_hull()
+	_check(is_equal_approx(damageable.current_hull, damageable.max_hull), "Carrier hull repair must restore full hull")
+	director._service_shields()
+	_check(is_equal_approx(damageable.current_shield, damageable.max_shield), "Carrier shield recharge must restore full shields")
+	director._service_boost()
+	_check(is_equal_approx(player.boost_amount, player.flight_config.boost_capacity), "Carrier boost refill must restore full boost")
+	director._service_weapons()
+	_check(profile.get_credits() < credits_before, "Maintenance services must deduct persistent pilot credits")
+	_check(director._service_layer != null and is_instance_valid(director._service_layer), "Docking must present the carrier maintenance panel")
 	_finished = true
-	print("DEMO_MISSION_TEST_PASS")
+	print("DEMO_DOCKING_SERVICE_TEST_PASS")
 	quit(0)
 
 
