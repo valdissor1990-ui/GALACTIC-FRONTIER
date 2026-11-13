@@ -24,6 +24,14 @@ func _ready() -> void:
 	apply_preset(current)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key := event as InputEventKey
+		if key.pressed and not key.echo and key.keycode == KEY_F10:
+			cycle_preset()
+			get_viewport().set_input_as_handled()
+
+
 func set_preset(preset: Preset) -> void:
 	current = preset
 	apply_preset(current)
