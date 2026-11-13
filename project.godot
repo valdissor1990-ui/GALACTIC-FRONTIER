@@ -1,18 +1,18 @@
 ; Engine configuration file.
-; GALACTIC FRONTIER — first flight prototype.
-; Target engine: Godot 4.7.2-stable. Runtime status: NOT RUN.
+; GALACTIC FRONTIER — Full HD desktop rendering baseline.
+; Target engine: Godot 4.7.2-stable, Forward+ desktop renderer.
 
 config_version=5
 
 [application]
 config/name="GALACTIC FRONTIER"
 run/main_scene="res://scenes/bootstrap/main.tscn"
-config/features=PackedStringArray("4.7", "GL Compatibility")
+config/features=PackedStringArray("4.7")
 config/description="Original single-player space action RPG prototype."
 
 [display]
-window/size/viewport_width=1600
-window/size/viewport_height=900
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
@@ -110,7 +110,7 @@ target_clear={
 common/physics_ticks_per_second=60
 
 [rendering]
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="mobile"
 environment/defaults/default_clear_color=Color(0.008, 0.014, 0.035, 1)
 textures/default_filters/use_nearest_mipmap_filter=false
