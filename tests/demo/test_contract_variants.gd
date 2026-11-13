@@ -23,6 +23,8 @@ func _run() -> void:
 	profile.call("_save_profile")
 	var save_manager := root.get_node("GameSave")
 	var checkpoint_backup: Dictionary = save_manager.call("load_slot", "silent_relay")
+	var pending_payload_backup: Variant = save_manager.get("pending_mission_payload")
+	save_manager.set("pending_mission_payload", {})
 
 	var demo := load("res://scenes/demo/ten_minute_demo.tscn").instantiate()
 	demo.add_to_group("qa_demo_driver")
@@ -66,6 +68,7 @@ func _run() -> void:
 		save_manager.call("save_slot", "silent_relay", checkpoint_backup.get("payload", {}))
 	else:
 		save_manager.call("delete_slot", "silent_relay")
+	save_manager.set("pending_mission_payload", pending_payload_backup)
 
 	if _failures.is_empty():
 		print("CONTRACT_VARIANTS_TEST_PASS assertions=13")
