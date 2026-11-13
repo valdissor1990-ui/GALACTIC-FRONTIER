@@ -48,6 +48,13 @@ func _run() -> void:
 	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
 	_check(cratered_moon != null and cratered_moon.mesh.material is ShaderMaterial, "the distant moon has procedural crater and regolith shading")
 	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
+	_check(environment.has_node("StellarPrimary") and environment.has_node("StellarCorona"), "the system has a visible animated primary star and plasma corona")
+	_check(environment.has_node("CometLandmark/CometNucleus") and environment.has_node("CometLandmark/CometComa") and environment.has_node("CometLandmark/CometIonTail"), "a comet has a rocky nucleus, animated coma and ion tail")
+	var comet_tail := environment.get_node_or_null("CometLandmark/CometIonTail") as MeshInstance3D
+	_check(comet_tail != null and comet_tail.mesh.material is ShaderMaterial, "the comet ion tail uses a procedural animated shader")
+	_check(environment.has_node("DerelictWreckLandmark/WreckMainHull") and environment.has_node("DerelictWreckLandmark/WreckBrokenPanel") and environment.has_node("DerelictWreckLandmark/WreckEmergencyBeacon"), "a derelict courier wreck includes broken hull sections and an emergency beacon")
+	var wreck_debris := environment.get_node_or_null("DerelictWreckLandmark/WreckDebrisCloud") as MultiMeshInstance3D
+	_check(wreck_debris != null and wreck_debris.multimesh.instance_count == 96, "the derelict wreck debris is batched into one 96-piece MultiMesh")
 	var cloud_layer := environment.get_node_or_null("AureliaCloudLayer") as MeshInstance3D
 	_check(cloud_layer != null and cloud_layer.mesh.material is ShaderMaterial, "the nearby planet has a separate procedural cloud shell")
 	var star_clusters := environment.get_node_or_null("ChromaticStarClusters") as MultiMeshInstance3D
@@ -67,6 +74,18 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	environment.call("_process", 0.0)
+	var stellar_primary := environment.get_node("StellarPrimary") as MeshInstance3D
+	var expected_star_position := sky_camera.global_position + sky_camera.global_basis * Vector3(-620.0, 285.0, -3200.0)
+	_check(stellar_primary.global_position.distance_to(expected_star_position) < 1.0, "the primary star remains a camera-relative sky landmark during long flights")
+	var stellar_key_light := environment.get_node("StellarKeyLight") as DirectionalLight3D
+	var expected_light_direction := sky_camera.global_basis * Vector3(620.0, -285.0, 3200.0).normalized()
+	_check((-stellar_key_light.global_basis.z).dot(expected_light_direction) > 0.98, "the directional key light points away from the visible primary star")
+	var tracked_comet := environment.get_node("CometLandmark") as Node3D
+	var expected_comet_position := sky_camera.global_position + sky_camera.global_basis * Vector3(-520.0, 205.0, -1880.0)
+	_check(tracked_comet.global_position.distance_to(expected_comet_position) < 1.0, "the comet remains a camera-relative distant sky landmark")
+	var tracked_wreck := environment.get_node("DerelictWreckLandmark") as Node3D
+	var expected_wreck_position := sky_camera.global_position + sky_camera.global_basis * Vector3(285.0, -118.0, -690.0)
+	_check(tracked_wreck.global_position.distance_to(expected_wreck_position) < 1.0, "the derelict wreck remains visible during long flights")
 	var tracked_clusters := environment.get_node("ChromaticStarClusters") as MultiMeshInstance3D
 	_check(tracked_clusters.global_position.distance_to(sky_camera.global_position) < 0.01, "chromatic star clusters remain camera-relative during long flights")
 	var tracked_clouds := environment.get_node("AureliaCloudLayer") as MeshInstance3D
