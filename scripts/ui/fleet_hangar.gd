@@ -301,7 +301,7 @@ func _get_ship_specs_with_modules(ship_data: Dictionary) -> String:
 		return specs
 	var installed: Array = profile.call("get_installed_modules", str(ship_data.get("id", "")))
 	var catalog: Array = profile.call("get_module_catalog")
-	var names: Array[String] = []
+	var names := PackedStringArray()
 	for module_id in installed:
 		for module in catalog:
 			if str(module.get("id", "")) == str(module_id):
