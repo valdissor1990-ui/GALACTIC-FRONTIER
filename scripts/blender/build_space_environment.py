@@ -195,6 +195,7 @@ def create_space_backdrop(resolution):
 
     material = bpy.data.materials.new("GF_DeepSpace_Emissive")
     material.use_nodes = True
+    material.use_backface_culling = False
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     principled = nodes.get("Principled BSDF")
