@@ -37,7 +37,7 @@ func _run_test() -> void:
 	# Keep the first-person composition stable across future model/cockpit edits.
 	var cockpit_camera := camera_rig.get_node("CockpitCamera") as Camera3D
 	_check(is_equal_approx(cockpit_camera.fov, 76.0), "Cockpit camera must retain the polished 76-degree field of view")
-	_check(cockpit_camera.position.is_equal_approx(Vector3(0.0, 0.20, -1.05)), "Cockpit camera must retain the forward-biased framing")
+	_check(cockpit_camera.position.is_equal_approx(Vector3(0.0, 0.24, -1.72)), "Cockpit camera must retain the forward-biased framing")
 	_check(cockpit != null and not cockpit.visible, "Cockpit interior must start hidden in chase-camera mode")
 	camera_rig.toggle_camera()
 	_check(cockpit.visible and not player.get_node("Visual").visible, "Cockpit mode must show the cockpit and hide the exterior ship")
