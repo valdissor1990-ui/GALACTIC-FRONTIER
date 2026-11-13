@@ -30,6 +30,7 @@ on:
       - chatgpt/m01-m05-story-integration
       - chatgpt/campaign-runtime-manager
       - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
       - chatgpt/dialogue-choice-overlay-m01
   workflow_dispatch:
 
