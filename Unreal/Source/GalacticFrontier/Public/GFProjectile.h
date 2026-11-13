@@ -5,6 +5,7 @@
 #include "GFProjectile.generated.h"
 
 class USphereComponent;
+class UStaticMeshComponent;
 class UProjectileMovementComponent;
 
 UCLASS()
