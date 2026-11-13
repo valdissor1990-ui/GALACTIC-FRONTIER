@@ -47,6 +47,9 @@ public:
     FVector WreckPosition = FVector(52000.0, -2800.0, -3300000.0);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
+    FVector CarrierPosition = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
     float InteractionRange = 9500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
