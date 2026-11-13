@@ -51,7 +51,7 @@ func _capture_sequence() -> void:
 	diagnostic_sphere.global_position = Vector3(-138.0, 54.0, -465.0)
 	_environment.add_child(diagnostic_sphere)
 	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	await get_tree().create_timer(0.2).timeout
 	var diagnostic_image := get_viewport().get_texture().get_image()
 	var diagnostic_error := diagnostic_image.save_png(output_directory + "/space-camera-diagnostic.png")
 	print("SPACE_SHOWCASE_CAMERA_ACTIVE=", get_viewport().get_camera_3d() == _camera,
@@ -94,7 +94,6 @@ func _capture_sequence() -> void:
 		_camera.look_at(target_position, Vector3.UP)
 		print("SPACE_SHOWCASE_CAMERA=", shot["name"], " pos=", camera_position, " target=", target_position)
 		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
 		await get_tree().create_timer(1.15).timeout
 		var screenshot := get_viewport().get_texture().get_image()
 		var file_path := output_directory + "/space-" + str(shot["name"]) + ".png"
