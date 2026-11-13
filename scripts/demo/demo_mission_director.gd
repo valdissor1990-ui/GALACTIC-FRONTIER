@@ -563,7 +563,7 @@ func _build_docking_services() -> void:
 	var module_separator := HSeparator.new()
 	column.add_child(module_separator)
 	var module_heading := Label.new()
-	module_heading.text = "HARDPOINT MODULES  /  ONE MODULE PER SLOT"
+	module_heading.text = "SHIP SYSTEMS  /  ONE MODULE PER SLOT"
 	module_heading.add_theme_color_override("font_color", Color(0.38, 0.94, 0.86))
 	column.add_child(module_heading)
 	var profile := get_node_or_null("/root/GameProfile")
