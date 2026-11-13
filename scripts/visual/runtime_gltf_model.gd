@@ -113,7 +113,12 @@ func _ready() -> void:
 	var instance := packed.instantiate()
 	instance.name = "Model"
 	instance.scale = model_scale
-	var detailed_surfaces := apply_surface_finish(instance)
+	var detailed_surfaces: int = 0
+	# Godot's dummy renderer used by headless smoke tests cannot render detail
+	# textures. Keep those tests quiet; the dedicated GLB test still exercises
+	# the finish on detached scenes, and real desktop builds apply it normally.
+	if DisplayServer.get_name() != "headless":
+		detailed_surfaces = apply_surface_finish(instance)
 	print("SHIP_SURFACE_FINISH: %s — %d material surfaces" % [source_path.get_file(), detailed_surfaces])
 	add_child(instance)
 
