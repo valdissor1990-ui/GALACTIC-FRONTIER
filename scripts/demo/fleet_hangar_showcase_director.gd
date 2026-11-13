@@ -99,7 +99,7 @@ func _spawn_ship(data: Dictionary) -> bool:
 		push_error("Fleet hangar generated a null scene for %s" % path)
 		return false
 
-	var detailed_surfaces := RUNTIME_GLTF_SCRIPT.apply_surface_finish(ship)
+	var detailed_surfaces: int = int(RUNTIME_GLTF_SCRIPT.apply_surface_finish(ship))
 	if detailed_surfaces <= 0:
 		push_error("Fleet hangar surface finish did not find PBR materials in %s" % path)
 		ship.free()
