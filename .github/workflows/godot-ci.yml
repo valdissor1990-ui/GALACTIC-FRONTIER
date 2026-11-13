@@ -28,6 +28,7 @@ on:
       - chatgpt/campaign-objectives
       - chatgpt/campaign-story-integration
       - chatgpt/open-world-space-environment
+      - chatgpt/deep-space-detail-pass
   workflow_dispatch:
 
 permissions:
