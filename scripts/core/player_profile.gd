@@ -4,6 +4,32 @@ class_name PlayerProfile
 
 const PROFILE_SLOT := "pilot_profile"
 const STARTING_CREDITS := 2500
+const MODULE_CATALOG := {
+	"reinforced_hull": {
+		"name": "Reinforced Hull", "slot": "HULL", "price": 1800,
+		"description": "+18% maximum hull", "stats": {"hull_multiplier": 1.18}
+	},
+	"shield_capacitor": {
+		"name": "Shield Capacitor", "slot": "SHIELD", "price": 1600,
+		"description": "+22% shields, +15% shield regeneration",
+		"stats": {"shield_multiplier": 1.22, "shield_regen_multiplier": 1.15}
+	},
+	"weapon_overclock": {
+		"name": "Weapon Overclock", "slot": "WEAPON", "price": 2200,
+		"description": "+10% fire rate, +12% projectile damage",
+		"stats": {"shots_per_second_multiplier": 1.10, "projectile_damage_multiplier": 1.12}
+	},
+	"boost_injector": {
+		"name": "Boost Injector", "slot": "ENGINE", "price": 1700,
+		"description": "+25% boost reserve, +18% boost recharge",
+		"stats": {"boost_capacity_multiplier": 1.25, "boost_recharge_multiplier": 1.18}
+	},
+	"ion_thrusters": {
+		"name": "Ion Thrusters", "slot": "ENGINE", "price": 2500,
+		"description": "+8% top speed, +12% acceleration",
+		"stats": {"max_speed_multiplier": 1.08, "acceleration_multiplier": 1.12}
+	}
+}
 const FLYABLE_SHIPS := {
 	"player_fighter": {
 		"path": "res://assets/models/ships/player_fighter.glb",
@@ -39,6 +65,7 @@ var selected_ship_id: String = "player_fighter"
 var credits: int = STARTING_CREDITS
 var unlocked_ship_ids: Array[String] = ["player_fighter"]
 var completed_mission_ids: Array[String] = []
+var installed_modules: Dictionary = {}
 
 
 func _ready() -> void:
@@ -70,6 +97,25 @@ func _load_profile() -> void:
 		unlocked_ship_ids.push_front("player_fighter")
 
 	completed_mission_ids.clear()
+	var saved_modules: Variant = payload.get("installed_modules", {})
+	installed_modules.clear()
+	if saved_modules is Dictionary:
+		for ship_key in saved_modules.keys():
+			var ship_id := str(ship_key)
+			if not FLYABLE_SHIPS.has(ship_id) or not saved_modules[ship_key] is Array:
+				continue
+			var accepted: Array[String] = []
+			var occupied_slots: Array[String] = []
+			for module_value in saved_modules[ship_key]:
+				var module_id := str(module_value)
+				if not MODULE_CATALOG.has(module_id) or accepted.has(module_id):
+					continue
+				var module_slot := str(MODULE_CATALOG[module_id].slot)
+				if occupied_slots.has(module_slot):
+					continue
+				accepted.append(module_id)
+				occupied_slots.append(module_slot)
+			installed_modules[ship_id] = accepted
 	var saved_missions: Variant = payload.get("completed_mission_ids", [])
 	if saved_missions is Array:
 		for value in saved_missions:
@@ -112,6 +158,59 @@ func spend_credits(amount: int) -> bool:
 	if not _save_profile():
 		credits += cost
 		return false
+	return true
+
+
+func purchase_module(ship_id: String, module_id: String) -> bool:
+	if not FLYABLE_SHIPS.has(ship_id) or not unlocked_ship_ids.has(ship_id):
+		return false
+	if not MODULE_CATALOG.has(module_id) or not is_module_slot_available(ship_id, module_id):
+		return false
+	var price := int(MODULE_CATALOG[module_id].price)
+	if credits < price:
+		return false
+	var installed := get_installed_modules(ship_id)
+	installed.append(module_id)
+	installed_modules[ship_id] = installed
+	credits -= price
+	if not _save_profile():
+		credits += price
+		installed.erase(module_id)
+		if installed.is_empty():
+			installed_modules.erase(ship_id)
+		else:
+			installed_modules[ship_id] = installed
+		return false
+	return true
+
+
+func get_module_catalog() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for module_id in MODULE_CATALOG.keys():
+		var entry: Dictionary = MODULE_CATALOG[module_id].duplicate(true)
+		entry["id"] = str(module_id)
+		result.append(entry)
+	return result
+
+
+func get_installed_modules(ship_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var raw: Variant = installed_modules.get(ship_id, [])
+	if raw is Array:
+		for module_id in raw:
+			result.append(str(module_id))
+	return result
+
+
+func is_module_slot_available(ship_id: String, module_id: String) -> bool:
+	if not FLYABLE_SHIPS.has(ship_id) or not MODULE_CATALOG.has(module_id):
+		return false
+	var candidate_slot := str(MODULE_CATALOG[module_id].slot)
+	for installed_id in get_installed_modules(ship_id):
+		if not MODULE_CATALOG.has(installed_id):
+			continue
+		if str(MODULE_CATALOG[installed_id].slot) == candidate_slot:
+			return false
 	return true
 
 
@@ -164,9 +263,22 @@ func get_selected_ship_flight_config_path() -> String:
 
 func get_selected_ship_stats() -> Dictionary:
 	var stats: Variant = FLYABLE_SHIPS[selected_ship_id].get("stats", {})
-	if stats is Dictionary:
-		return stats.duplicate(true)
-	return {}
+	var result: Dictionary = stats.duplicate(true) if stats is Dictionary else {}
+	for multiplier_key in [
+		"hull_multiplier", "shield_multiplier", "shield_regen_multiplier",
+		"shots_per_second_multiplier", "projectile_speed_multiplier",
+		"projectile_damage_multiplier", "max_speed_multiplier",
+		"acceleration_multiplier", "boost_capacity_multiplier",
+		"boost_recharge_multiplier"
+	]:
+		result[multiplier_key] = 1.0
+	for module_id in get_installed_modules(selected_ship_id):
+		if not MODULE_CATALOG.has(module_id):
+			continue
+		var module_stats: Dictionary = MODULE_CATALOG[module_id].get("stats", {})
+		for stat_key in module_stats.keys():
+			result[stat_key] = float(result.get(stat_key, 1.0)) * float(module_stats[stat_key])
+	return result
 
 
 func _save_profile() -> bool:
@@ -174,11 +286,12 @@ func _save_profile() -> bool:
 	if save_manager == null:
 		return false
 	var result: Dictionary = save_manager.call("save_slot", PROFILE_SLOT, {
-		"profile_version": 2,
+		"profile_version": 3,
 		"selected_ship_id": selected_ship_id,
 		"credits": credits,
 		"unlocked_ship_ids": unlocked_ship_ids,
-		"completed_mission_ids": completed_mission_ids
+		"completed_mission_ids": completed_mission_ids,
+		"installed_modules": installed_modules
 	})
 	if not result.get("ok", false):
 		push_error("Pilot profile save failed: " + str(result.get("error", "unknown")))
