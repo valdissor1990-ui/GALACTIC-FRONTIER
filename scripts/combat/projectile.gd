@@ -40,40 +40,56 @@ func _physics_process(delta: float) -> void:
 func _sweep_for_impact(motion: Vector3) -> bool:
 	if motion.length_squared() <= 0.000001 or not is_inside_tree():
 		return false
-	var collision_shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
-	if collision_shape == null or collision_shape.shape == null:
-		return false
 	var space := get_world_3d().direct_space_state
-	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = collision_shape.shape
-	query.transform = global_transform
-	query.motion = motion
-	query.collision_mask = collision_mask
-	query.collide_with_bodies = true
-	query.collide_with_areas = false
-	var excluded: Array[RID] = [get_rid()]
+	var excluded: Array[RID] = []
 	if _source is CollisionObject3D:
 		excluded.append((_source as CollisionObject3D).get_rid())
-	query.exclude = excluded
 
-	var fractions := space.cast_motion(query)
-	if fractions.size() < 2 or fractions[0] >= 1.0:
-		return false
-
-	var contact := space.get_rest_info(query)
-	var collider: Variant = contact.get("collider") if not contact.is_empty() else null
-	if not collider is Node3D:
-		# A ray fallback still guarantees a hit when the swept shape reports a
-		# safe fraction but the backend cannot provide rest information.
-		var ray := PhysicsRayQueryParameters3D.create(global_position, global_position + motion, collision_mask, excluded)
+	# Nine parallel rays approximate the projectile's 0.12 m spherical radius.
+	# This avoids discrete overlap tunnelling without allocating physics bodies.
+	var right := _direction.cross(Vector3.UP).normalized()
+	if right.length_squared() <= 0.0001:
+		right = _direction.cross(Vector3.RIGHT).normalized()
+	var up := _direction.cross(right).normalized()
+	var radius := 0.12
+	var diagonal := radius * 0.70710678
+	var offsets: Array[Vector3] = [
+		Vector3.ZERO,
+		right * radius, -right * radius,
+		up * radius, -up * radius,
+		(right + up) * diagonal, (right - up) * diagonal,
+		(-right + up) * diagonal, (-right - up) * diagonal
+	]
+	var best_distance_squared := INF
+	var best_collider: Node3D
+	var best_position := global_position
+	for offset in offsets:
+		var ray := PhysicsRayQueryParameters3D.create(
+			global_position + offset,
+			global_position + motion + offset,
+			collision_mask,
+			excluded
+		)
 		ray.collide_with_areas = false
-		var ray_hit := space.intersect_ray(ray)
-		collider = ray_hit.get("collider") if not ray_hit.is_empty() else null
-	if collider is Node3D:
-		global_position += motion * clampf(float(fractions[0]), 0.0, 1.0)
-		_on_body_entered(collider as Node3D)
-		return true
-	return false
+		ray.collide_with_bodies = true
+		var hit := space.intersect_ray(ray)
+		if hit.is_empty():
+			continue
+		var collider: Variant = hit.get("collider")
+		if not collider is Node3D or _is_source_or_child(collider as Node3D):
+			continue
+		var hit_position: Vector3 = hit.get("position", global_position + motion)
+		var projectile_position := hit_position - offset
+		var distance_squared := global_position.distance_squared_to(projectile_position)
+		if distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
+			best_collider = collider as Node3D
+			best_position = projectile_position
+	if best_collider == null:
+		return false
+	global_position = best_position
+	_on_body_entered(best_collider)
+	return true
 
 
 func _create_trail() -> void:
