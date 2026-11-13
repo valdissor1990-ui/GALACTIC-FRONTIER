@@ -366,6 +366,63 @@ def build_cruiser(m):
 
     detail_panels("Leviathan",2.4,[-15,-11,-7,-3,1,5,9,13,17],1.65,m)
 
+
+def consolidate_static_meshes(root):
+    """Bake modifiers and merge static parts by material to reduce GLB draw calls.
+
+    Keep independently addressable gameplay/animation parts as separate objects.
+    The single GF root, ship bounds, orientation and local transforms are preserved.
+    """
+    keep_tokens = (
+        "turret", "landing strut", "landing pad", "sliding bay door",
+        "bomb bay door", "elevon", "control surface", "flap", "sensor mast",
+        "antenna", "rotating", "gear", "door"
+    )
+    groups = {}
+    for obj in list(root.children_recursive):
+        if obj.type != "MESH":
+            continue
+        if any(token in obj.name.lower() for token in keep_tokens):
+            continue
+        material_key = tuple(
+            slot.material.name if slot.material else "__no_material__"
+            for slot in obj.material_slots
+        )
+        groups.setdefault(material_key, []).append(obj.name)
+
+    merged_count = 0
+    for material_key, object_names in groups.items():
+        if len(object_names) < 2:
+            continue
+        for object_name in object_names:
+            obj = bpy.data.objects.get(object_name)
+            if obj is None or obj.type != "MESH":
+                continue
+            if obj.modifiers:
+                bpy.ops.object.select_all(action="DESELECT")
+                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.object.convert(target="MESH")
+
+        objects = [bpy.data.objects.get(name) for name in object_names]
+        objects = [obj for obj in objects if obj is not None and obj.type == "MESH"]
+        if len(objects) < 2:
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objects[0]
+        bpy.ops.object.join()
+        merged = bpy.context.object
+        material_label = "_".join(material_key).replace(" ", "_")[:32]
+        merged.name = "GF_Static_%02d_%s" % (merged_count, material_label)
+        merged.parent = root
+        merged_count += 1
+
+    print("GF_MESH_CONSOLIDATION", root.name,
+          "static_groups", merged_count,
+          "remaining_meshes", sum(1 for obj in root.children_recursive if obj.type == "MESH"))
+
 BUILDERS=[
  ("heavy_fighter","Aegis Heavy Fighter",build_heavy_fighter,((.075,.13,.19),(.32,.43,.49),(.04,.68,.78),(.02,.32,.95))),
  ("bomber","Bastion Bomber",build_bomber,((.13,.105,.075),(.42,.34,.22),(.88,.38,.08),(.95,.20,.035))),
@@ -415,6 +472,7 @@ def main():
         for o in list(bpy.context.scene.objects):
             if o not in (root,) and o.type in {"MESH","EMPTY"} and o.parent is None:
                 o.parent=root
+        consolidate_static_meshes(root)
         # Bounds from ship meshes determine a robust framing target and scale.
         meshes=[o for o in root.children_recursive if o.type=="MESH"]
         bpy.context.view_layer.update()
