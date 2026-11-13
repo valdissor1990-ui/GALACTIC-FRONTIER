@@ -1,7 +1,7 @@
 """Generate a small original planet set for GALACTIC FRONTIER.
 
 Run with Blender 4.5:
-  blender --background --python scripts/blender/build_space_environment.py -- --output-dir assets/models/planets
+  blender --background --python scripts/blender/build_space_environment.py -- --output-dir assets/models
 
 The script creates independent GLB files so the Unreal import queue can process
 one finished asset at a time. Materials use embedded generated image textures.
@@ -21,7 +21,7 @@ from mathutils import Vector
 def parse_args():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", default="assets/models/planets")
+    parser.add_argument("--output-dir", default="assets/models")
     parser.add_argument("--resolution", type=int, default=512)
     return parser.parse_args(argv)
 
@@ -142,8 +142,9 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.context.view_layer.objects.active = planet
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    output = os.path.join(OUTPUT_DIR, slug + ".glb")
+    planet_dir = os.path.join(OUTPUT_DIR, "planets")
+    os.makedirs(planet_dir, exist_ok=True)
+    output = os.path.join(planet_dir, slug + ".glb")
     bpy.ops.export_scene.gltf(
         filepath=output,
         export_format="GLB",
@@ -156,6 +157,73 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
     return output
 
 
+
+def create_space_backdrop(resolution):
+    """Create a textured, inward-facing sky sphere with stars and nebula clouds."""
+    width = max(512, resolution * 2)
+    height_px = max(256, resolution)
+    image = bpy.data.images.new("GF_DeepSpace_Starfield", width=width, height=height_px, alpha=True)
+    rng = random.Random(20261114)
+    stars = [(rng.randrange(width), rng.randrange(height_px), rng.uniform(0.55, 1.0))
+             for _ in range(max(1800, width * height_px // 170))]
+    pixels = []
+    for y in range(height_px):
+        lat = (y / max(1, height_px - 1) - 0.5) * math.pi
+        for x in range(width):
+            lon = x / width * math.tau
+            cloud_a = math.exp(-((lon - 2.0) ** 2 + (lat + 0.12) ** 2) * 1.7)
+            cloud_b = math.exp(-((lon - 4.4) ** 2 + (lat - 0.32) ** 2) * 2.6)
+            grain = (math.sin(lon * 31.0 + lat * 17.0) *
+                     math.sin(lon * 13.0 - lat * 39.0) + 1.0) * 0.5
+            r = 0.002 + cloud_a * (0.035 + grain * 0.045) + cloud_b * 0.018
+            g = 0.003 + cloud_a * (0.012 + grain * 0.020) + cloud_b * 0.025
+            b = 0.012 + cloud_a * (0.065 + grain * 0.085) + cloud_b * 0.075
+            pixels.extend((r, g, b, 1.0))
+    for sx, sy, brightness in stars:
+        index = (sy * width + sx) * 4
+        pixels[index:index + 4] = [brightness, brightness, brightness, 1.0]
+    image.pixels.foreach_set(pixels)
+    image.pack()
+
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=128, ring_count=64, radius=5000.0)
+    sky = bpy.context.object
+    sky.name = "GF_DeepSpace_Backdrop"
+    sky.data.name = "GF_DeepSpace_BackdropMesh"
+    for polygon in sky.data.polygons:
+        polygon.flip()
+    sky.data.update()
+    for polygon in sky.data.polygons:
+        polygon.use_smooth = True
+
+    material = bpy.data.materials.new("GF_DeepSpace_Emissive")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    principled = nodes.get("Principled BSDF")
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.image = image
+    links.new(texture.outputs["Color"], principled.inputs["Base Color"])
+    emission_socket = principled.inputs.get("Emission Color")
+    if emission_socket:
+        links.new(texture.outputs["Color"], emission_socket)
+        principled.inputs["Emission Strength"].default_value = 1.0
+    principled.inputs["Roughness"].default_value = 1.0
+    sky.data.materials.append(material)
+    sky["gf_asset_role"] = "space_backdrop"
+
+    bpy.ops.object.select_all(action="DESELECT")
+    sky.select_set(True)
+    bpy.context.view_layer.objects.active = sky
+    space_dir = os.path.join(OUTPUT_DIR, "space")
+    os.makedirs(space_dir, exist_ok=True)
+    output = os.path.join(space_dir, "space_backdrop.glb")
+    bpy.ops.export_scene.gltf(filepath=output, export_format="GLB",
+                              use_selection=True, export_apply=True,
+                              export_image_format="AUTO", export_materials="EXPORT")
+    print("[GF SPACE] Exported " + output)
+    return output
+
+
 OUTPUT_DIR = ""
 
 
@@ -164,6 +232,7 @@ def main():
     args = parse_args()
     OUTPUT_DIR = os.path.abspath(args.output_dir)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    space_output = create_space_backdrop(max(128, args.resolution))
     definitions = (
         ("planet_verdant", "Verdant", "ocean", 100.0, 11, False),
         ("planet_dune", "Dune", "desert", 82.0, 23, False),
@@ -175,6 +244,7 @@ def main():
         clear_scene()
         outputs.append(create_planet(slug, name, kind, radius,
                                      max(128, args.resolution), seed, rings))
+    print("[GF SPACE] Complete: " + space_output)
     print("[GF PLANETS] Complete: " + str(len(outputs)) + " planet GLBs")
     for path in outputs:
         print("[GF PLANETS] " + path)
