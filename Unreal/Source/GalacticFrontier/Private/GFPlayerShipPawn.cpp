@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GFShipFlightComponent.h"
 #include "GFDamageableComponent.h"
