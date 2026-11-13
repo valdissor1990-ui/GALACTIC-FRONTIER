@@ -5,6 +5,8 @@
 #include "GFDamageableComponent.h"
 #include "GFSaveSubsystem.h"
 #include "GFPlayerProfileSave.h"
+#include "GFGameCatalog.h"
+#include "Engine/GameInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -33,12 +35,30 @@ void AGFMissionDirector::BeginPlay()
 {
     Super::BeginPlay();
     PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (UGFSaveSubsystem* Saves = GI->GetSubsystem<UGFSaveSubsystem>())
+        {
+            if (UGFPlayerProfileSave* Profile = Saves->GetProfile())
+            {
+                ActiveContractId = Profile->ActiveContractId;
+                FGFContractDefinition Contract;
+                if (UGFGameCatalog::FindContract(ActiveContractId, Contract))
+                {
+                    ActiveContractName = Contract.DisplayName;
+                    MissionReward = Contract.Reward;
+                    WavesPerEncounter = Contract.WavesPerEncounter;
+                    EnemyHealthMultiplier = Contract.EnemyHealthMultiplier;
+                }
+            }
+        }
+    }
     if (RelayMarker && ObjectiveMesh) RelayMarker->SetStaticMesh(ObjectiveMesh);
     if (WreckMarker && ObjectiveMesh) WreckMarker->SetStaticMesh(ObjectiveMesh);
     UpdateObjectiveMarker(RelayMarker, RelayPosition);
     if (WreckMarker) WreckMarker->SetVisibility(false, true);
     BindMissionInput();
-    UE_LOG(LogTemp, Display, TEXT("GF Mission: The Silent Relay started. Fly to the relay and press F."));
+    UE_LOG(LogTemp, Display, TEXT("GF Mission: Contract started. Fly to the relay and press F."));
 }
 
 void AGFMissionDirector::Tick(const float DeltaSeconds)
@@ -116,14 +136,14 @@ void AGFMissionDirector::HandleInteract()
             {
                 if (UGFPlayerProfileSave* Profile = Saves->GetProfile())
                 {
-                    Profile->Credits += 5000;
-                    Profile->CompletedMissionIds.AddUnique(TEXT("silent_relay"));
-                    Profile->StoryFlags.Add(TEXT("m01_done"), true);
+                    Profile->Credits += MissionReward;
+                    Profile->CompletedMissionIds.AddUnique(ActiveContractId);
+                    if (ActiveContractId == TEXT("silent_relay")) Profile->StoryFlags.Add(TEXT("m01_done"), true);
                     Saves->SaveProfile();
                 }
             }
         }
-        UE_LOG(LogTemp, Display, TEXT("GF Mission: The Silent Relay complete. 5000 credits awarded."));
+        UE_LOG(LogTemp, Display, TEXT("GF Mission: Contract complete. %d credits awarded."), MissionReward);
     }
 }
 
@@ -142,6 +162,13 @@ void AGFMissionDirector::SpawnWave()
         AGFEnemyShip* Enemy = GetWorld()->SpawnActor<AGFEnemyShip>(EnemyShipClass, SpawnLocation, FRotator::ZeroRotator);
         if (!Enemy) continue;
         if (EnemyShipMesh && Enemy->ShipMesh) Enemy->ShipMesh->SetStaticMesh(EnemyShipMesh);
+        if (Enemy->Damageable)
+        {
+            Enemy->Damageable->MaximumHull *= EnemyHealthMultiplier;
+            Enemy->Damageable->MaximumShield *= EnemyHealthMultiplier;
+            Enemy->Damageable->CurrentHull = Enemy->Damageable->MaximumHull;
+            Enemy->Damageable->CurrentShield = Enemy->Damageable->MaximumShield;
+        }
         Enemy->SetCombatTarget(PlayerPawn.Get());
         if (Enemy->Damageable) Enemy->Damageable->OnDestroyed.AddDynamic(this, &AGFMissionDirector::HandleEnemyDestroyed);
         ++EnemiesRemaining;
