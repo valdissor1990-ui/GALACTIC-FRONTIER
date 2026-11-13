@@ -967,7 +967,7 @@ func _create_planet_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
-func _load_glb_mesh(source_path: String) -> Mesh:
+func _load_glb_scene(source_path: String) -> Node3D:
 	if not FileAccess.file_exists(source_path):
 		push_warning("GLB asset is missing: %s" % source_path)
 		return null
@@ -980,6 +980,13 @@ func _load_glb_mesh(source_path: String) -> Mesh:
 	var instance := document.generate_scene(state)
 	if instance == null:
 		push_warning("GLB asset generated an empty scene: %s" % source_path)
+		return null
+	return instance
+
+
+func _load_glb_mesh(source_path: String) -> Mesh:
+	var instance := _load_glb_scene(source_path)
+	if instance == null:
 		return null
 	var mesh := _find_first_mesh(instance)
 	instance.free()
@@ -1425,13 +1432,12 @@ func _build_orbital_station_landmark() -> void:
 	# NASA's detailed ISS model adds a recognizable human-made landmark to the
 	# deep-space route. It is visual-only and follows the camera like other sky
 	# landmarks, so it never changes flight physics or mission collision.
-	var station_scene := load("res://assets/models/environment/nasa_iss_station.glb") as PackedScene
-	if station_scene == null:
+	var station := _load_glb_scene("res://assets/models/environment/nasa_iss_station.glb")
+	if station == null:
 		push_warning("NASA ISS model unavailable; skipping orbital station landmark")
 		return
 	_orbital_station_root = Node3D.new()
 	_orbital_station_root.name = "OrbitalStationLandmark"
-	var station := station_scene.instantiate()
 	station.name = "NASA_ISS_Visual"
 	station.scale = Vector3.ONE * 0.62
 	station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
@@ -1449,13 +1455,12 @@ func _build_distant_traffic() -> void:
 		{"path": "res://assets/models/environment/kenney_craft_racer.glb", "name": "CivilianCourier", "scale": 7.5}
 	]
 	for spec in traffic_specs:
-		var packed_scene := load(str(spec.path)) as PackedScene
-		if packed_scene == null:
+		var ship := _load_glb_scene(str(spec.path))
+		if ship == null:
 			push_warning("Optional Kenney traffic model unavailable: %s" % spec.path)
 			continue
 		var root := Node3D.new()
 		root.name = str(spec.name)
-		var ship := packed_scene.instantiate()
 		ship.scale = Vector3.ONE * float(spec.scale)
 		root.add_child(ship)
 		add_child(root)
@@ -1489,9 +1494,8 @@ func _build_derelict_landmark() -> void:
 	_add_wreck_box("WreckStarboardWing", Vector3(19.0, -1.0, 7.0), Vector3(23.0, 1.5, 7.0), exposed_material)
 	_add_wreck_box("WreckBrokenPanel", Vector3(-31.0, 1.0, 9.0), Vector3(10.0, 1.0, 13.0), exposed_material)
 	_add_wreck_box("WreckBridgeGlass", Vector3(0.0, 3.0, -8.0), Vector3(6.0, 1.2, 8.0), window_material)
-	var turret_scene := load("res://assets/models/environment/kenney_turret_double.glb") as PackedScene
-	if turret_scene != null:
-		var turret := turret_scene.instantiate()
+	var turret := _load_glb_scene("res://assets/models/environment/kenney_turret_double.glb")
+	if turret != null:
 		turret.name = "KenneyDerelictTurret"
 		turret.position = Vector3(0.0, 5.0, -18.0)
 		turret.rotation_degrees = Vector3(0.0, 180.0, 0.0)
