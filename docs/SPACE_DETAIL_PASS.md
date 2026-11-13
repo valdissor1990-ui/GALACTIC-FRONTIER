@@ -1,39 +1,25 @@
-# Space detail pass
+# Space detail pass — production status
 
-**Branch:** `grok/graphics-open-world-2025`  
-**Goal:** denser, more readable open space without breaking quality presets.
+The original Grok notes described a separate OpenSpaceBackdrop scene. The active Full HD branch now uses scripts/environment/space_environment.gd and the SpaceEnvironment scene instead.
 
-## Sky (`space_starfield_sky.gdshader`)
-- 3 star layers (far / mid / near)
-- Colored stars + rare warm/cool giants
-- Soft fbm nebulae (3 tint colors)
-- Galactic plane band + dust lane
-- Params driven by `GraphicsQuality.sky_*`
+## Production detail
 
-| Preset | density | brightness | nebula | dust | galactic |
-|--------|---------|------------|--------|------|----------|
-| Low | 1.4 | 1.05 | 0.35 | 0.15 | 0.18 |
-| Medium | 2.2 | 1.25 | 0.55 | 0.28 | 0.35 |
-| High | 3.0 | 1.40 | 0.75 | 0.40 | 0.50 |
+- MultiMesh asteroid field with NASA asteroid geometry and procedural fallback.
+- Route-safe relay debris cluster with collision proxies.
+- Layered starfield, six chromatic star clusters, nebula sheets and distant galaxy.
+- Gas giant, companion worlds, atmosphere/cloud layers and three subtle ring sub-bands.
+- Interplanetary dust scaled by graphics preset.
+- Planet tessellation and star/nebula/galaxy brightness respond to Low/Medium/High.
+- Gravitational lens landmark and screen-space distortion, disabled on Low.
+- All environment instance counts are adjusted by GraphicsQuality.
 
-## World geometry (`open_space_backdrop.gd`)
-- Main asteroid belt (quality count)
-- Inner cluster (~1/4 count)
-- Outer debris field (~1/3 count)
-- Gas giant **ice ring** (TorusMesh, unshaded alpha)
-- Third body: distant **IceWorld** for parallax depth
-- Higher planet mesh segments on Med/High
+## Performance model
 
-| Preset | main belt | planet segs |
-|--------|-----------|-------------|
-| Low | 120 | 28 |
-| Medium | 280 | 48 |
-| High | 420 | 64 |
+- Asteroid and dust fields use MultiMesh rather than one draw call per instance.
+- Collision proxies are kept separate from visual MultiMeshes.
+- FSR and dynamic resolution change internal 3D scale only; HUD remains Full HD.
+- Gravitational lensing is hidden when no mass is visible.
 
-## Perf notes
-- Rocks remain MultiMesh (1 draw call per field).
-- Sky is fullscreen sky shader — cost scales with resolution/FSR, not asteroid count.
-- Outer debris uses long `visibility_range_end` so it fades, not pops hard.
+## Validation status
 
-## NOT RUN
-Play `test_flight.tscn`, orbit toward gas giant ring and out through the belt; F10 through presets.
+Headless environment tests cover asteroid/collision counts, star/dust population, planet tessellation and lens behaviour. Visual review and GPU profiling remain pending.
