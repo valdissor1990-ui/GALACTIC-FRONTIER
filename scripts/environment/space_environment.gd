@@ -857,7 +857,7 @@ func _build_companion_worlds() -> void:
 	var giant_shader := Shader.new()
 	giant_shader.code = """
 shader_type spatial;
-render_mode unshaded;
+render_mode diffuse_burley, specular_schlick_ggx;
 
 uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
 uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
@@ -918,7 +918,7 @@ void fragment() {
 	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands + (storm_noise - 0.5) * 0.24);
 	vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
 	vec3 authored_surface = texture(gas_albedo_texture, UV).rgb;
-	band_color = mix(authored_surface, band_color, 0.24);
+	band_color = mix(authored_surface, band_color, 0.32);
 	float storm_distance = length(vec2((UV.x - 0.63) * 1.8, UV.y - 0.43));
 	float storm_edge = 1.0 - smoothstep(0.025, 0.105, storm_distance);
 	float storm_angle = atan(UV.y - 0.43, (UV.x - 0.63) * 1.8);
@@ -926,8 +926,8 @@ void fragment() {
 	vec3 storm_color = mix(band_highlight.rgb, band_dark.rgb, smoothstep(-0.4, 0.65, storm_swirl));
 	band_color = mix(band_color, storm_color, storm_edge * 0.82);
 	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
-	EMISSION = band_color * 0.24;
-	ROUGHNESS = 0.91;
+	EMISSION = band_color * 0.012;
+	ROUGHNESS = 0.94;
 	METALLIC = 0.0;
 }
 """
