@@ -525,9 +525,9 @@ void fragment() {
 	float wisps = smoothstep(0.49, 0.82, detail) * 0.22 + smoothstep(0.72, 0.91, micro) * 0.12;
 	vec2 centered = UV * 2.0 - 1.0;
 	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
-	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.36);
+	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.22);
 	ALBEDO = nebula_tint.rgb;
-	EMISSION = nebula_tint.rgb * (0.45 + filaments * 1.8);
+	EMISSION = nebula_tint.rgb * (0.18 + filaments * 0.75);
 	ALPHA = alpha;
 }
 """
