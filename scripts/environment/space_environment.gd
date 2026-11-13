@@ -52,8 +52,20 @@ func _ready() -> void:
 	_build_derelict_landmark()
 	_build_orbital_station_landmark()
 	_build_distant_traffic()
+	_build_gravity_lens_landmark()
 	if quality != null:
 		apply_quality(quality, false)
+
+
+func _build_gravity_lens_landmark() -> void:
+	var lens := Node3D.new()
+	lens.name = "GravitationalLensMass"
+	lens.set_script(load("res://scripts/environment/gravity_lens_mass.gd"))
+	lens.set("lens_strength", 1.2)
+	lens.set("lens_radius", 0.28)
+	lens.set("show_debug_core", true)
+	lens.position = Vector3(-240.0, 72.0, -430.0)
+	add_child(lens)
 
 
 func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
