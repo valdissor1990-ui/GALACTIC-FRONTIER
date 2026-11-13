@@ -71,8 +71,8 @@ func _build_canopy_frame() -> void:
 	for side in [-1.0, 1.0]:
 		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -2.62), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
 		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.55), Vector3(0.09, 0.12, 4.15), _panel, Vector3(0.0, 0.0, side * 4.0))
-		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.70, -2.28), Vector3(0.07, 0.07, 0.78), _panel, Vector3(-8.0, side * 12.0, 0.0))
-	_box("Canopy cross member", Vector3(0.0, 0.62, -2.55), Vector3(1.55, 0.08, 0.08), _armor)
+		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.82, -2.28), Vector3(0.055, 0.055, 0.78), _panel, Vector3(-8.0, side * 12.0, 0.0))
+	_box("Canopy cross member", Vector3(0.0, 0.88, -2.55), Vector3(1.55, 0.05, 0.07), _armor)
 	_box("Rear canopy arch", Vector3(0.0, 0.46, 0.42), Vector3(1.72, 0.12, 0.10), _panel)
 
 
