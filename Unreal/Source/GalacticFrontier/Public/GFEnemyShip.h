@@ -37,6 +37,9 @@ public:
     float ApproachSpeed = 5200.0f;
 
 private:
+    UFUNCTION()
+    void HandleDestroyed();
+
     TWeakObjectPtr<AActor> CombatTarget;
     bool bWeaponActive = false;
 };
