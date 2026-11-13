@@ -459,6 +459,43 @@ func sky_galactic_strength() -> float:
 	return 0.32
 
 
+func lens_enabled() -> bool:
+	return current != Preset.LOW
+
+
+func lens_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.58
+		Preset.HIGH:
+			return 1.0
+	return 0.58
+
+
+func lens_chroma() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.0015
+		Preset.HIGH:
+			return 0.0035
+	return 0.0015
+
+
+func lens_ring_boost() -> float:
+	match current:
+		Preset.LOW:
+			return 0.35
+		Preset.MEDIUM:
+			return 0.65
+		Preset.HIGH:
+			return 0.9
+	return 0.65
+
+
 func _apply_to_scene_tree() -> void:
 	var root := get_tree().root
 	if root == null:
