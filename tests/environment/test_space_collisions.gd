@@ -66,6 +66,8 @@ func _run() -> void:
 	var gas_material := gas_giant.mesh.surface_get_material(0) as ShaderMaterial if gas_giant != null else null
 	var gas_albedo := gas_material.get_shader_parameter("gas_albedo_texture") as Texture2D if gas_material != null else null
 	_check(gas_material != null and gas_material.shader != null, "gas giant uses its layered procedural surface shader")
+	var gas_shader_code := gas_material.shader.code if gas_material != null else ""
+	_check(gas_shader_code.contains("render_mode diffuse_burley"), "gas giant uses physically lit surface shading")
 	_check(gas_albedo != null and gas_albedo.get_width() >= 2048 and gas_albedo.get_height() >= 1024, "authored 2K gas-giant texture is bound to the surface shader")
 	if quality != null and gas_material != null:
 		_check(is_equal_approx(float(gas_material.get_shader_parameter("noise_lacunarity")), quality.procedural_noise_lacunarity()), "gas giant uses shared quality lacunarity")
