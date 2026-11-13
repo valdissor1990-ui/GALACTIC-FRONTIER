@@ -653,13 +653,16 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 varying float rock_variation;
+varying vec4 asteroid_custom;
 uniform vec4 rock_tint = vec4(0.48, 0.52, 0.56, 1.0);
 
 void vertex() {
+	asteroid_custom = INSTANCE_CUSTOM;
 	vec3 p = VERTEX;
-	float broad = sin(p.x * 4.7 + p.y * 2.1) * cos(p.z * 3.8 - p.x * 1.9);
-	float fracture = sin(p.y * 9.3 + p.z * 6.1) * cos(p.x * 8.2 + p.z * 4.4);
-	float chips = sin(p.x * 15.0 + p.y * 11.0) * sin(p.z * 13.0 - p.y * 7.0);
+	float seed = asteroid_custom.a * 6.28318;
+	float broad = sin(p.x * 4.7 + p.y * 2.1 + seed) * cos(p.z * 3.8 - p.x * 1.9 + seed * 0.7);
+	float fracture = sin(p.y * 9.3 + p.z * 6.1 + seed * 1.8) * cos(p.x * 8.2 + p.z * 4.4 - seed);
+	float chips = sin(p.x * 15.0 + p.y * 11.0 + seed * 2.4) * sin(p.z * 13.0 - p.y * 7.0 + seed);
 	float displacement = broad * 0.105 + fracture * 0.042 + chips * 0.014;
 	VERTEX += NORMAL * displacement;
 	rock_variation = broad * 0.5 + fracture * 0.22 + chips * 0.12;
@@ -668,8 +671,9 @@ void vertex() {
 void fragment() {
 	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
 	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
-	ALBEDO = rock_tint.rgb * value;
-	METALLIC = 0.12;
+	vec3 mineral_tint = mix(vec3(0.72), vec3(1.18), asteroid_custom.rgb);
+	ALBEDO = rock_tint.rgb * value * mineral_tint;
+	METALLIC = 0.08 + asteroid_custom.g * 0.16;
 	ROUGHNESS = 0.94;
 }
 """
@@ -678,7 +682,14 @@ void fragment() {
 	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
 	asteroid_mesh.material = asteroid_material
 
-	var field := _make_multimesh("AsteroidField", asteroid_mesh, asteroid_count)
+	var asteroid_multimesh := MultiMesh.new()
+	asteroid_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	asteroid_multimesh.use_custom_data = true
+	asteroid_multimesh.mesh = asteroid_mesh
+	asteroid_multimesh.instance_count = asteroid_count
+	var field := MultiMeshInstance3D.new()
+	field.name = "AsteroidField"
+	field.multimesh = asteroid_multimesh
 	for index in range(asteroid_count):
 		var position := _random_asteroid_position()
 		var size := _rng.randf_range(0.8, 3.8)
@@ -693,6 +704,7 @@ void fragment() {
 			size * _rng.randf_range(0.72, 1.25)
 		))
 		field.multimesh.set_instance_transform(index, Transform3D(basis, position))
+		field.multimesh.set_instance_custom_data(index, Color(_rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf()))
 		_add_asteroid_collision(index, position, size)
 	add_child(field)
 
