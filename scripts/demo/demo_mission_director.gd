@@ -647,6 +647,7 @@ func _hide_flight_hud_for_overlay() -> void:
 
 
 func _build_docking_services() -> void:
+	# The service modal owns the screen until debrief returns to mission results.
 	_hide_flight_hud_for_overlay()
 	_service_layer = CanvasLayer.new()
 	_service_layer.name = "CarrierServices"
