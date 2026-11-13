@@ -58,7 +58,9 @@ func _process(delta: float) -> void:
 		_companion_planet.global_position = camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 		_companion_planet.rotate_y(delta * 0.003)
 	if is_instance_valid(_companion_rings):
-		_companion_rings.global_transform = camera.global_transform * Transform3D(Basis(Vector3.RIGHT, deg_to_rad(68.0)), Vector3(430.0, -92.0, -1320.0))
+		var ring_position := camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
+		var ring_basis := camera.global_basis * Basis(Vector3.RIGHT, deg_to_rad(68.0))
+		_companion_rings.global_transform = Transform3D(ring_basis.scaled(Vector3.ONE * 100.0), ring_position)
 	if is_instance_valid(_companion_moon):
 		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
 
@@ -313,13 +315,28 @@ func _build_companion_worlds() -> void:
 	giant_mesh.height = 2.0
 	giant_mesh.radial_segments = 96
 	giant_mesh.rings = 48
-	var giant_material := StandardMaterial3D.new()
-	giant_material.albedo_color = Color(0.48, 0.34, 0.24)
-	giant_material.roughness = 0.9
-	giant_material.metallic = 0.0
-	giant_material.emission_enabled = true
-	giant_material.emission = Color(0.08, 0.035, 0.018)
-	giant_material.emission_energy_multiplier = 0.12
+	var giant_shader := Shader.new()
+	giant_shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+
+void fragment() {
+	float latitude = UV.y;
+	float warp = sin(UV.x * 18.0 + sin(latitude * 21.0) * 1.8) * 0.012;
+	float broad_bands = sin((latitude + warp) * 92.0);
+	float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
+	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands);
+	vec3 deep = vec3(0.19, 0.105, 0.075);
+	vec3 warm = vec3(0.58, 0.39, 0.27);
+	vec3 pale = vec3(0.76, 0.62, 0.46);
+	vec3 band_color = mix(deep, warm, cloud);
+	ALBEDO = mix(band_color, pale, smoothstep(0.68, 0.96, broad_bands) * 0.28);
+	ROUGHNESS = 0.91;
+	METALLIC = 0.0;
+}
+"""
+	var giant_material := ShaderMaterial.new()
+	giant_material.shader = giant_shader
 	giant_mesh.material = giant_material
 	giant.mesh = giant_mesh
 	giant.scale = Vector3.ONE * 82.0
