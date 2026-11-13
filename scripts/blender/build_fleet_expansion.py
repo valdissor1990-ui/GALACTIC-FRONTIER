@@ -382,6 +382,8 @@ def main():
         for o in list(bpy.context.scene.objects):
             if o not in (root,) and o.type in {"MESH","EMPTY"} and o.parent is None:
                 o.parent=root
+        ensure_uvs(root)
+        bpy.context.view_layer.update()
         # Bounds from ship meshes determine a robust framing target and scale.
         meshes=[o for o in root.children_recursive if o.type=="MESH"]
         bpy.context.view_layer.update()
