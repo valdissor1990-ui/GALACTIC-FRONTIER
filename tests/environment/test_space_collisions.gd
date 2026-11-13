@@ -39,6 +39,7 @@ func _run() -> void:
 		var outer_sector_count := 0
 		var route_clear := true
 		var asteroid_proxy_count := 0
+		var variant_proxy_count := 0
 		for obstacle in obstacles:
 			if not str(obstacle.name).begins_with("AsteroidCollision_"):
 				continue
@@ -46,7 +47,7 @@ func _run() -> void:
 			if collision_index < asteroid_field.multimesh.instance_count:
 				asteroid_proxy_count += 1
 			else:
-				outer_sector_count += 0
+				variant_proxy_count += 1
 			var asteroid_position := (obstacle as Node3D).global_position
 			var route_distance := float(environment.call("_distance_to_route", asteroid_position))
 			if route_distance < 82.0 or route_distance > 760.0:
@@ -56,6 +57,7 @@ func _run() -> void:
 			elif asteroid_position.z <= -20000.0:
 				outer_sector_count += 1
 		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each base MultiMesh asteroid has one matching collision proxy")
+		_check(variant_proxy_count == 18, "each Kenney meteor variant has one matching collision proxy")
 		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
