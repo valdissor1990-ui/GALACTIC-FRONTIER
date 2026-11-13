@@ -1,33 +1,37 @@
 # Visual target — GALACTIC FRONTIER
 
-This document is the permanent visual-direction source of truth. The project has no user-supplied hand sketches; the original concept studies below are authored for this project and establish the first approved visual direction.
+**Главный документ по художественному направлению:** [GRAPHICS_ART_BIBLE.md](GRAPHICS_ART_BIBLE.md).
 
-## Canonical concept studies
-- `../art_source/references/player_interceptor.svg` — player fighter silhouette, top view, materials and design language.
-- `../art_source/references/enemy_strike_craft.svg` — hostile fighter silhouette and contrasting faction palette.
-- `../art_source/references/deep_space_environment.svg` — space lighting, planet, orbital relay and asteroid scale.
+## Эталон
 
-These vector studies are the design targets for the prototype. Update them deliberately when the art direction changes; do not silently drift away from their silhouettes and palette.
+Star Citizen — главный визуальный эталон качества и подачи. Цель — сопоставимое художественное ощущение: материальные корабли, сложная геометрия, убедительное освещение, масштабные планеты, атмосферный космос и детализированные эффекты.
 
-## Art direction
-- Original single-player science-fiction universe with premium indie space-sim presentation, without copying protected designs from other games.
-- Player craft: wide swept delta wings, narrow armored central spine, recessed cockpit, separated twin vectoring engines; cool steel/blue palette with restrained amber signals.
-- Enemy craft: compact aggressive forward silhouette, short swept wings, dark red-brown armor, red-orange threat lights and hot-core exhaust.
-- Space: deep navy-black base, sparse sharp point stars, subtle non-repeating nebula, readable planetary terminators and atmospheric rim, varied irregular asteroids, restrained bloom.
-- Coherent PBR materials: painted and bare metal, heat-darkened engine parts, glass, navigation lights, restrained wear, purposeful panel seams and decals.
-- Avoid box-only ships, toy-like proportions, arbitrary neon outlines, and decorative lines without physical purpose.
+Это не копирование Star Citizen и не обещание воспроизвести его движок или бюджет. GALACTIC FRONTIER остаётся оригинальной игрой на Godot 4.7.2. Все конкретные модели, текстуры, интерфейс, фракции и дизайн создаются самостоятельно или берутся из материалов с проверенной лицензией.
 
-## Technical constraints
-- Godot 4.7.2 Forward+; Blender for 3D authoring.
-- Target resolution: 1920×1080.
-- Performance target: 60 FPS on GTX 1660 / RX 580 class hardware. Use LODs, instancing, sensible material counts, and measured post-processing.
-- Free tools and assets only. Verify third-party licenses and record source/license in `THIRD_PARTY_NOTICES.md`.
-- Preserve gameplay, flight physics, controls, cameras, collision, and HUD during visual-only work.
+Прежняя планка «уровень графики 2020 года» отменена. Качество повышается последовательно, без бесконтрольного добавления постэффектов.
 
-## Review checklist
-1. Compare every ship directly with its concept study before export.
-2. Check silhouette at thumbnail size and from first- and third-person cameras.
-3. Inspect materials under neutral light and in the actual space environment.
-4. Verify scale, collision, pivots, normals, UVs, LODs, and exhaust direction.
-5. Run Godot import and scene-load checks; capture 1920×1080 screenshots.
-6. Profile frame time on target hardware; do not claim 60 FPS without measurement.
+## Канонические концепт-референсы проекта
+- `../art_source/references/player_interceptor.svg` — силуэт и палитра корабля игрока.
+- `../art_source/references/enemy_strike_craft.svg` — силуэт и палитра противника.
+- `../art_source/references/deep_space_environment.svg` — композиция космического окружения.
+
+Это оригинальные проектные исследования, а не изображения Star Citizen.
+
+## Приоритеты
+1. Силуэт, масштаб и геометрия кораблей.
+2. Физически убедительные PBR-материалы и детали корпуса.
+3. Свет, тени, HDR и контролируемое свечение.
+4. Планеты, атмосферы, газовые гиганты и астероиды.
+5. Двигатели, оружие, попадания и разрушения.
+6. Станции, конструкции и окружение.
+7. Постобработка — только поддержка уже качественной сцены.
+
+## Технические ограничения
+- Godot 4.7.2-stable, Forward+, GDScript.
+- Windows PC, контрольный кадр 1920×1080.
+- FPS измеряется на реальном оборудовании; не обещать без замеров.
+- Low/Medium/High меняют стоимость рендеринга, но не художественную идентичность.
+- Сторонние материалы — только с проверенной лицензией и записью в `THIRD_PARTY_NOTICES.md`.
+- Сохранять игровой процесс, физику, управление, камеры, коллизии и HUD при графических изменениях.
+
+Полные критерии находятся в [GRAPHICS_ART_BIBLE.md](GRAPHICS_ART_BIBLE.md). Непроведённые проверки отмечаются **NOT RUN**.
