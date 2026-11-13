@@ -20,6 +20,10 @@ func _ready() -> void:
 
 
 func start_mission(mission_id: String) -> Dictionary:
+	if not story_state.active_mission_id.is_empty():
+		if story_state.active_mission_id == mission_id:
+			return {"ok": true, "resumed": true, "mission_id": mission_id, "objectives": get_objectives()}
+		return _failure("Finish or abandon the active mission before starting another one.")
 	if not MissionCatalog.can_start(mission_id, story_state):
 		return _failure("Mission is locked, unknown, or already completed: %s" % mission_id)
 	var definition := MissionCatalog.get_mission(mission_id)
@@ -28,7 +32,8 @@ func start_mission(mission_id: String) -> Dictionary:
 	story_state.active_mission_id = mission_id
 	objective_progress = {}
 	for objective in definition.get("objectives", []):
-		objective_progress[str(objective.get("id", ""))] = false
+		var objective_id := str(objective.get("id", ""))
+		objective_progress[objective_id] = 0 if int(objective.get("count", 1)) > 1 else false
 	_persist()
 	mission_started.emit(mission_id)
 	campaign_state_changed.emit()
@@ -47,17 +52,22 @@ func complete_objective(objective_id: String, choice_id: String = "") -> Diction
 			break
 	if objective.is_empty():
 		return _failure("Objective does not belong to active mission: %s" % objective_id)
-	if bool(objective_progress.get(objective_id, false)):
-		return {"ok": true, "duplicate": true, "mission_completed": false}
+	var required_count := maxi(1, int(objective.get("count", 1)))
+	var current_progress := int(objective_progress.get(objective_id, 0)) if required_count > 1 else (1 if bool(objective_progress.get(objective_id, false)) else 0)
+	if current_progress >= required_count:
+		return {"ok": true, "duplicate": true, "mission_completed": false, "progress": current_progress, "required": required_count}
 	if str(objective.get("type", "")) == "choice":
 		var choices: Dictionary = definition.get("choices", {})
 		if choice_id.is_empty() or not choices.has(choice_id):
 			return _failure("A valid choice_id is required for this objective.")
-	objective_progress[objective_id] = true
+	current_progress += 1
+	objective_progress[objective_id] = current_progress if required_count > 1 else true
 	if str(objective.get("type", "")) == "choice":
 		objective_progress[objective_id + "::choice"] = choice_id
-	objective_completed.emit(mission_id, objective_id)
-	var mission_done := _all_required_objectives_complete(definition)
+	var objective_done := current_progress >= required_count
+	if objective_done:
+		objective_completed.emit(mission_id, objective_id)
+	var mission_done := objective_done and _all_required_objectives_complete(definition)
 	if mission_done:
 		var selected_choice := ""
 		for candidate in definition.get("objectives", []):
@@ -69,7 +79,7 @@ func complete_objective(objective_id: String, choice_id: String = "") -> Diction
 		mission_completed.emit(mission_id)
 	_persist()
 	campaign_state_changed.emit()
-	return {"ok": true, "mission_completed": mission_done, "mission_id": mission_id, "objective_id": objective_id}
+	return {"ok": true, "mission_completed": mission_done, "objective_completed": objective_done, "progress": current_progress, "required": required_count, "mission_id": mission_id, "objective_id": objective_id}
 
 
 func get_objectives() -> Array[Dictionary]:
@@ -81,7 +91,11 @@ func get_objectives() -> Array[Dictionary]:
 	for objective in definition.get("objectives", []):
 		var item: Dictionary = objective.duplicate(true)
 		var objective_id := str(item.get("id", ""))
-		item["completed"] = bool(objective_progress.get(objective_id, false))
+		var required_count := maxi(1, int(item.get("count", 1)))
+		var current_progress := int(objective_progress.get(objective_id, 0)) if required_count > 1 else (1 if bool(objective_progress.get(objective_id, false)) else 0)
+		item["progress"] = current_progress
+		item["required_count"] = required_count
+		item["completed"] = current_progress >= required_count
 		result.append(item)
 	return result
 
