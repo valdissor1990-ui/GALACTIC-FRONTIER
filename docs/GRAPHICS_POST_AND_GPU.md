@@ -1,6 +1,10 @@
-# Post-processing and GPU shader notes
+# Post-processing and GPU implementation notes
 
 **Branch:** `grok/graphics-open-world-2025`  
+**Назначение:** технические заметки по реализации, не художественный стандарт.
+
+Главный визуальный ориентир и критерии качества находятся в [GRAPHICS_ART_BIBLE.md](GRAPHICS_ART_BIBLE.md). Значения и статусы ниже отражают состояние на момент исходного технического прохода; перед изменением графики сверять их с актуальным кодом. При конфликте художественных решений приоритет у GRAPHICS_ART_BIBLE.
+
 **Author:** Grok
 
 ## Built-in Environment post (Forward+)
