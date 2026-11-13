@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: galactic-frontier-asset-build-${{ github.ref }}
+  group: galactic-frontier-asset-build-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -58,21 +58,21 @@ jobs:
       - name: Build Raider Interceptor
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/build_enemy_interceptor.py \
             -- --output-dir build/unreal-assets
 
       - name: Build Heavy Fighter, Bomber, Cargo Hauler, Frigate and Cruiser
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/build_fleet_expansion.py \
             -- --output-dir build/unreal-assets
 
       - name: Validate all seven ship assets
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/validate_generated_fleet.py \
             -- --output-dir build/unreal-assets \
                --report build/unreal-assets/build-validation.json
@@ -88,7 +88,7 @@ jobs:
       - name: Build space backdrop and four planets
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/build_space_environment.py \
             -- --output-dir build/unreal-assets/environment --resolution 512
 
