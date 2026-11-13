@@ -426,6 +426,33 @@ func sky_star_brightness() -> float:
 	return 1.1
 
 
+## Procedural detail budget: avoid spending high-frequency samples on distant sky.
+func procedural_noise_octaves() -> int:
+	match current:
+		Preset.LOW:
+			return 3
+		Preset.MEDIUM:
+			return 4
+		Preset.HIGH:
+			return 5
+	return 4
+
+
+func procedural_noise_lacunarity() -> float:
+	return 2.05
+
+
+func procedural_noise_gain() -> float:
+	match current:
+		Preset.LOW:
+			return 0.48
+		Preset.MEDIUM:
+			return 0.50
+		Preset.HIGH:
+			return 0.52
+	return 0.50
+
+
 func sky_nebula_strength() -> float:
 	match current:
 		Preset.LOW:
