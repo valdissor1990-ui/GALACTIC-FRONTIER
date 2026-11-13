@@ -75,6 +75,12 @@ void AGFSpaceHUD::DrawHUD()
             const int32 StageIndex = static_cast<int32>(Mission->GetMissionStage());
             const int32 SafeIndex = FMath::Clamp(StageIndex, 0, UE_ARRAY_COUNT(StageLabels) - 1);
             DrawTextLine(FString::Printf(TEXT("CONTRACT  %s  /  %s"), *Mission->GetActiveContractName().ToString(), StageLabels[SafeIndex]), Canvas->ClipX - 500.0f, 68.0f, FLinearColor(0.3f, 0.85f, 1.0f), 1.0f);
+            if (Mission->GetMissionStage() == EGFMissionStage::ScanRelay ||
+                Mission->GetMissionStage() == EGFMissionStage::ScanWreck)
+            {
+                DrawTextLine(FString::Printf(TEXT("SCANNING  %3.0f%%"), Mission->GetScanProgress() * 100.0f),
+                    Canvas->ClipX - 270.0f, 124.0f, FLinearColor(0.2f, 0.9f, 1.0f), 1.05f);
+            }
             if (Mission->GetEnemiesRemaining() > 0)
             {
                 DrawTextLine(FString::Printf(TEXT("HOSTILES  %d"), Mission->GetEnemiesRemaining()), Canvas->ClipX - 270.0f, 96.0f, FLinearColor(1.0f, 0.4f, 0.2f), 1.0f);
