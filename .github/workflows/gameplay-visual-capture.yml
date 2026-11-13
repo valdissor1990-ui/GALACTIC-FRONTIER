@@ -68,6 +68,24 @@ jobs:
       - name: Import project and validate scripts and GLB resources
         run: godot --headless --editor --path . --import --quit
 
+      - name: Capture the actual test flight scene in both cameras and combat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/screenshots
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan --script res://scripts/demo/test_flight_visual_capture.gd > build/test-flight-visual.log 2>&1
+            grep -q "TEST_FLIGHT_VISUAL_QA_COMPLETE cameras=2 combat_enemy=true" build/test-flight-visual.log
+            grep -Eq "Vulkan [0-9]" build/test-flight-visual.log
+            grep -q "Forward+" build/test-flight-visual.log
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            for shot in test-flight-chase test-flight-cockpit test-flight-combat; do
+              test -s "$app_data/$shot.png"
+              cp "$app_data/$shot.png" build/screenshots/
+            done
+          '
+
       - name: Capture eight deterministic Full HD gameplay screenshots
         shell: bash
         run: |
@@ -256,6 +274,7 @@ jobs:
           name: GALACTIC-FRONTIER-gameplay-visual-qa-fullhd
           path: |
             build/screenshots/*.png
+            build/test-flight-visual.log
             build/gameplay-showcase.log
             build/space-showcase.log
             build/fleet-hangar.log
