@@ -1,45 +1,41 @@
 # GALACTIC FRONTIER — Unreal project
 
-Target engine: **Unreal Engine 5.8** stable (`EngineAssociation`: 5.8).
-Target platform: Windows PC.
-Game model: single-player, offline-first.
+Target engine: **Unreal Engine 5.8** (`EngineAssociation`: 5.8).  
+Windows PC · single-player · offline-first.
 
-Open `GalacticFrontier.uproject` with UE 5.8 and compile the C++ module before running the content setup script.
+Open `GalacticFrontier.uproject` → compile C++ → run content setup script.
 
-## Already ported (C++)
+## Ported systems (C++)
 
-| System | Classes |
-|--------|---------|
+| Area | Classes |
+|------|---------|
+| Boot | `UGFGameInstance` (loads profile) |
+| Control | `AGFPlayerController` (ESC pause, F10 graphics) |
 | Flight | `UGFShipFlightComponent`, `AGFPlayerShipPawn` |
-| Combat | `UGFWeaponComponent`, `AGFProjectile`, `UGFDamageableComponent`, `UGFTargetingComponent` |
-| Enemy | `AGFEnemyShip` (approach/strafe/retreat + lead) |
-| Mission | `AGFMissionDirector` (Silent Relay stages, scan, waves) |
-| Meta | `UGFSaveSubsystem`, `UGFPlayerProfileSave`, `UGFGameCatalog` |
-| Hangar API | `UGFHangarSubsystem` |
-| Dialogue data | `UGFDialogueService` (M01 / Silent Relay seeds) |
-| Graphics | `UGFGraphicsSettings` (Low/Med/High scalability) |
-| HUD | `AGFSpaceHUD` |
-| GameMode | `AGFGameModeBase` (auto-spawns MissionDirector) |
+| Combat | weapon / projectile / damageable / targeting |
+| Enemy | `AGFEnemyShip` |
+| Mission | `AGFMissionDirector` (Silent Relay full loop) |
+| Meta | save, catalog, `UGFHangarSubsystem` |
+| Story | `UGFDialogueService` (M01–M05 line data) |
+| Audio | `UGFAudioSubsystem` (volumes + optional 2D SFX) |
+| Graphics | `UGFGraphicsSettings` |
+| HUD | `AGFSpaceHUD` (telemetry, mission, credits, pause) |
 
-Godot remains in-repo as reference until gates in `../UNREAL_MIGRATION_PLAN.md` pass.
+## Setup
 
-## First-time content setup
+1. Compile in UE 5.8.  
+2. **Tools → Execute Python Script** → `Content/Python/setup_galactic_frontier.py`.  
+3. Inspect GLB imports (multi-mesh ships need manual assembly).  
+4. Play `L_FlightTest`. Runtime is **not** verified in CI from this environment.
 
-1. Compile in UE 5.8.
-2. Open the project.
-3. **Tools → Execute Python Script** → `Content/Python/setup_galactic_frontier.py`.
-4. Inspect every imported GLB (multi-mesh ships must be assembled manually).
-5. Play `L_FlightTest` — do **not** treat compile success as a playtest pass.
+## Controls
 
-## Still incomplete / not runtime-verified
+WASD move · arrows rotate · Shift boost · Space brake · LMB fire · T/X target · V camera · F interact · **ESC pause** · **F10 graphics**
 
-- Full UMG main menu + hangar screens (API ready; widgets TBD)
-- Remaining dialogue M02–M05 branching UI
-- Production space environment / Niagara VFX / audio assets
-- Enhanced Input assets (project enables plugin; legacy axis bindings still used)
-- Windows packaged build
-- **No automated UE test run claimed in this repository state**
+## Still open
 
-## Generated folders (do not commit)
+UMG main menu / hangar screens · Niagara VFX · production audio assets · Enhanced Input asset pack · Windows package · automated UE tests
 
-`Binaries/`, `Intermediate/`, `Saved/`, `DerivedDataCache/`
+Do not delete Godot until gates in `../UNREAL_MIGRATION_PLAN.md` pass.
+
+Ignore: `Binaries/`, `Intermediate/`, `Saved/`, `DerivedDataCache/`
