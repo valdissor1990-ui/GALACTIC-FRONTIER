@@ -6,6 +6,35 @@ Run: blender --background --python scripts/blender/build_enemy_interceptor.py --
 import bpy, math, os, sys
 from mathutils import Vector
 
+
+def ensure_uvs(root):
+    """Create a smart UV layout for every mesh that lacks a UV layer."""
+    meshes = [obj for obj in root.children_recursive if obj.type == "MESH" and len(obj.data.polygons) > 0]
+    missing = [obj for obj in meshes if len(obj.data.uv_layers) == 0]
+    if not missing:
+        return
+    active = bpy.context.view_layer.objects.active
+    if active is not None and active.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in missing:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = missing[0]
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(
+        angle_limit=math.radians(66.0),
+        island_margin=0.018,
+        area_weight=0.0,
+        correct_aspect=True,
+        scale_to_bounds=False,
+    )
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    if active is not None and active.name in bpy.data.objects:
+        bpy.context.view_layer.objects.active = active
+    print("UV_UNWRAP_COMPLETE", len(missing), "of", len(meshes), "mesh objects")
+
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
     return os.path.abspath(args[args.index("--output-dir")+1]) if "--output-dir" in args else os.path.abspath("build/blender")
@@ -289,6 +318,7 @@ def main():
     mats=(mat("Raider | obsidian ceramic",(0.065,.09,.13),.82,.26),mat("Raider | titanium armor",(.30,.36,.42),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
     add_integrated_raider_detail(root,mats)
+    ensure_uvs(root)
     # Retain the clean silhouette; new details are integrated into the existing wing and hull surfaces.
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)
