@@ -245,7 +245,7 @@ func _update_hud() -> void:
 		completed_waves = 3
 	elif stage == MissionStage.DEFEND_WRECK:
 		completed_waves = 3 + wave_index - 1
-	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
+	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.DOCKING or stage == MissionStage.DOCKED or stage == MissionStage.COMPLETE:
 		completed_waves = 6
 	if stage == MissionStage.DOCKING:
 		var alignment := (-player.global_transform.basis.z).normalized().dot(Vector3.BACK)
@@ -725,7 +725,7 @@ func restore_from_save(payload: Dictionary) -> bool:
 	if str(payload.get("mission_id", "")) != "silent_relay":
 		return false
 	var saved_stage := int(payload.get("stage", -1))
-	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.RETURN_HOME:
+	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.DOCKING:
 		return false
 	stage = saved_stage
 	wave_index = maxi(0, int(payload.get("wave_index", 0)))
@@ -750,6 +750,8 @@ func restore_from_save(payload: Dictionary) -> bool:
 			_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
 		MissionStage.RETURN_HOME:
 			_move_beacon(HOME_POSITION, Color(0.18, 1.0, 0.62))
+		MissionStage.DOCKING:
+			_move_beacon(_dock_position, Color(0.18, 1.0, 0.72))
 	if stage == MissionStage.DEFEND_RELAY or stage == MissionStage.DEFEND_WRECK:
 		wave_index = maxi(0, wave_index - 1)
 		_spawn_wave()
