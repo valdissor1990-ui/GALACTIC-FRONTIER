@@ -9,6 +9,9 @@
 
 [node name="VisualFlight" instance=ExtResource("1")]
 
+[node name="WorldEnvironment" parent="." index="0"]
+environment = null
+
 [node name="SpaceEnvironment" parent="." instance=ExtResource("3")]
 
 [node name="KeyLight" parent="." index="1"]
