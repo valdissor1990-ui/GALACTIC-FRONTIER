@@ -858,12 +858,25 @@ void fragment() {
 			# A denser, navigable debris belt around the relay gives the player
 			# a memorable asteroid encounter instead of a few isolated rocks.
 			var cluster_angle := _rng.randf_range(0.0, TAU)
-			var cluster_radius := _rng.randf_range(260.0, 620.0)
+			var cluster_radius := _rng.randf_range(120.0, 180.0)
 			position = Vector3(
-				cos(cluster_angle) * cluster_radius,
-				18.0 + sin(cluster_angle) * cluster_radius * 0.42,
-				-13500.0 + _rng.randf_range(-340.0, 340.0)
+				-250.0 + cos(cluster_angle) * cluster_radius,
+				220.0 + sin(cluster_angle) * cluster_radius,
+				-13500.0 + _rng.randf_range(-100.0, 100.0)
 			)
+			# The route returns through this sector; keep every new rock outside
+			# both outbound and return corridors, not just the straight relay leg.
+			for attempt in range(24):
+				var route_distance := _distance_to_route(position)
+				if route_distance >= 120.0 and route_distance <= 700.0:
+					break
+				cluster_angle = _rng.randf_range(0.0, TAU)
+				cluster_radius = _rng.randf_range(120.0, 180.0)
+				position = Vector3(
+					-250.0 + cos(cluster_angle) * cluster_radius,
+					220.0 + sin(cluster_angle) * cluster_radius,
+					-13500.0 + _rng.randf_range(-100.0, 100.0)
+				)
 		var size := _rng.randf_range(0.8, 3.8)
 		var rotation := Vector3(
 			_rng.randf_range(0.0, TAU),
