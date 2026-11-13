@@ -44,6 +44,8 @@ func _process(delta: float) -> void:
 	# tens of kilometres; static backdrop geometry would otherwise be left
 	# behind at the starting carrier and leave later combat shots almost black.
 	_starfield.global_position = camera.global_position
+	if is_instance_valid(_star_clusters):
+		_star_clusters.global_position = camera.global_position
 	var camera_transform := camera.global_transform
 	var primary_nebula := get_node_or_null("PrimaryNebula") as Node3D
 	if primary_nebula != null:
@@ -323,8 +325,12 @@ func _build_star_clusters() -> void:
 	shader.code = """
 shader_type spatial;
 render_mode unshaded;
+varying vec4 star_custom;
+void vertex() {
+	star_custom = INSTANCE_CUSTOM;
+}
 void fragment() {
-	vec4 tint = INSTANCE_CUSTOM;
+	vec4 tint = star_custom;
 	float pulse = 0.82 + 0.18 * sin(TIME * 1.4 + tint.a * 6.28318);
 	ALBEDO = tint.rgb * pulse;
 	EMISSION = tint.rgb * (1.1 + pulse * 2.4);
