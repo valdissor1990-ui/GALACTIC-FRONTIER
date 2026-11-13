@@ -138,7 +138,7 @@ func _build_contract_card(contract: Dictionary) -> Control:
 	card.add_child(content)
 
 	var status := Label.new()
-	status.text = "ACTIVE DEPLOYMENT" if active else ("COMPLETED" if completed else ("AVAILABLE" if unlocked else "LOCKED"))
+	status.text = "COMPLETED" if completed else ("ACTIVE DEPLOYMENT" if active else ("AVAILABLE" if unlocked else "LOCKED"))
 	status.add_theme_font_size_override("font_size", 11)
 	status.add_theme_color_override("font_color", Color(0.35, 0.94, 0.78) if unlocked else Color(0.55, 0.62, 0.68))
 	content.add_child(status)
