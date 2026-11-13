@@ -226,13 +226,13 @@ surface_material_override/0 = SubResource("Material_secondary")
 
 [node name="LeftThrusterCore" type="MeshInstance3D" parent="PlayerShip/Visual"]
 position = Vector3(-0.38, 0, 2.245)
-scale = Vector3(0.62, 0.62, 0.62)
+scale = Vector3(0.35, 0.35, 0.35)
 mesh = SubResource("SphereMesh_canopy")
 surface_material_override/0 = SubResource("Material_thruster_core")
 
 [node name="RightThrusterCore" type="MeshInstance3D" parent="PlayerShip/Visual"]
 position = Vector3(0.38, 0, 2.245)
-scale = Vector3(0.62, 0.62, 0.62)
+scale = Vector3(0.35, 0.35, 0.35)
 mesh = SubResource("SphereMesh_canopy")
 surface_material_override/0 = SubResource("Material_thruster_core")
 
