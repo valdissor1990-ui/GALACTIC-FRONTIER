@@ -65,7 +65,7 @@ const CONTRACT_CATALOG := {
 	"vesper_salvage": {
 		"name": "Vesper Salvage",
 		"system_id": "vesper",
-		"description": "Secure a damaged survey relay and recover its black-box data from the belt.",
+		"description": "Secure the survey relay, clear raiders and recover three salvage pods from the belt.",
 		"difficulty": "VETERAN",
 		"reward": 6500,
 		"waves_per_encounter": 4,
@@ -75,7 +75,7 @@ const CONTRACT_CATALOG := {
 	"kestrel_patrol": {
 		"name": "Kestrel Patrol",
 		"system_id": "kestrel",
-		"description": "Patrol the cold frontier, intercept raiders and secure the long-range telemetry core.",
+		"description": "Clear frontier raiders, sweep three patrol markers and secure the long-range telemetry corridor.",
 		"difficulty": "ELITE",
 		"reward": 8000,
 		"waves_per_encounter": 5,
