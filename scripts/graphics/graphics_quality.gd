@@ -1,5 +1,6 @@
 extends Node
-## Global graphics quality + FSR + tonemap/HDR + space detail + lens tables.
+## GraphicsQuality — presets shaped like SC axes (view distance, gas, fog)
+## without claiming feature parity with CIG's renderer.
 ## Autoload: GraphicsQuality
 ##
 ## Tonemap: Low Filmic | Medium ACES | High AgX
@@ -197,6 +198,59 @@ func adjustment_saturation() -> float:
 			return 1.05
 
 
+# --- SC-inspired axes -------------------------------------------------------
+# Object View Distance: multiplier on visibility_range_end for clutter fields.
+func object_view_distance_mul() -> float:
+	match current:
+		Preset.LOW:
+			return 0.55
+		Preset.MEDIUM:
+			return 1.0
+		Preset.HIGH:
+			return 1.35
+	return 1.0
+
+
+# Gas cloud (local volumetric near giant / anomaly)
+func gas_cloud_enabled() -> bool:
+	return current != Preset.LOW
+
+
+func gas_cloud_density() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.012
+		Preset.HIGH:
+			return 0.022
+	return 0.012
+
+
+func gas_cloud_size() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 90.0
+		Preset.HIGH:
+			return 120.0
+	return 90.0
+
+
+# Depth cue fog (very light — space must stay black)
+func depth_fog_enabled() -> bool:
+	return current == Preset.HIGH
+
+
+func depth_fog_density() -> float:
+	match current:
+		Preset.HIGH:
+			return 0.00018
+		_:
+			return 0.0
+
+
 # --- Sky detail -------------------------------------------------------------
 
 func sky_star_density() -> float:
@@ -293,9 +347,8 @@ func lens_ring_boost() -> float:
 	return 0.75
 
 
-# --- HDR glow ---------------------------------------------------------------
+# --- Sun --------------------------------------------------------------------
 
-## Keep the star disc on every preset; only the soft flare is quality-scaled.
 func sun_disc_energy() -> float:
 	return 1.8
 
@@ -314,6 +367,8 @@ func sun_flare_strength() -> float:
 			return 0.25
 	return 0.16
 
+
+# --- HDR glow ---------------------------------------------------------------
 
 func glow_enabled() -> bool:
 	return true
