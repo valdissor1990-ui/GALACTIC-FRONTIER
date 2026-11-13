@@ -1048,7 +1048,7 @@ def main():
         use_selection=True,
         export_apply=True,
         export_materials="EXPORT",
-        export_image_format="PNG",
+        export_image_format="AUTO",
         export_image_quality=100,
         export_cameras=False,
         export_lights=False,
