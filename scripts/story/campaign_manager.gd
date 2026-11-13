@@ -221,26 +221,56 @@ func load_campaign() -> Dictionary:
 	var saved_state: Variant = payload.get("story_state", {})
 	if saved_state is Dictionary:
 		story_state.from_save_dict(saved_state)
-	var saved_progress: Variant = payload.get("objective_progress", {})
+
 	objective_progress.clear()
+	var saved_progress: Variant = payload.get("objective_progress", {})
 	if saved_progress is Dictionary:
 		for key in saved_progress.keys():
 			objective_progress[str(key)] = saved_progress[key]
-	# Discard stale or malformed objective progress rather than blocking a mission.
-	if not story_state.active_mission_id.is_empty():
-		var definition := MissionCatalog.get_mission(story_state.active_mission_id)
-		if definition.is_empty():
+
+	var active_id := story_state.active_mission_id
+	if active_id.is_empty():
+		objective_progress.clear()
+	else:
+		var definition := MissionCatalog.get_mission(active_id)
+		if definition.is_empty() or not MissionCatalog.can_start(active_id, story_state):
 			story_state.active_mission_id = ""
 			objective_progress.clear()
 		else:
-			var valid_ids: Array[String] = []
+			var objective_definitions: Dictionary = {}
 			for objective in definition.get("objectives", []):
-				valid_ids.append(str(objective.get("id", "")))
-			for key in objective_progress.keys():
-				if str(key).ends_with("::choice"):
+				objective_definitions[str(objective.get("id", ""))] = objective
+
+			for key_variant in objective_progress.keys():
+				var key := str(key_variant)
+				if key.ends_with("::choice"):
+					var choice_objective_id := key.substr(0, key.length() - 8)
+					var choice_objective: Dictionary = objective_definitions.get(choice_objective_id, {})
+					var choices: Dictionary = definition.get("choices", {})
+					var saved_choice := str(objective_progress[key])
+					if str(choice_objective.get("type", "")) != "choice" or not choices.has(saved_choice):
+						objective_progress.erase(key)
 					continue
-				if str(key) not in valid_ids:
+
+				if not objective_definitions.has(key):
 					objective_progress.erase(key)
+					continue
+				var objective: Dictionary = objective_definitions[key]
+				var required_count := maxi(1, int(objective.get("count", 1)))
+				var saved_value: Variant = objective_progress[key]
+				if required_count > 1:
+					if typeof(saved_value) != TYPE_INT and typeof(saved_value) != TYPE_FLOAT:
+						objective_progress[key] = 0
+					else:
+						objective_progress[key] = clampi(int(saved_value), 0, required_count)
+				else:
+					objective_progress[key] = bool(saved_value)
+
+			for objective_id in objective_definitions.keys():
+				if not objective_progress.has(objective_id):
+					var objective: Dictionary = objective_definitions[objective_id]
+					objective_progress[objective_id] = 0 if int(objective.get("count", 1)) > 1 else false
+
 	campaign_state_changed.emit()
 	return {"ok": true, "loaded": true}
 
