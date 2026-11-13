@@ -12,6 +12,7 @@ var _system_id: String = "aurelia"
 var _theme: Dictionary = {}
 var _planet_visual: MeshInstance3D
 var _planet_atmosphere: MeshInstance3D
+var _planet_clouds: MeshInstance3D
 var _companion_planet: MeshInstance3D
 var _companion_rings: MeshInstance3D
 var _companion_moon: MeshInstance3D
@@ -70,6 +71,9 @@ func _process(delta: float) -> void:
 		_planet_visual.global_position = planet_position
 	if is_instance_valid(_planet_atmosphere):
 		_planet_atmosphere.global_position = planet_position
+	if is_instance_valid(_planet_clouds):
+		_planet_clouds.global_position = planet_position
+		_planet_clouds.rotate_y(delta * 0.0038)
 	if is_instance_valid(_companion_planet):
 		_companion_planet.global_position = camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 		_companion_planet.rotate_y(delta * 0.003)
@@ -406,6 +410,66 @@ func _build_planet() -> void:
 	atmosphere.mesh = atmosphere_mesh
 	_planet_atmosphere = atmosphere
 	add_child(atmosphere)
+
+	# A separate, slowly rotating cloud shell gives the nearby world real depth.
+	var cloud_shell := MeshInstance3D.new()
+	cloud_shell.name = "AureliaCloudLayer" if _system_id == "aurelia" else "PlanetCloudLayer_%s" % _system_id
+	var cloud_mesh := SphereMesh.new()
+	cloud_mesh.radius = 1.0
+	cloud_mesh.height = 2.0
+	cloud_mesh.radial_segments = 96
+	cloud_mesh.rings = 48
+	var cloud_shader := Shader.new()
+	cloud_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+uniform vec4 cloud_tint : source_color = vec4(0.78, 0.86, 1.0, 0.30);
+uniform float cloud_coverage = 0.56;
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float noise21(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int i = 0; i < 5; i++) {
+		value += noise21(p) * amplitude;
+		p = p * 2.03 + vec2(13.7, 7.1);
+		amplitude *= 0.5;
+	}
+	return value;
+}
+void fragment() {
+	vec2 p = UV * vec2(12.0, 6.0);
+	p.x += TIME * 0.006;
+	float broad = fbm(p);
+	float detail = fbm(p * 2.1 + vec2(4.2, 8.7));
+	float clouds = broad * 0.72 + detail * 0.28;
+	float coverage = smoothstep(cloud_coverage, cloud_coverage + 0.19, clouds);
+	float wisps = smoothstep(0.68, 0.86, detail) * 0.16;
+	float density = clamp(coverage * 0.82 + wisps, 0.0, 0.72);
+	ALBEDO = cloud_tint.rgb;
+	EMISSION = cloud_tint.rgb * 0.08;
+	ALPHA = density * cloud_tint.a;
+}
+"""
+	var cloud_material := ShaderMaterial.new()
+	cloud_material.shader = cloud_shader
+	cloud_material.set_shader_parameter("cloud_tint", Color(0.76, 0.84, 1.0, 0.34))
+	cloud_material.set_shader_parameter("cloud_coverage", 0.53)
+	cloud_mesh.material = cloud_material
+	cloud_shell.mesh = cloud_mesh
+	cloud_shell.scale = Vector3.ONE * 43.65
+	_planet_clouds = cloud_shell
+	add_child(cloud_shell)
 
 
 
