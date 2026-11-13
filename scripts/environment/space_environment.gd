@@ -24,6 +24,7 @@ var _stellar_corona: MeshInstance3D
 var _stellar_key_light: DirectionalLight3D
 var _comet_root: Node3D
 var _derelict_root: Node3D
+var _orbital_station_root: Node3D
 
 
 func _ready() -> void:
@@ -41,6 +42,7 @@ func _ready() -> void:
 	_build_cosmic_dust()
 	_build_comet_landmark()
 	_build_derelict_landmark()
+	_build_orbital_station_landmark()
 
 
 func _process(delta: float) -> void:
@@ -111,6 +113,8 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_derelict_root):
 		var derelict_transform := camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
 		_derelict_root.global_transform = derelict_transform
+	if is_instance_valid(_orbital_station_root):
+		_orbital_station_root.global_transform = camera_transform * Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
 
 
 func _update_showcase_landmarks() -> void:
@@ -159,6 +163,8 @@ func _update_showcase_landmarks() -> void:
 		_comet_root.global_transform = Transform3D(Basis(Vector3(0.2, 0.8, 0.1).normalized(), 0.0), Vector3(-520.0, 205.0, -1880.0))
 	if is_instance_valid(_derelict_root):
 		_derelict_root.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
+	if is_instance_valid(_orbital_station_root):
+		_orbital_station_root.global_transform = Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
 
 
 
@@ -1230,6 +1236,24 @@ void fragment() {
 	tail.position = Vector3(0.0, 320.0, 2.0)
 	tail.rotation_degrees = Vector3(0.0, 0.0, 24.0)
 	_comet_root.add_child(tail)
+
+
+func _build_orbital_station_landmark() -> void:
+	# NASA's detailed ISS model adds a recognizable human-made landmark to the
+	# deep-space route. It is visual-only and follows the camera like other sky
+	# landmarks, so it never changes flight physics or mission collision.
+	var station_scene := load("res://assets/models/environment/nasa_iss_station.glb") as PackedScene
+	if station_scene == null:
+		push_warning("NASA ISS model unavailable; skipping orbital station landmark")
+		return
+	_orbital_station_root = Node3D.new()
+	_orbital_station_root.name = "OrbitalStationLandmark"
+	var station := station_scene.instantiate()
+	station.name = "NASA_ISS_Visual"
+	station.scale = Vector3.ONE * 0.62
+	station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
+	_orbital_station_root.add_child(station)
+	add_child(_orbital_station_root)
 
 
 func _build_derelict_landmark() -> void:
