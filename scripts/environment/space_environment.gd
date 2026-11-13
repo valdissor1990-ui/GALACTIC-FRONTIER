@@ -836,10 +836,10 @@ func _find_first_mesh(node: Node) -> Mesh:
 
 
 func _build_asteroid_field() -> void:
-	# A denser base sphere plus deterministic vertex displacement avoids the
-	# smooth blue-marble look of the first capture and gives each instance a
-	# fractured, rocky silhouette without spawning hundreds of separate nodes.
+	# Use NASA's authored asteroid geometry and embedded materials for the
+	# actual debris field; retain a procedural mesh only as a safe fallback.
 	var asteroid_mesh: Mesh = _load_nasa_asteroid_mesh()
+	var using_nasa_asset := asteroid_mesh != null
 	if asteroid_mesh == null:
 		# Keep the procedural fallback available on platforms where the imported
 		# NASA GLB is unavailable; normal project builds use the real scanned mesh.
@@ -883,8 +883,11 @@ void fragment() {
 	var asteroid_material := ShaderMaterial.new()
 	asteroid_material.shader = asteroid_shader
 	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
-	for surface_index in range(asteroid_mesh.get_surface_count()):
-		asteroid_mesh.surface_set_material(surface_index, asteroid_material)
+	# Keep the NASA GLB's authored PBR materials and embedded texture maps.
+	# Only the low-detail fallback receives the procedural shader.
+	if not using_nasa_asset:
+		for surface_index in range(asteroid_mesh.get_surface_count()):
+			asteroid_mesh.surface_set_material(surface_index, asteroid_material)
 
 	const RELAY_CLUSTER_COUNT := 28
 	var total_asteroid_count := asteroid_count + RELAY_CLUSTER_COUNT
