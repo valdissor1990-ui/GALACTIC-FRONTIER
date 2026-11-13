@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AGFEnemyShip::AGFEnemyShip()
 {
@@ -25,6 +26,13 @@ void AGFEnemyShip::Tick(const float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     AActor* Target = CombatTarget.Get();
     if (!IsValid(Target) || !Damageable || Damageable->IsDestroyed()) return;
+
+    if (!IsValid(Target))
+    {
+        Target = UGameplayStatics::GetPlayerPawn(this, 0);
+        CombatTarget = Target;
+    }
+    if (!IsValid(Target)) return;
 
     const FVector ToTarget = Target->GetActorLocation() - GetActorLocation();
     const float Distance = ToTarget.Size();
