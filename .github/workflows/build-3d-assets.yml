@@ -68,6 +68,14 @@ jobs:
             --python-exit-code 1 --python scripts/blender/build_fleet_expansion.py \
             -- --output-dir build/unreal-assets
 
+
+      - name: Consolidate each ship into one Unreal-ready mesh
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/consolidate_generated_fleet.py \
+            -- --output-dir build/unreal-assets
+
       - name: Validate all seven ship assets
         run: |
           set -euo pipefail
@@ -161,6 +169,7 @@ jobs:
           cp build/unreal-assets/environment/space/space_backdrop.glb assets/models/space/
           cp build/unreal-assets/environment/planets/*.glb assets/models/planets/
           cp build/unreal-assets/build-validation.json assets/models/ships/fleet-build-validation.json
+          cp build/unreal-assets/single-mesh-report.json assets/models/ships/single-mesh-report.json
           cp build/unreal-assets/BUILD_REPORT.md assets/models/BUILD_REPORT.md
 
       - name: Commit validated generated assets to migration branch
