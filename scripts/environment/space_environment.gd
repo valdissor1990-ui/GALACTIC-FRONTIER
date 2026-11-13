@@ -895,7 +895,7 @@ void fragment() {
 	float variation = 0.84 + 0.12 * sin(radial * 17.0) + grain;
 	float radial_fade = smoothstep(0.0, 0.045, radial) * (1.0 - smoothstep(0.94, 0.99, radius));
 	vec3 color = ring_tint.rgb * variation * mix(0.62, 1.16, bands);
-	float particulate = 0.78 + 0.22 * noise21(vec2(radial * 180.0, atan(centered.y, centered.x) * 22.0));
+	float particulate = 0.88 + 0.12 * sin(radial * 180.0 + atan(centered.y, centered.x) * 22.0);
 	color *= particulate;
 	ALBEDO = color;
 	EMISSION = color * 0.028;
