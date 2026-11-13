@@ -60,9 +60,9 @@ func _build_dashboard() -> void:
 	_box("Central display housing", Vector3(0.0, -0.25, -1.80), Vector3(0.56, 0.30, 0.10), _panel, Vector3(-8.0, 0.0, 0.0))
 	_box("Port display housing", Vector3(-0.53, -0.25, -1.72), Vector3(0.38, 0.25, 0.08), _panel, Vector3(-10.0, 0.0, 0.0))
 	_box("Starboard display housing", Vector3(0.53, -0.25, -1.72), Vector3(0.38, 0.25, 0.08), _panel, Vector3(-10.0, 0.0, 0.0))
-	_quad("Primary flight display", Vector3(0.0, -0.25, -1.74), Vector2(0.46, 0.22), _screen)
-	_quad("Port tactical display", Vector3(-0.53, -0.25, -1.67), Vector2(0.31, 0.18), _screen)
-	_quad("Starboard systems display", Vector3(0.53, -0.25, -1.67), Vector2(0.31, 0.18), _screen)
+	_quad("Primary flight display", Vector3(0.0, -0.25, -1.68), Vector2(0.46, 0.22), _screen)
+	_quad("Port tactical display", Vector3(-0.53, -0.25, -1.62), Vector2(0.31, 0.18), _screen)
+	_quad("Starboard systems display", Vector3(0.53, -0.25, -1.62), Vector2(0.31, 0.18), _screen)
 	_box("Lower console", Vector3(0.0, -0.66, -1.52), Vector3(1.18, 0.08, 0.42), _panel, Vector3(-12.0, 0.0, 0.0))
 	for side in [-1.0, 1.0]:
 		_box("Side instrument console %s" % side, Vector3(side * 0.79, -0.30, -1.34), Vector3(0.15, 0.42, 0.72), _armor, Vector3(-8.0, side * -8.0, 0.0))
@@ -73,9 +73,9 @@ func _build_dashboard() -> void:
 
 
 func _build_canopy_frame() -> void:
-	# The forward camera sits just ahead of the instrument fascia. Keep the canopy
-	# structure farther forward so its side rails frame the view instead of
-	# intersecting the camera or disappearing behind it.
+	# The pilot camera sits behind the instrument fascia. Keep the canopy
+	# rails outside the central sightline and use thin forward pillars to frame
+	# the view without blocking the dashboard or the flight path.
 	for side in [-1.0, 1.0]:
 		_box("Forward canopy pillar %s" % side, Vector3(side * 0.96, 0.25, -2.62), Vector3(0.038, 0.76, 0.05), _canopy_frame, Vector3(-13.0, side * -7.0, 0.0))
 		_box("Side canopy rail %s" % side, Vector3(side * 1.55, 0.32, -0.55), Vector3(0.035, 0.07, 3.85), _canopy_frame, Vector3(0.0, 0.0, side * 3.0))
