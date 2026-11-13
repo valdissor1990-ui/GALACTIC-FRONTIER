@@ -96,6 +96,7 @@ func report_gameplay_event(event_type: String, target_id: String = "", amount: i
 	var normalized_event := event_type.strip_edges().to_lower()
 	var accepted_types: Dictionary = {
 		"talk": ["talk"],
+		"choice": ["choice"],
 		"undock": ["undock"],
 		"reach_target": ["goto"],
 		"goto": ["goto"],
