@@ -15,21 +15,6 @@
 [ext_resource type="Script" path="res://scripts/audio/engine_audio.gd" id="12"]
 [ext_resource type="Shader" path="res://shaders/space/test_flight_star_sky.gdshader" id="13"]
 
-[sub_resource type="Environment" id="Environment_space"]
-background_mode = 2
-background_sky = SubResource("Sky_space")
-background_energy_multiplier = 1.0
-ambient_light_source = 1
-ambient_light_color = Color(0.24, 0.31, 0.48, 1)
-ambient_light_energy = 0.68
-tonemap_mode = 2
-glow_enabled = true
-glow_intensity = 0.32
-glow_strength = 0.72
-glow_bloom = 0.04
-glow_hdr_threshold = 1.35
-glow_hdr_scale = 1.0
-
 
 [sub_resource type="BoxMesh" id="BoxMesh_wing_panel"]
 size = Vector3(1.55, 0.16, 1.25)
@@ -86,6 +71,21 @@ shader = ExtResource("13")
 
 [sub_resource type="Sky" id="Sky_space"]
 sky_material = SubResource("Material_star_sky")
+
+[sub_resource type="Environment" id="Environment_space"]
+background_mode = 2
+background_sky = SubResource("Sky_space")
+background_energy_multiplier = 1.0
+ambient_light_source = 1
+ambient_light_color = Color(0.24, 0.31, 0.48, 1)
+ambient_light_energy = 0.68
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.32
+glow_strength = 0.72
+glow_bloom = 0.04
+glow_hdr_threshold = 1.35
+glow_hdr_scale = 1.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_cockpit_dashboard"]
 size = Vector3(1.65, 0.2, 0.78)
