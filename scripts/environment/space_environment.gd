@@ -868,6 +868,8 @@ uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
 uniform vec4 band_highlight = vec4(0.76, 0.62, 0.46, 1.0);
 uniform sampler2D gas_albedo_texture : source_color;
 uniform int noise_octaves = 4;
+uniform float noise_lacunarity = 2.05;
+uniform float noise_gain = 0.5;
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
