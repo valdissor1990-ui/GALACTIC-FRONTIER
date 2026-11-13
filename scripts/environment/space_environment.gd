@@ -510,6 +510,8 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.16);
 uniform float nebula_seed = 1.0;
 uniform int noise_octaves = 4;
+uniform float noise_lacunarity = 2.05;
+uniform float noise_gain = 0.5;
 
 float hash21(vec2 p) {
 	p += nebula_seed * vec2(17.17, 31.73);
@@ -536,8 +538,8 @@ float fbm(vec2 p) {
 		}
 		value += noise21(p) * amplitude;
 		total_amplitude += amplitude;
-		p = p * 2.03 + vec2(13.7, 7.1);
-		amplitude *= 0.5;
+		p = p * noise_lacunarity + vec2(13.7, 7.1);
+		amplitude *= noise_gain;
 	}
 	return value / max(total_amplitude, 0.001);
 }
@@ -553,8 +555,8 @@ float ridged_fbm(vec2 p) {
 		float ridge = 1.0 - abs(noise21(p) * 2.0 - 1.0);
 		value += ridge * ridge * amplitude;
 		total_amplitude += amplitude;
-		p = p * 2.03 + vec2(9.2, 21.7);
-		amplitude *= 0.5;
+		p = p * noise_lacunarity + vec2(9.2, 21.7);
+		amplitude *= noise_gain;
 	}
 	return value / max(total_amplitude, 0.001);
 }
@@ -596,6 +598,8 @@ void fragment() {
 	material.set_shader_parameter("nebula_seed", float(seed_value))
 	if quality != null:
 		material.set_shader_parameter("noise_octaves", quality.procedural_noise_octaves())
+		material.set_shader_parameter("noise_lacunarity", quality.procedural_noise_lacunarity())
+		material.set_shader_parameter("noise_gain", quality.procedural_noise_gain())
 
 	var quad := QuadMesh.new()
 	quad.size = dimensions
@@ -887,8 +891,8 @@ float fbm(vec2 p) {
 		if (octave >= noise_octaves) { break; }
 		sum += value_noise(p) * amp;
 		weight += amp;
-		p = p * 2.07 + vec2(11.3, 7.9);
-		amp *= 0.5;
+		p = p * noise_lacunarity + vec2(11.3, 7.9);
+		amp *= noise_gain;
 	}
 	return sum / max(weight, 0.001);
 }
@@ -902,8 +906,8 @@ float ridged_fbm(vec2 p) {
 		float ridge = 1.0 - abs(value_noise(p) * 2.0 - 1.0);
 		sum += ridge * ridge * amp;
 		weight += amp;
-		p = p * 2.07 + vec2(5.7, 17.1);
-		amp *= 0.5;
+		p = p * noise_lacunarity + vec2(5.7, 17.1);
+		amp *= noise_gain;
 	}
 	return sum / max(weight, 0.001);
 }
@@ -940,6 +944,8 @@ void fragment() {
 	var graphics_quality := get_node_or_null("/root/GraphicsQuality")
 	if graphics_quality != null:
 		fallback_giant_material.set_shader_parameter("noise_octaves", graphics_quality.procedural_noise_octaves())
+		fallback_giant_material.set_shader_parameter("noise_lacunarity", graphics_quality.procedural_noise_lacunarity())
+		fallback_giant_material.set_shader_parameter("noise_gain", graphics_quality.procedural_noise_gain())
 	# Preserve the authored 2K Jupiter map while layering procedural cloud bands,
 	# warped storm structure and ridged filaments over it in the same shader.
 	var gas_giant_texture: Texture2D = JUPITER_SURFACE_TEXTURE
