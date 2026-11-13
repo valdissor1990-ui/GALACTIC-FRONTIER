@@ -6,6 +6,7 @@ Scope: static review of the Unreal migration branch `chatgpt/unreal-migration-ue
 
 - The Editor script imports GLBs from `assets/models/ships` and `assets/models/environment`.
 - It records imported object paths and lists StaticMesh assets per GLB.
+- It now also parses each source GLB JSON chunk before import and logs the scene node hierarchy, node-to-mesh references, local matrix/TRS, mesh primitive material names and source counts. This supplies a source-side inventory, but does not yet compose parent transforms or create Unreal assembly actors.
 - It explicitly warns when a source GLB produces multiple StaticMesh assets; this is inventory/diagnostic behavior, not ship assembly.
 - It creates `/Game/GF/Maps/L_FlightTest`, lighting, a PlayerStart and a GFMissionDirector.
 - It attempts to assign an enemy mesh only when the imported-path token lookup yields exactly one StaticMesh.
