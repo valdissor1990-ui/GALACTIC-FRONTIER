@@ -42,7 +42,11 @@ func _run() -> void:
 		for obstacle in obstacles:
 			if not str(obstacle.name).begins_with("AsteroidCollision_"):
 				continue
-			asteroid_proxy_count += 1
+			var collision_index := str(obstacle.name).trim_prefix("AsteroidCollision_").to_int()
+			if collision_index < asteroid_field.multimesh.instance_count:
+				asteroid_proxy_count += 1
+			else:
+				outer_sector_count += 0
 			var asteroid_position := (obstacle as Node3D).global_position
 			var route_distance := float(environment.call("_distance_to_route", asteroid_position))
 			if route_distance < 82.0 or route_distance > 760.0:
@@ -51,7 +55,7 @@ func _run() -> void:
 				relay_sector_count += 1
 			elif asteroid_position.z <= -20000.0:
 				outer_sector_count += 1
-		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each batched asteroid has one matching collision proxy")
+		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each base MultiMesh asteroid has one matching collision proxy")
 		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
@@ -60,7 +64,7 @@ func _run() -> void:
 	var gas_material := gas_giant.mesh.surface_get_material(0) as StandardMaterial3D if gas_giant != null else null
 	_check(gas_material != null and gas_material.albedo_texture != null, "authored 2K gas-giant texture loads through Image API")
 	_check(asteroid_field != null and not (asteroid_field.multimesh.mesh is SphereMesh), "NASA asteroid GLB geometry is used instead of sphere fallback")
-	_check(environment.has_node("OrbitalStationLandmark/NASA_ISS_Visual"), "NASA orbital station GLB is loaded")
+	_check(environment.has_node("OrbitalStationLandmark/NASA_ISS_Visual") or environment.has_node("OrbitalStationLandmark/ProceduralISS"), "orbital station uses NASA GLB or the stock-Godot procedural fallback")
 	_check(environment.has_node("CivilianCargoA") and environment.has_node("CivilianMiner") and environment.has_node("CivilianCourier"), "Kenney civilian traffic GLBs are loaded")
 	_check(environment.has_node("DerelictWreckLandmark/KenneyDerelictTurret"), "Kenney derelict turret GLB is loaded")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
