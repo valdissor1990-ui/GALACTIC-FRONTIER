@@ -43,7 +43,7 @@ The project enables the EnhancedInput plugin and lists it as a module dependency
 
 ## P1 — Mission flow is a foundation, not a complete campaign
 
-A source review also found that mission completion originally checked the world origin as the carrier return point. This has been corrected in the migration branch: `CarrierPosition` is now an editable mission property and both the return-range check and objective marker use it. The actual carrier coordinates still must be set and playtested in the Editor. The declared `ScanRelay`/`ScanWreck` enum stages are not yet backed by a distinct scan-duration/progress interaction; they remain a migration gap.
+A source review also found that mission completion originally checked the world origin as the carrier return point. This has been corrected in the migration branch: `CarrierPosition` is now an editable mission property and both the return-range check and objective marker use it. The actual carrier coordinates still must be set and playtested in the Editor. Relay and wreck interactions now enter explicit `ScanRelay`/`ScanWreck` stages. Progress advances while the player remains inside the interaction radius and starts the encounter after the editable scan duration; leaving range resets progress. This remains unverified in the Unreal runtime, and there is not yet a dedicated visual progress indicator in the HUD.
 
 The current first-pass implementation includes a relay/wreck encounter loop and reward persistence, but the full authored campaign, all three contracts' unique objectives, distinct scan interactions, dialogue, branching story state and production objective presentation remain incomplete or unverified.
 
