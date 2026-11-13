@@ -830,6 +830,7 @@ void fragment() {
 	float value = clamp(0.42 + rock_variation * 0.30 + strata, 0.24, 0.78);
 	vec3 mineral_tint = mix(vec3(0.72), vec3(1.18), asteroid_custom.rgb);
 	ALBEDO = rock_tint.rgb * value * mineral_tint;
+	EMISSION = rock_tint.rgb * value * mineral_tint * 0.14;
 	METALLIC = 0.08 + asteroid_custom.g * 0.16;
 	ROUGHNESS = 0.94;
 }
