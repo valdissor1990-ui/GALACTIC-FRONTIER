@@ -2,8 +2,10 @@ extends Node
 ## Global graphics quality + FSR + tonemap/HDR tables.
 ## Autoload: GraphicsQuality
 ##
-## Tonemap cost (Godot Forward+, relative): Linear < Reinhard < Filmic < ACES ≈ AgX(opt).
-## Low uses Filmic (~free win vs ACES). Medium/High keep ACES look.
+## Tonemap ladder:
+##   Low    → Filmic  (cheapest film curve)
+##   Medium → ACES    (cinematic contrast)
+##   High   → AgX     (best hue retention on bright engines; HDR-ready)
 
 enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
 
@@ -57,6 +59,18 @@ func get_preset_name() -> String:
 	return "Medium"
 
 
+func get_tonemap_name() -> String:
+	match tonemap_mode():
+		Environment.TONE_MAP_MODE_FILMIC:
+			return "Filmic"
+		Environment.TONE_MAP_MODE_ACES:
+			return "ACES"
+		Environment.TONE_MAP_MODE_AGX:
+			return "AgX"
+		_:
+			return "Other"
+
+
 # --- FSR / 3D scale ---------------------------------------------------------
 
 func base_scale_3d() -> float:
@@ -108,52 +122,91 @@ func _apply_viewport_scale() -> void:
 		vp.fsr_sharpness = fsr_sharpness()
 
 
-# --- Tonemap (perf-aware) ---------------------------------------------------
-# Cost order (approx ms @4K ref scene): Linear 0.82 | Reinhard 0.93 |
-# Filmic 1.00 | ACES 1.07 | AgX-opt ~1.05. Delta ACES−Filmic is small but
-# free on Low when stacked with fewer glow mips + no color adjustment.
+# --- Tonemap ----------------------------------------------------------------
+# AgX (Godot 4.4+): keeps hue on bright saturated colors (engines, lasers),
+# rolls highlights to white instead of ACES hue-shift. White is fixed ~16.29
+# on older builds; 4.6+ may expose agx_white / agx_contrast.
 
 func tonemap_mode() -> int:
 	match current:
 		Preset.LOW:
 			return Environment.TONE_MAP_MODE_FILMIC
-		_:
+		Preset.MEDIUM:
 			return Environment.TONE_MAP_MODE_ACES
+		Preset.HIGH:
+			return Environment.TONE_MAP_MODE_AGX
+	return Environment.TONE_MAP_MODE_ACES
 
 
 func tonemap_exposure() -> float:
+	# AgX often reads slightly flatter — nudge exposure on High
 	match current:
 		Preset.LOW:
 			return 0.90
 		Preset.MEDIUM:
 			return 0.94
 		Preset.HIGH:
-			return 1.0
+			return 1.05
 	return 0.94
 
 
 func tonemap_white() -> float:
+	# Ignored by AgX on Godot ≤4.5 (fixed 16.29). Still set for ACES/Filmic.
 	match current:
 		Preset.LOW:
 			return 6.0
 		Preset.MEDIUM:
 			return 7.5
 		Preset.HIGH:
-			return 10.0
+			return 16.29
 	return 7.5
 
 
+func agx_white() -> float:
+	# Blender default; only applied if Environment has the property (4.6+)
+	return 16.29
+
+
+func agx_contrast() -> float:
+	# 1.0 = neutral AgX curve; slight punch for space silhouette
+	return 1.05
+
+
+func apply_tonemap_extras(env: Environment) -> void:
+	## Optional AgX params on newer Godot builds (safe no-op otherwise).
+	if env == null:
+		return
+	if tonemap_mode() != Environment.TONE_MAP_MODE_AGX:
+		return
+	if "tonemap_agx_white" in env:
+		env.tonemap_agx_white = agx_white()
+	elif "agx_white" in env:
+		env.set("agx_white", agx_white())
+	if "tonemap_agx_contrast" in env:
+		env.tonemap_agx_contrast = agx_contrast()
+	elif "agx_contrast" in env:
+		env.set("agx_contrast", agx_contrast())
+
+
 func adjustment_enabled() -> bool:
-	# Extra fullscreen grade; skip on Low
 	return current != Preset.LOW
 
 
 func adjustment_contrast() -> float:
-	return 1.04
+	# Slightly more grade under AgX (neutral base)
+	match current:
+		Preset.HIGH:
+			return 1.06
+		_:
+			return 1.04
 
 
 func adjustment_saturation() -> float:
-	return 1.05
+	match current:
+		Preset.HIGH:
+			return 1.08
+		_:
+			return 1.05
 
 
 # --- HDR glow ---------------------------------------------------------------
@@ -228,7 +281,6 @@ func glow_strength() -> float:
 	return 1.05
 
 
-## Fewer active glow mip levels on Low → less blur bandwidth
 func apply_glow_levels(env: Environment) -> void:
 	if env == null:
 		return
