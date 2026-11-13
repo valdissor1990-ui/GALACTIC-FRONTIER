@@ -1,6 +1,6 @@
 extends Node3D
 class_name EngineThrustFx
-## Thruster plumes, boost trails, hull heat. Visual only.
+## Thruster plumes, soft-shader trails, hull heat. Visual only.
 
 @export var ship_path: NodePath
 @export var idle_intensity: float = 0.25
@@ -17,6 +17,8 @@ var _hull_mats: Array[ShaderMaterial] = []
 var _trail_particles: Array[GPUParticles3D] = []
 var _intensity: float = 0.25
 var _boosting: bool = false
+var _spark_base: int = 24
+var _trail_base: int = 40
 
 
 func _ready() -> void:
@@ -33,6 +35,9 @@ func _ready() -> void:
 			else:
 				_particles.append(gp)
 				gp.emitting = true
+				# Upgrade spark draw to thrust_spark shader if still default
+				gp.draw_pass_1 = ParticleDrawFactory.spark_quad(0.11)
+				gp.visibility_aabb = AABB(Vector3(-6, -6, -6), Vector3(12, 12, 16))
 		elif child is MeshInstance3D:
 			var mi := child as MeshInstance3D
 			var mat := mi.get_active_material(0)
@@ -54,10 +59,10 @@ func apply_quality(gq: Node) -> void:
 	if gq.has_method("particle_amount_scale"):
 		scale = gq.particle_amount_scale()
 	for p in _particles:
-		p.amount = maxi(8, int(24.0 * scale))
+		ParticleDrawFactory.apply_budget(p, _spark_base, scale)
 	for t in _trail_particles:
-		t.amount = maxi(12, int(48.0 * scale))
-		t.visible = scale > 0.4
+		ParticleDrawFactory.apply_budget(t, _trail_base, scale)
+		t.visible = scale > 0.35
 
 
 func _collect_hull_mats() -> void:
@@ -82,13 +87,14 @@ func _spawn_default_trails() -> void:
 		var gp := GPUParticles3D.new()
 		gp.name = "Trail%d" % i
 		gp.position = offset_list[i]
-		gp.amount = 40
-		gp.lifetime = 0.55
+		gp.amount = _trail_base
+		gp.lifetime = 0.5
 		gp.explosiveness = 0.0
 		gp.randomness = 0.25
 		gp.local_coords = false
 		gp.emitting = false
 		gp.set_meta("is_boost_trail", true)
+		gp.visibility_aabb = AABB(Vector3(-8, -8, -4), Vector3(16, 16, 24))
 		var ppm := ParticleProcessMaterial.new()
 		ppm.direction = Vector3(0, 0, 1)
 		ppm.spread = 6.0
@@ -97,23 +103,11 @@ func _spawn_default_trails() -> void:
 		ppm.gravity = Vector3.ZERO
 		ppm.damping_min = 1.0
 		ppm.damping_max = 3.0
-		ppm.scale_min = 0.06
-		ppm.scale_max = 0.18
-		ppm.color = Color(0.4, 0.75, 1.0, 0.55)
+		ppm.scale_min = 0.6
+		ppm.scale_max = 1.3
+		ppm.color = Color(0.4, 0.75, 1.0, 0.5)
 		gp.process_material = ppm
-		var draw := QuadMesh.new()
-		draw.size = Vector2(0.2, 0.2)
-		var sm := StandardMaterial3D.new()
-		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		sm.vertex_color_use_as_albedo = true
-		sm.albedo_color = Color(0.45, 0.85, 1.0, 0.7)
-		sm.emission_enabled = true
-		sm.emission = Color(0.35, 0.75, 1.0)
-		sm.emission_energy_multiplier = 1.8
-		sm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		draw.material = sm
-		gp.draw_pass_1 = draw
+		gp.draw_pass_1 = ParticleDrawFactory.soft_quad(0.16, Color(0.45, 0.85, 1.0), 1.6)
 		add_child(gp)
 		_trail_particles.append(gp)
 
