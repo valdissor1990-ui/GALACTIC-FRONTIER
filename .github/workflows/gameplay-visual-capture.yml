@@ -257,6 +257,7 @@ jobs:
           path: |
             build/screenshots/*.png
             build/gameplay-showcase.log
+            build/space-showcase.log
             build/fleet-hangar.log
           if-no-files-found: error
           retention-days: 30
