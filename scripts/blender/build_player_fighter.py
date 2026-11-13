@@ -152,13 +152,30 @@ def cylinder_between(name, start, end, radius, material, vertices=24, radius_end
 
 
 def add_detail_uv(mesh, scale=4.0):
-    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    """Create meter-scaled, per-face planar UVs for runtime PBR detail maps.
+
+    Project each face along its dominant normal axis. A single global XY
+    projection collapses detail on vertical surfaces and stretches it along
+    the ship's height; this keeps panels, engine housings and wing skins
+    consistently textured without requiring a separate unwrap per primitive.
+    """
+    mesh.update()
     uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
     for polygon in mesh.polygons:
+        normal = polygon.normal
+        abs_normal = (abs(normal.x), abs(normal.y), abs(normal.z))
+        dominant_axis = abs_normal.index(max(abs_normal))
         for loop_index in polygon.loop_indices:
             vertex_index = mesh.loops[loop_index].vertex_index
-            vertex = mesh.vertices[vertex_index]
-            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+            vertex = mesh.vertices[vertex_index].co
+            if dominant_axis == 2:
+                projected = (vertex.x, vertex.y)
+            elif dominant_axis == 1:
+                projected = (vertex.x, vertex.z)
+            else:
+                projected = (vertex.y, vertex.z)
+            uv_layer.data[loop_index].uv = (projected[0] * scale, projected[1] * scale)
+    mesh.update()
 
 def loft_fuselage(name, sections, material, sides=12):
     vertices = []
