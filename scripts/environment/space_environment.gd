@@ -41,7 +41,7 @@ func _process(_delta: float) -> void:
 	# visual shell and collision proxy together relative to the active camera
 	# so long-range mission shots retain a readable planetary horizon.
 	var planet_position := camera.global_position + camera.global_basis * Vector3(-160.0, 26.0, -285.0)
-	for landmark_name in ["Aurelia", "AureliaAtmosphere", "AureliaCollision"]:
+	for landmark_name in ["Aurelia", "AureliaAtmosphere"]:
 		var landmark := get_node_or_null(landmark_name) as Node3D
 		if landmark != null:
 			landmark.global_position = planet_position
