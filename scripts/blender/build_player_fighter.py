@@ -526,6 +526,91 @@ def add_integrated_surface_detail(root, materials):
             obj.parent = root
 
 
+
+def add_hero_identification(root, materials):
+    """Add restrained, production-style markings and identification hardware."""
+    white = materials["white"]
+    dark = materials["dark"]
+    accent = materials["accent"]
+
+    def stencil(name, body, location, size, material, rotation=0.0):
+        bpy.ops.object.text_add(
+            location=location,
+            rotation=(0.0, 0.0, rotation),
+        )
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.body = body
+        obj.data.size = size
+        obj.data.align_x = "CENTER"
+        obj.data.align_y = "CENTER"
+        obj.data.extrude = 0.0008
+        obj.data.bevel_depth = 0.0004
+        obj.data.bevel_resolution = 1
+        bpy.ops.object.convert(target="MESH")
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.materials.append(material)
+        obj.parent = root
+        return obj
+
+    def roundel(name, location, material, radius=0.19):
+        bpy.ops.mesh.primitive_torus_add(
+            major_segments=40,
+            minor_segments=8,
+            location=location,
+            major_radius=radius,
+            minor_radius=0.018,
+        )
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.materials.append(material)
+        obj.parent = root
+        return obj
+
+    for side in (-1, 1):
+        # Squadron roundel and readable craft number on each wing upper surface.
+        roundel("GF squadron roundel %s" % side,
+                (side * 4.18, 1.62, 0.255), accent)
+        cube("GF roundel center bar %s" % side,
+             (side * 4.18, 1.62, 0.274), (0.045, 0.23, 0.018), white, 0.008)
+        stencil("Wing serial stencil %s" % side, "GF / 07",
+                (side * 3.45, 0.55, 0.247), 0.145, white)
+        stencil("Wing service microtext %s" % side, "ACCESS  /  LIFT",
+                (side * 2.55, -0.35, 0.252), 0.062, dark)
+        # Small chevron bars identify lift and service zones without obscuring panels.
+        for index in range(3):
+            cube("Wing lift chevron %s %s" % (side, index),
+                 (side * (2.05 + index * 0.13), -1.10 + index * 0.13, 0.246),
+                 (0.055, 0.30, 0.018), accent, 0.009,
+                 (0.0, 0.0, side * -0.48))
+        # Recessed-looking warning bands around engine service access.
+        for index in range(4):
+            cube("Engine caution hash %s %s" % (side, index),
+                 (side * 1.34, 3.86 + index * 0.12, 0.505),
+                 (0.23, 0.045, 0.014), accent if index % 2 == 0 else white,
+                 0.006, (0.0, 0.0, side * -0.18))
+        stencil("Engine serial stencil %s" % side, "ION-02",
+                (side * 1.02, 4.35, 0.505), 0.105, white)
+
+    # Central maker mark and maintenance labels on the dorsal armor crown.
+    stencil("Dorsal manufacturer stencil", "GALACTIC  /  FRONTIER",
+            (0.0, 0.15, 0.655), 0.105, white)
+    stencil("Dorsal inspection stencil", "MK.I   //   FLIGHT TEST",
+            (0.0, 0.48, 0.655), 0.060, accent)
+    # Nose-side optical warning labels and small status lamps.
+    for side in (-1, 1):
+        cube("Nose optical status lamp %s" % side,
+             (side * 0.27, -5.72, 0.30), (0.09, 0.18, 0.035),
+             accent, 0.018, (0.0, 0.0, side * -0.10))
+        stencil("Nose caution stencil %s" % side, "SENSOR",
+                (side * 0.40, -5.25, 0.285), 0.060, dark)
+
+    # Ensure every generated marking is part of the exported hero hierarchy.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
     # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
@@ -586,6 +671,7 @@ def main():
 
     root = create_ship(materials)
     add_integrated_surface_detail(root, materials)
+    add_hero_identification(root, materials)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.
