@@ -167,7 +167,7 @@ func _build_contract_card(contract: Dictionary) -> Control:
 		str(contract.get("difficulty", "UNKNOWN")),
 		int(contract.get("waves_per_encounter", 3)),
 		int(contract.get("waves_per_encounter", 3)),
-		String.num_int64(int(contract.get("reward", 0)))
+		str(int(contract.get("reward", 0)))
 	]
 	details.add_theme_font_size_override("font_size", 13)
 	details.add_theme_color_override("font_color", Color(0.78, 0.88, 0.94))
