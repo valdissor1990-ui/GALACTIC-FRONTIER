@@ -37,6 +37,11 @@ func apply_quality(gq: Node) -> void:
 	if gq == null:
 		return
 	enable_ssao = gq.ssao_enabled()
+	var requested_asteroids: int = gq.asteroid_count()
+	if requested_asteroids != asteroid_count:
+		asteroid_count = requested_asteroids
+		_setup_asteroid_belt()
+	_apply_planet_quality(gq.planet_segments())
 	if _sky_mat:
 		_sky_mat.set_shader_parameter("star_density", gq.sky_star_density())
 		_sky_mat.set_shader_parameter("star_brightness", gq.sky_star_brightness())
