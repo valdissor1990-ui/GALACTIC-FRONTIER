@@ -61,6 +61,7 @@ func _ready() -> void:
 
 func _initialize_mission() -> void:
 	_load_active_contract()
+	_begin_story_campaign_if_available()
 	if encounter != null:
 		encounter.set_process(false)
 		encounter.set_physics_process(false)
@@ -68,7 +69,14 @@ func _initialize_mission() -> void:
 	_build_navigation_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
 	_build_contract_objectives()
 	_build_mission_hud()
-	_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
+	if _is_story_mission_active("m01"):
+		var intro := DialogueM01M05.get_node("m01_quinn_intro")
+		var line: Dictionary = intro.get("text", {})
+		_set_radio("SERA QUINN", str(line.get("en", "Contract accepted. Approach the relay beacon and scan its core.")))
+		_report_story_event("talk")
+		_report_story_event("undock")
+	else:
+		_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
 	print("MISSION_READY: ", _contract_name, " | SYSTEM: ", _system_name, " | WAVES: ", _waves_per_encounter * 2)
 	var save_manager := _get_save_manager()
 	var pending_payload: Variant = save_manager.get("pending_mission_payload") if save_manager != null else {}
@@ -79,6 +87,40 @@ func _initialize_mission() -> void:
 		_save_checkpoint("mission start")
 
 
+
+
+
+func _begin_story_campaign_if_available() -> void:
+	if _contract_id != "silent_relay" or get_tree().get_first_node_in_group("qa_demo_driver") != null:
+		return
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign == null:
+		return
+	var state: Variant = campaign.get("story_state")
+	if state == null:
+		return
+	if str(state.get("active_mission_id")) == "":
+		campaign.call("start_mission", "m01")
+
+
+func _is_story_mission_active(mission_id: String) -> bool:
+	if get_tree().get_first_node_in_group("qa_demo_driver") != null:
+		return false
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign == null:
+		return false
+	var state: Variant = campaign.get("story_state")
+	return state != null and str(state.get("active_mission_id")) == mission_id
+
+
+func _report_story_event(event_type: String, target_id: String = "") -> void:
+	if not _is_story_mission_active("m01"):
+		return
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign != null:
+		var result: Dictionary = campaign.call("report_gameplay_event", event_type, target_id)
+		if not result.get("ok", false):
+			push_warning("Story event was not accepted: " + str(result.get("error", "unknown")))
 
 func _load_active_contract() -> void:
 	var profile := get_node_or_null("/root/GameProfile")
@@ -155,6 +197,7 @@ func _update_mission(delta: float) -> void:
 	match stage:
 		MissionStage.OUTBOUND:
 			if _distance_to_objective() <= 95.0:
+				_report_story_event("reach_target", "aurelia_a3")
 				stage = MissionStage.SCAN_RELAY
 				_set_radio("ORBITAL CONTROL", "Relay beacon acquired. Hold position and scan the core with F.")
 		MissionStage.DEFEND_RELAY, MissionStage.DEFEND_WRECK:
@@ -286,6 +329,7 @@ func _begin_return_home(message: String) -> void:
 
 
 func _complete_relay_scan() -> void:
+	_report_story_event("scan", "aurelia_a3")
 	stage = MissionStage.DEFEND_RELAY
 	wave_index = 0
 	_set_radio("UNKNOWN TRANSMISSION", "Signal lock detected. Hostile craft inbound.")
@@ -625,6 +669,7 @@ func _complete_docking(qa_mode: bool = false) -> void:
 		_show_mission_result(true)
 		return
 
+	_report_story_event("dock", "port_solace")
 	var profile := get_node_or_null("/root/GameProfile")
 	if profile != null:
 		mission_reward_credits = int(profile.call("complete_mission", _contract_id, _mission_reward))
