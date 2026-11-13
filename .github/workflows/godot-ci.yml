@@ -26,6 +26,7 @@ on:
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
       - chatgpt/campaign-story-integration
+      - chatgpt/open-world-space-environment
   workflow_dispatch:
 
 permissions:
