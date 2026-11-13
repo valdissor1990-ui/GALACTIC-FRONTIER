@@ -10,3 +10,11 @@
 - Import: Godot 4.7.2 glTF/GLB importer.
 
 The model is used as source geometry for MultiMesh instances. The game retains a procedural fallback if the asset cannot be imported.
+
+## Gas giant texture map
+
+- File: `assets/textures/space/jupiter_2k.jpg`
+- Source: [Sanghel/solar-system-3d](https://github.com/Sanghel/solar-system-3d), sourced from Solar System Scope.
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0); attribution required. See the upstream `public/textures/README.md` and [Solar System Scope textures](https://www.solarsystemscope.com/textures/).
+- Intended use: 2K equirectangular base-color map for the Nacreon gas giant; the procedural shader remains as an offline fallback.
+- Credit: Solar System Scope.

@@ -659,11 +659,21 @@ void fragment() {
 	METALLIC = 0.0;
 }
 """
-	var giant_material := ShaderMaterial.new()
-	giant_material.shader = giant_shader
-	giant_material.set_shader_parameter("band_dark", _theme.get("gas_dark", Color(0.19, 0.105, 0.075)))
-	giant_material.set_shader_parameter("band_light", _theme.get("gas_light", Color(0.58, 0.39, 0.27)))
-	giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
+	var giant_material: Material = ShaderMaterial.new()
+	var fallback_giant_material := giant_material as ShaderMaterial
+	fallback_giant_material.shader = giant_shader
+	fallback_giant_material.set_shader_parameter("band_dark", _theme.get("gas_dark", Color(0.19, 0.105, 0.075)))
+	fallback_giant_material.set_shader_parameter("band_light", _theme.get("gas_light", Color(0.58, 0.39, 0.27)))
+	fallback_giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
+	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
+	# banding and storm detail; keep the procedural shader as an offline fallback.
+	var gas_giant_texture := load("res://assets/textures/space/jupiter_2k.jpg") as Texture2D
+	if gas_giant_texture != null:
+		var textured_giant := StandardMaterial3D.new()
+		textured_giant.albedo_texture = gas_giant_texture
+		textured_giant.roughness = 0.94
+		textured_giant.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		giant_material = textured_giant
 	giant_mesh.material = giant_material
 	giant.mesh = giant_mesh
 	giant.scale = Vector3.ONE * 82.0
