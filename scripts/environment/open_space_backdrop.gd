@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space visual stack. Tonemap locked to ACES for cinematic HDR engines.
+## Open-space visual stack. Tonemap: Filmic (Low) / ACES (Med+High).
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -36,12 +36,13 @@ func apply_quality(gq: Node) -> void:
 	enable_ssao = gq.ssao_enabled()
 	if _world_env and _world_env.environment:
 		var env := _world_env.environment
-		# Always ACES — do not drift to Reinhard/Filmic on preset switch
-		env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
-		if gq.has_method("tonemap_mode"):
-			env.tonemap_mode = gq.tonemap_mode()
+		env.tonemap_mode = gq.tonemap_mode()
 		env.tonemap_exposure = gq.tonemap_exposure()
 		env.tonemap_white = gq.tonemap_white()
+		env.adjustment_enabled = gq.adjustment_enabled()
+		if env.adjustment_enabled:
+			env.adjustment_contrast = gq.adjustment_contrast()
+			env.adjustment_saturation = gq.adjustment_saturation()
 		env.ssao_enabled = enable_ssao
 		env.glow_enabled = gq.glow_enabled()
 		env.glow_intensity = gq.glow_intensity()
@@ -50,6 +51,8 @@ func apply_quality(gq: Node) -> void:
 		env.glow_hdr_scale = gq.glow_hdr_scale()
 		env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap()
 		env.glow_strength = gq.glow_strength()
+		if gq.has_method("apply_glow_levels"):
+			gq.apply_glow_levels(env)
 	if _key_light:
 		_key_light.shadow_enabled = gq.shadow_enabled()
 		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
@@ -89,20 +92,18 @@ func _setup_sky_environment() -> void:
 	env.ambient_light_energy = 0.26
 
 	var gq := _gq()
-	# --- ACES tone mapping (locked) ------------------------------------------
-	# High contrast film curve; bright engine/projectile values desaturate
-	# instead of clipping to pure white. Exposure keeps the void dark.
-	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
+	env.tonemap_mode = gq.tonemap_mode() if gq else Environment.TONE_MAP_MODE_ACES
 	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.94
 	env.tonemap_white = gq.tonemap_white() if gq else 7.5
 
 	env.glow_enabled = true
-	env.glow_levels[1] = 0.0
-	env.glow_levels[2] = 0.6
-	env.glow_levels[3] = 1.0
-	env.glow_levels[4] = 0.7
-	env.glow_levels[5] = 0.35
-	env.glow_levels[6] = 0.15
+	if gq and gq.has_method("apply_glow_levels"):
+		gq.apply_glow_levels(env)
+	else:
+		env.glow_levels[2] = 0.6
+		env.glow_levels[3] = 1.0
+		env.glow_levels[4] = 0.7
+		env.glow_levels[5] = 0.35
 	env.glow_intensity = gq.glow_intensity() if gq else 0.55
 	env.glow_strength = gq.glow_strength() if gq else 1.05
 	env.glow_bloom = gq.glow_bloom() if gq else 0.25
@@ -111,10 +112,10 @@ func _setup_sky_environment() -> void:
 	env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap() if gq else 12.0
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 
-	# Mild grade after tonemap (ACES already sets contrast character)
-	env.adjustment_enabled = true
-	env.adjustment_contrast = 1.04
-	env.adjustment_saturation = 1.05
+	env.adjustment_enabled = gq.adjustment_enabled() if gq else true
+	if env.adjustment_enabled:
+		env.adjustment_contrast = 1.04
+		env.adjustment_saturation = 1.05
 	env.ssr_enabled = false
 	env.ssao_enabled = enable_ssao
 	if enable_ssao:
