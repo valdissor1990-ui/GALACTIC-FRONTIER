@@ -8,9 +8,9 @@ class_name GravitationalLensFx
 @export var max_masses: int = 2
 @export var auto_find_masses: bool = true
 @export var camera_path: NodePath
-@export var strength_multiplier: float = 1.0
-@export var min_effect_distance: float = 40.0
-@export var max_effect_distance: float = 900.0
+@export var strength_multiplier: float = 0.5
+@export var min_effect_distance: float = 150.0
+@export var max_effect_distance: float = 480.0
 
 var _layer: CanvasLayer
 var _rect: ColorRect
