@@ -23,14 +23,19 @@ func _run() -> void:
 	if asteroid_field != null:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
+		var route_clear := true
 		for index in range(asteroid_field.multimesh.instance_count):
 			var asteroid_position := asteroid_field.multimesh.get_instance_transform(index).origin
+			var route_distance := float(environment.call("_distance_to_route", asteroid_position))
+			if route_distance < 82.0 or route_distance > 760.0:
+				route_clear = false
 			if asteroid_position.z < -5000.0 and asteroid_position.z > -20000.0:
 				relay_sector_count += 1
 			elif asteroid_position.z <= -20000.0:
 				outer_sector_count += 1
 		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
+		_check(route_clear, "every asteroid remains outside the marked flight corridor")
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
