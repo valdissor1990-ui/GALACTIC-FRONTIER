@@ -535,7 +535,7 @@ def main():
         if c.type=="MESH":c.select_set(True)
     bpy.context.view_layer.objects.active=root
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(dest,"enemy_fighter.blend"))
-    bpy.ops.export_scene.gltf(filepath=os.path.join(dest,"enemy_fighter.glb"),export_format="GLB",use_selection=True,export_apply=True,export_materials="EXPORT",export_image_format="PNG",export_image_quality=100,export_cameras=False,export_lights=False)
+    bpy.ops.export_scene.gltf(filepath=os.path.join(dest,"enemy_fighter.glb"),export_format="GLB",use_selection=True,export_apply=True,export_materials="EXPORT",export_image_format="AUTO",export_image_quality=100,export_cameras=False,export_lights=False)
     bpy.ops.object.select_all(action="DESELECT");scene.camera=cam;scene.render.filepath=os.path.join(dest,"enemy_fighter_preview.png");bpy.ops.render.render(write_still=True)
     print("RAIDER INTERCEPTOR ASSET BUILD COMPLETE")
 if __name__=="__main__":main()
