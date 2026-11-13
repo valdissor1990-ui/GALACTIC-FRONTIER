@@ -54,7 +54,7 @@ func _capture_sequence() -> void:
 						densest_neighbors = neighbor_count
 						densest_center = candidate
 				target_position = densest_center
-				camera_position = target_position + Vector3(250.0, 180.0, 720.0)
+				camera_position = target_position + Vector3(160.0, 100.0, 440.0)
 				print("SPACE_SHOWCASE_ASTEROID_FIELD_COUNT=", asteroid_positions.size())
 				print("SPACE_SHOWCASE_ASTEROID_FOCUS=", target_position)
 			else:
