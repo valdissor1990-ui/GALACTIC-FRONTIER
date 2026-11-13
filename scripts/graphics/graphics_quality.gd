@@ -69,11 +69,11 @@ func get_preset_name() -> String:
 
 func get_tonemap_name() -> String:
 	match tonemap_mode():
-		Environment.TONE_MAP_MODE_FILMIC:
+		Environment.TONE_MAPPER_FILMIC:
 			return "Filmic"
-		Environment.TONE_MAP_MODE_ACES:
+		Environment.TONE_MAPPER_ACES:
 			return "ACES"
-		Environment.TONE_MAP_MODE_AGX:
+		Environment.TONE_MAPPER_AGX:
 			return "AgX"
 		_:
 			return "Other"
@@ -138,12 +138,12 @@ func _apply_viewport_scale() -> void:
 func tonemap_mode() -> int:
 	match current:
 		Preset.LOW:
-			return Environment.TONE_MAP_MODE_FILMIC
+			return Environment.TONE_MAPPER_FILMIC
 		Preset.MEDIUM:
-			return Environment.TONE_MAP_MODE_ACES
+			return Environment.TONE_MAPPER_ACES
 		Preset.HIGH:
-			return Environment.TONE_MAP_MODE_AGX
-	return Environment.TONE_MAP_MODE_ACES
+			return Environment.TONE_MAPPER_AGX
+	return Environment.TONE_MAPPER_ACES
 
 
 func tonemap_exposure() -> float:
@@ -184,7 +184,7 @@ func apply_tonemap_extras(env: Environment) -> void:
 	## Optional AgX params on newer Godot builds (safe no-op otherwise).
 	if env == null:
 		return
-	if tonemap_mode() != Environment.TONE_MAP_MODE_AGX:
+	if tonemap_mode() != Environment.TONE_MAPPER_AGX:
 		return
 	if "tonemap_agx_white" in env:
 		env.tonemap_agx_white = agx_white()
