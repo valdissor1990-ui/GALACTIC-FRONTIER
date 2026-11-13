@@ -105,6 +105,20 @@ func _run_showcase() -> void:
 	camera_rig.chase_camera.rotation_degrees = original_chase_rotation
 	await get_tree().create_timer(0.25).timeout
 	await _capture_screenshot("gameplay-08.png")
+
+	# Capture the actual carrier maintenance UI as a separate visual QA frame.
+	# This is a presentation-only snapshot; pilot credits are restored immediately.
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile != null:
+		var original_credits := int(profile.call("get_credits"))
+		profile.set("credits", maxi(original_credits, 10000))
+		mission._build_docking_services()
+		await get_tree().create_timer(0.25).timeout
+		await _capture_screenshot("carrier-services.png")
+		if is_instance_valid(mission._service_layer):
+			mission._service_layer.queue_free()
+		profile.set("credits", original_credits)
+		profile.call("_save_profile")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
 
 
