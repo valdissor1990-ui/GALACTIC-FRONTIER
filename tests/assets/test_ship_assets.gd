@@ -71,11 +71,15 @@ func _validate_glb(path: String) -> void:
 		return
 	var valid_surfaces := 0
 	var uv_surfaces := 0
+	var triplanar_detail_surfaces := 0
 	for instance in meshes:
 		if instance.mesh == null:
 			continue
 		for surface in range(instance.mesh.get_surface_count()):
 			valid_surfaces += 1
+			var detailed_material := instance.get_surface_override_material(surface) as StandardMaterial3D
+			if detailed_material != null and detailed_material.detail_enabled and detailed_material.uv1_triplanar:
+				triplanar_detail_surfaces += 1
 			var arrays := instance.mesh.surface_get_arrays(surface)
 			if arrays.size() > Mesh.ARRAY_TEX_UV and arrays[Mesh.ARRAY_TEX_UV] is PackedVector2Array and not (arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).is_empty():
 				uv_surfaces += 1
@@ -87,9 +91,13 @@ func _validate_glb(path: String) -> void:
 		_fail(path, "runtime GLB has no UV surfaces for PBR micro-detail maps")
 		scene.free()
 		return
+	if triplanar_detail_surfaces == 0:
+		_fail(path, "runtime GLB has no triplanar PBR detail surfaces")
+		scene.free()
+		return
 
 	_passed += 1
-	print("  PASS  %s — %d mesh nodes, %d surfaces, %d UV surfaces, %d detailed materials" % [path.get_file(), meshes.size(), valid_surfaces, uv_surfaces, detailed_surfaces])
+	print("  PASS  %s — %d mesh nodes, %d surfaces, %d UV surfaces, %d detailed materials, %d triplanar" % [path.get_file(), meshes.size(), valid_surfaces, uv_surfaces, detailed_surfaces, triplanar_detail_surfaces])
 	scene.free()
 
 
