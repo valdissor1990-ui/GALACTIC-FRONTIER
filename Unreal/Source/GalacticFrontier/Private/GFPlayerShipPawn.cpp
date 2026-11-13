@@ -45,8 +45,9 @@ AGFPlayerShipPawn::AGFPlayerShipPawn()
 void AGFPlayerShipPawn::BeginPlay()
 {
     Super::BeginPlay();
-    ToggleCameraMode();
-    ToggleCameraMode(); // Ensure chase camera is active without changing initial mode.
+    bCockpitCameraActive = false;
+    if (ChaseCamera) ChaseCamera->SetActive(true);
+    if (CockpitCamera) CockpitCamera->SetActive(false);
     if (APlayerController* PC = Cast<APlayerController>(GetController()))
     {
         PC->bShowMouseCursor = false;
