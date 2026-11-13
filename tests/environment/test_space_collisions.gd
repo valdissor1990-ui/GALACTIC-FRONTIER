@@ -64,7 +64,11 @@ func _run() -> void:
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
-	_check(dust_field != null and dust_field.multimesh.instance_count == 2400, "2400 interplanetary dust flakes are populated in one batched MultiMesh")
+	var quality := root.get_node_or_null("GraphicsQuality")
+	var expected_dust_count := 2400
+	if quality != null:
+		expected_dust_count = maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
+	_check(dust_field != null and dust_field.multimesh.instance_count == expected_dust_count, "%d interplanetary dust flakes match the active quality preset" % expected_dust_count)
 	_check(dust_field != null and dust_field.multimesh.use_custom_data, "interplanetary dust uses per-instance spectral tint and shimmer data")
 	_check(dust_field != null and dust_field.multimesh.mesh.material is ShaderMaterial, "interplanetary dust uses one shared shader material rather than per-particle nodes")
 	var sky_camera := Camera3D.new()
