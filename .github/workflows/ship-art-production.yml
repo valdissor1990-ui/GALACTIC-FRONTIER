@@ -52,6 +52,11 @@ jobs:
         run: |
           PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_fleet_expansion.py -- --output-dir build/fleet
 
+      - name: Consolidate static ship meshes by material
+        run: |
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/optimize_fleet_meshes.py -- --input-dir build/fleet --output-dir build/fleet --report build/fleet/optimization.json
+          cat build/fleet/optimization.json
+
       - name: Validate all Blender files, GLBs and studio renders
         run: |
           PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/validate_fleet_assets.py -- --output-dir build/fleet --report build/fleet/validation.json
@@ -67,6 +72,7 @@ jobs:
             build/fleet/*.glb
             build/fleet/*_preview.png
             build/fleet/validation.json
+            build/fleet/optimization.json
           if-no-files-found: warn
           retention-days: 14
 
