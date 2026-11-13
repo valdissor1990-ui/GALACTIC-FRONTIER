@@ -840,16 +840,30 @@ void fragment() {
 	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
 	asteroid_mesh.material = asteroid_material
 
+	const RELAY_CLUSTER_COUNT := 28
+	var total_asteroid_count := asteroid_count + RELAY_CLUSTER_COUNT
 	var asteroid_multimesh := MultiMesh.new()
 	asteroid_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	asteroid_multimesh.use_custom_data = true
 	asteroid_multimesh.mesh = asteroid_mesh
-	asteroid_multimesh.instance_count = asteroid_count
+	asteroid_multimesh.instance_count = total_asteroid_count
 	var field := MultiMeshInstance3D.new()
 	field.name = "AsteroidField"
 	field.multimesh = asteroid_multimesh
-	for index in range(asteroid_count):
-		var position := _random_asteroid_position()
+	for index in range(total_asteroid_count):
+		var position: Vector3
+		if index < asteroid_count:
+			position = _random_asteroid_position()
+		else:
+			# A denser, navigable debris belt around the relay gives the player
+			# a memorable asteroid encounter instead of a few isolated rocks.
+			var cluster_angle := _rng.randf_range(0.0, TAU)
+			var cluster_radius := _rng.randf_range(260.0, 620.0)
+			position = Vector3(
+				cos(cluster_angle) * cluster_radius,
+				18.0 + sin(cluster_angle) * cluster_radius * 0.42,
+				-13500.0 + _rng.randf_range(-340.0, 340.0)
+			)
 		var size := _rng.randf_range(0.8, 3.8)
 		var rotation := Vector3(
 			_rng.randf_range(0.0, TAU),
@@ -1075,7 +1089,7 @@ func _build_comet_landmark() -> void:
 	nucleus_material.emission_energy_multiplier = 0.34
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
-	nucleus.scale = Vector3(14.0, 10.0, 12.0)
+	nucleus.scale = Vector3(20.0, 14.0, 18.0)
 	_comet_root.add_child(nucleus)
 
 	var coma := MeshInstance3D.new()
@@ -1100,16 +1114,16 @@ void fragment() {
 """
 	var coma_material := ShaderMaterial.new()
 	coma_material.shader = coma_shader
-	coma_material.set_shader_parameter("coma_tint", Color(0.38, 0.72, 1.0, 0.24))
+	coma_material.set_shader_parameter("coma_tint", Color(0.42, 0.76, 1.0, 0.34))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
-	coma.scale = Vector3(26.0, 20.0, 23.0)
+	coma.scale = Vector3(44.0, 34.0, 38.0)
 	_comet_root.add_child(coma)
 
 	var tail := MeshInstance3D.new()
 	tail.name = "CometIonTail"
 	var tail_mesh := QuadMesh.new()
-	tail_mesh.size = Vector2(62.0, 420.0)
+	tail_mesh.size = Vector2(100.0, 640.0)
 	var tail_shader := Shader.new()
 	tail_shader.code = """
 shader_type spatial;
@@ -1132,7 +1146,8 @@ void fragment() {
 	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
 	tail_mesh.material = tail_material
 	tail.mesh = tail_mesh
-	tail.position = Vector3(0.0, 205.0, 2.0)
+	tail.position = Vector3(0.0, 320.0, 2.0)
+	tail.rotation_degrees = Vector3(0.0, 0.0, 24.0)
 	_comet_root.add_child(tail)
 
 
