@@ -150,6 +150,16 @@ def cylinder_between(name, start, end, radius, material, vertices=24, radius_end
     return finish_mesh(obj, material, 0.025, True)
 
 
+
+def add_detail_uv(mesh, scale=4.0):
+    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            vertex = mesh.vertices[vertex_index]
+            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+
 def loft_fuselage(name, sections, material, sides=12):
     vertices = []
     faces = []
@@ -173,6 +183,7 @@ def loft_fuselage(name, sections, material, sides=12):
     faces.append(tuple(last + i for i in range(sides)))
     mesh = bpy.data.meshes.new(name + " mesh")
     mesh.from_pydata(vertices, [], faces)
+    add_detail_uv(mesh)
     mesh.materials.append(material)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
@@ -198,6 +209,7 @@ def extruded_wing(name, outline, z_bottom, z_top, material, bevel=0.10):
         faces.append((i, j, j + count, i + count))
     mesh = bpy.data.meshes.new(name + " mesh")
     mesh.from_pydata(vertices, [], faces)
+    add_detail_uv(mesh)
     mesh.materials.append(material)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
