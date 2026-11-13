@@ -1,5 +1,5 @@
 extends Node
-## Global graphics quality + dynamic 3D resolution.
+## Global graphics quality + FSR 1.0 scale + HDR glow/tonemap tables.
 ## Autoload: GraphicsQuality
 
 enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
@@ -7,7 +7,6 @@ enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
 signal quality_changed(preset: Preset)
 
 var current: Preset = Preset.MEDIUM
-## Extra multiplier from DynamicResolution (FPS adaptive). 1.0 = no change.
 var dynamic_scale_mul: float = 1.0
 
 const CONFIG_PATH := "user://graphics.cfg"
@@ -55,30 +54,45 @@ func get_preset_name() -> String:
 	return "Medium"
 
 
-# --- Resolution (Viewport.scaling_3d_scale) ---------------------------------
+# --- FSR 1.0 / 3D scale -----------------------------------------------------
+# AMD recommended user-facing points (Godot docs):
+#   Ultra Quality 0.77 | Quality 0.67 | Balanced 0.59 | Performance 0.50
+# FSR 1.0 is spatial only (no temporal history). Forward+ only.
+# Best with MSAA or TAA; we keep MSAA off by default for cost.
 
 func base_scale_3d() -> float:
-	# AMD FSR-style suggested points when < 1.0
 	match current:
 		Preset.LOW:
-			return 0.59
+			return 0.59 # Balanced
 		Preset.MEDIUM:
-			return 0.77
+			return 0.77 # Ultra Quality
 		Preset.HIGH:
-			return 1.0
+			return 1.0 # native (FSR idle)
 	return 0.77
 
 
 func scaling_3d_mode() -> int:
-	# Viewport.SCALING_3D_MODE_BILINEAR = 0, FSR = 1, FSR2 = 2
+	# 0=Bilinear, 1=FSR1, 2=FSR2
 	match current:
 		Preset.LOW:
-			return 0 # bilinear — cheapest
+			return 0 # bilinear cheaper than FSR on weak GPUs
 		Preset.MEDIUM:
-			return 1 # FSR 1.0
+			return 1
 		Preset.HIGH:
-			return 1 # FSR 1.0 at full res is no-op-ish; still fine
+			return 1 # at scale 1.0 upscale is disabled; mode kept for consistency
 	return 0
+
+
+func fsr_sharpness() -> float:
+	# Viewport.fsr_sharpness: 0 = sharpest, 2 = softest (Godot default ~0.2)
+	match current:
+		Preset.LOW:
+			return 0.35
+		Preset.MEDIUM:
+			return 0.2
+		Preset.HIGH:
+			return 0.15
+	return 0.2
 
 
 func effective_scale_3d() -> float:
@@ -96,9 +110,111 @@ func _apply_viewport_scale() -> void:
 		return
 	vp.scaling_3d_scale = effective_scale_3d()
 	vp.scaling_3d_mode = scaling_3d_mode() as Viewport.Scaling3DMode
+	if vp.has_method("set_fsr_sharpness") or "fsr_sharpness" in vp:
+		vp.fsr_sharpness = fsr_sharpness()
 
 
-# --- Visual feature tables -------------------------------------------------
+# --- HDR tonemap ------------------------------------------------------------
+
+func tonemap_exposure() -> float:
+	match current:
+		Preset.LOW:
+			return 0.92
+		Preset.MEDIUM:
+			return 0.95
+		Preset.HIGH:
+			return 1.0
+	return 0.95
+
+
+func tonemap_white() -> float:
+	# Higher white = more headroom before ACES clips bright engines
+	match current:
+		Preset.LOW:
+			return 5.5
+		Preset.MEDIUM:
+			return 6.5
+		Preset.HIGH:
+			return 8.0
+	return 6.5
+
+
+# --- HDR glow ---------------------------------------------------------------
+
+func glow_enabled() -> bool:
+	return true
+
+
+func glow_intensity() -> float:
+	match current:
+		Preset.LOW:
+			return 0.32
+		Preset.MEDIUM:
+			return 0.5
+		Preset.HIGH:
+			return 0.62
+	return 0.5
+
+
+func glow_bloom() -> float:
+	match current:
+		Preset.LOW:
+			return 0.12
+		Preset.MEDIUM:
+			return 0.22
+		Preset.HIGH:
+			return 0.32
+	return 0.22
+
+
+func glow_hdr_threshold() -> float:
+	# Pixels above this (relative to tonemap white) feed HDR glow
+	match current:
+		Preset.LOW:
+			return 1.0
+		Preset.MEDIUM:
+			return 0.85
+		Preset.HIGH:
+			return 0.72
+	return 0.85
+
+
+func glow_hdr_scale() -> float:
+	# Softens transition around threshold; higher = gentler bleed onset
+	match current:
+		Preset.LOW:
+			return 1.6
+		Preset.MEDIUM:
+			return 2.0
+		Preset.HIGH:
+			return 2.4
+	return 2.0
+
+
+func glow_hdr_luminance_cap() -> float:
+	# Clamp over-bright sources so one bolt does not white-out the frame
+	match current:
+		Preset.LOW:
+			return 8.0
+		Preset.MEDIUM:
+			return 12.0
+		Preset.HIGH:
+			return 16.0
+	return 12.0
+
+
+func glow_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.95
+		Preset.MEDIUM:
+			return 1.05
+		Preset.HIGH:
+			return 1.12
+	return 1.05
+
+
+# --- Other features ---------------------------------------------------------
 
 func shadow_enabled() -> bool:
 	return current != Preset.LOW
@@ -118,51 +234,13 @@ func shadow_max_distance() -> float:
 func shadow_splits() -> int:
 	match current:
 		Preset.HIGH:
-			return 1 # PARALLEL_2_SPLITS
+			return 1
 		_:
-			return 0 # one split
+			return 0
 
 
 func ssao_enabled() -> bool:
 	return current == Preset.HIGH
-
-
-func glow_enabled() -> bool:
-	return true
-
-
-func glow_intensity() -> float:
-	match current:
-		Preset.LOW:
-			return 0.32
-		Preset.MEDIUM:
-			return 0.5
-		Preset.HIGH:
-			return 0.62
-	return 0.5
-
-
-func glow_bloom() -> float:
-	# Soft threshold bloom — engines / bolts spill into HDR
-	match current:
-		Preset.LOW:
-			return 0.12
-		Preset.MEDIUM:
-			return 0.22
-		Preset.HIGH:
-			return 0.32
-	return 0.22
-
-
-func glow_hdr_threshold() -> float:
-	match current:
-		Preset.LOW:
-			return 1.0
-		Preset.MEDIUM:
-			return 0.85
-		Preset.HIGH:
-			return 0.7
-	return 0.85
 
 
 func screen_post_enabled() -> bool:
