@@ -14,13 +14,15 @@ permissions:
 
 concurrency:
   group: galactic-frontier-asset-build-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-assets:
     name: Sequential Blender production and validation
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 45
+    env:
+      GF_CI_FAST_PREVIEW: "1"
     steps:
       - name: Check out migration branch
         uses: actions/checkout@v4
@@ -49,7 +51,7 @@ jobs:
       - name: Build Player Fighter Mk.I
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/build_player_fighter.py \
             -- --output-dir build/unreal-assets
 
