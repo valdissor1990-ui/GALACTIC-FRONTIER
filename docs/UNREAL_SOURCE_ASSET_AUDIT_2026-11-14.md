@@ -6,14 +6,14 @@ Scope: static review of the Unreal migration branch `chatgpt/unreal-migration-ue
 
 - The Editor script imports GLBs from `assets/models/ships` and `assets/models/environment`.
 - It records imported object paths and lists StaticMesh assets per GLB.
-- It now also parses each source GLB JSON chunk before import and logs the scene node hierarchy, node-to-mesh references, local matrix/TRS, mesh primitive material names and source counts. This supplies a source-side inventory, but does not yet compose parent transforms or create Unreal assembly actors.
+- It now parses each source GLB JSON chunk before import, walks the selected scene hierarchy, composes each mesh node's world matrix from all parent transforms, records node-to-mesh references and primitive material names, and writes a JSON manifest under `Saved/GFAssetManifests`. A nested-rotation/translation self-check runs before the import workflow. Matrices remain in glTF source coordinates and units; they are deliberately not passed to Unreal components until coordinate/unit conversion is validated against actual Interchange imports.
 - It explicitly warns when a source GLB produces multiple StaticMesh assets; this is inventory/diagnostic behavior, not ship assembly.
 - It creates `/Game/GF/Maps/L_FlightTest`, lighting, a PlayerStart and a GFMissionDirector.
 - It attempts to assign an enemy mesh only when the imported-path token lookup yields exactly one StaticMesh.
 - It logs a Player Fighter candidate but does not assign that mesh to the player pawn.
-- It does not yet reconstruct the GLB scene hierarchy automatically, attach every mesh node with its source-relative transform, or validate materials, pivots, scale, axis and collision.
+- The manifest is not yet mapped to the exact StaticMesh assets produced by Interchange, and it does not yet populate `AGFShipAssemblyActor.Parts` automatically. Materials, pivots, scale, axis and collision still require Editor validation.
 - A reusable C++ `AGFShipAssemblyActor` has now been added. It accepts an explicit list of source-node mesh assets, composed root-relative transforms and optional material overrides, then builds one `UStaticMeshComponent` per part. Missing mesh references are logged rather than silently skipped.
-- This actor is an assembly primitive, not a completed asset pipeline: the Editor script does not yet populate its `Parts` array from the GLB manifest, and no actual imported GLB has been reconstructed or visually checked.
+- This actor is an assembly primitive, not a completed asset pipeline: the Editor script does not yet populate its `Parts` array from the manifest, and no actual imported GLB has been reconstructed or visually checked.
 
 ## P0 — Unreal compile and UHT gate remains open
 
