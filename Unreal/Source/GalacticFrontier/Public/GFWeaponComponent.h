@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "TimerManager.h"
 #include "GFWeaponComponent.generated.h"
 
 class AGFProjectile;
