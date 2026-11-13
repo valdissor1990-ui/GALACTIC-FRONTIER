@@ -24,8 +24,12 @@ func _run() -> void:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
 		var route_clear := true
-		for index in range(asteroid_field.multimesh.instance_count):
-			var asteroid_position := asteroid_field.multimesh.get_instance_transform(index).origin
+		var asteroid_proxy_count := 0
+		for obstacle in obstacles:
+			if not str(obstacle.name).begins_with("AsteroidCollision_"):
+				continue
+			asteroid_proxy_count += 1
+			var asteroid_position := (obstacle as Node3D).global_position
 			var route_distance := float(environment.call("_distance_to_route", asteroid_position))
 			if route_distance < 82.0 or route_distance > 760.0:
 				route_clear = false
@@ -33,6 +37,7 @@ func _run() -> void:
 				relay_sector_count += 1
 			elif asteroid_position.z <= -20000.0:
 				outer_sector_count += 1
+		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each batched asteroid has one matching collision proxy")
 		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
@@ -46,6 +51,7 @@ func _run() -> void:
 	await process_frame
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
+	print("WORLD_CAMERA_DEBUG camera=", sky_camera.global_position, " actual=", giant.global_position, " expected=", expected_giant_position)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
 	var rings := environment.get_node("NacreonRings") as MeshInstance3D
 	_check(is_equal_approx(rings.global_basis.x.length(), 100.0), "planetary rings retain their full visual scale while following the camera")
