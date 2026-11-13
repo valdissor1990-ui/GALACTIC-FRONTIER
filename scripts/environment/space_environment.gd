@@ -803,7 +803,10 @@ void fragment() {
 	fallback_giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
 	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
 	# banding and storm detail; keep the procedural shader as an offline fallback.
-	var gas_giant_texture := load("res://assets/textures/space/jupiter_2k.jpg") as Texture2D
+	var gas_giant_texture: Texture2D
+	var gas_giant_image := Image.load_from_file("res://assets/textures/space/jupiter_2k.jpg")
+	if gas_giant_image != null and not gas_giant_image.is_empty():
+		gas_giant_texture = ImageTexture.create_from_image(gas_giant_image)
 	if gas_giant_texture != null:
 		var textured_giant := StandardMaterial3D.new()
 		textured_giant.albedo_texture = gas_giant_texture
@@ -958,17 +961,30 @@ func _create_planet_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
-func _load_nasa_asteroid_mesh() -> Mesh:
-	var source := load("res://assets/models/environment/1999_rq36_asteroid.glb") as PackedScene
-	if source == null:
-		push_warning("NASA asteroid GLB could not be loaded; using procedural asteroid fallback")
+func _load_glb_mesh(source_path: String) -> Mesh:
+	if not FileAccess.file_exists(source_path):
+		push_warning("GLB asset is missing: %s" % source_path)
 		return null
-	var instance := source.instantiate()
+	var document := GLTFDocument.new()
+	var state := GLTFState.new()
+	var error := document.append_from_file(source_path, state)
+	if error != OK:
+		push_warning("GLB asset could not be parsed: %s (error %d)" % [source_path, error])
+		return null
+	var instance := document.generate_scene(state)
+	if instance == null:
+		push_warning("GLB asset generated an empty scene: %s" % source_path)
+		return null
 	var mesh := _find_first_mesh(instance)
 	instance.free()
 	if mesh == null:
-		push_warning("NASA asteroid GLB contains no MeshInstance3D; using procedural fallback")
-	return mesh
+		push_warning("GLB asset contains no MeshInstance3D: %s" % source_path)
+		return null
+	return mesh.duplicate(true) as Mesh
+
+
+func _load_nasa_asteroid_mesh() -> Mesh:
+	return _load_glb_mesh("res://assets/models/environment/1999_rq36_asteroid.glb")
 
 
 func _find_first_mesh(node: Node) -> Mesh:
@@ -1102,15 +1118,9 @@ void fragment() {
 func _build_asteroid_variants() -> void:
 	# A second silhouette from the CC0 Kenney kit breaks up repetition in the
 	# NASA asteroid field without adding hundreds of draw calls.
-	var packed_scene := load("res://assets/models/environment/kenney_meteor_detailed.glb") as PackedScene
-	if packed_scene == null:
-		push_warning("Optional Kenney meteor variant unavailable")
-		return
-	var instance := packed_scene.instantiate()
-	var meteor_mesh := _find_first_mesh(instance)
-	instance.free()
+	var meteor_mesh := _load_glb_mesh("res://assets/models/environment/kenney_meteor_detailed.glb")
 	if meteor_mesh == null:
-		push_warning("Kenney meteor model contains no MeshInstance3D")
+		push_warning("Optional Kenney meteor variant unavailable")
 		return
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
