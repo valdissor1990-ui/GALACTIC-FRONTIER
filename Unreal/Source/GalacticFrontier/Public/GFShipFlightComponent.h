@@ -52,10 +52,10 @@ protected:
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="1.0"))
-    float MaxSpeed = 95.0f;
+    float MaxSpeed = 9500.0f; // cm/s (95 m/s source-game tuning)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="0.0"))
-    float Acceleration = 34.0f;
+    float Acceleration = 3400.0f; // cm/s^2 (34 m/s^2 source-game tuning)
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="0.0"))
     float Drag = 0.85f;
