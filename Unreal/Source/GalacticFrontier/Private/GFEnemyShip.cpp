@@ -21,6 +21,9 @@ AGFEnemyShip::AGFEnemyShip()
     Weapon->ShotsPerSecond = 1.6f;
     Weapon->ProjectileSpeed = 16000.0f;
     Weapon->ProjectileDamage = 12.0f;
+    Damageable->MaximumHull = 85.0f;
+    Damageable->MaximumShield = 45.0f;
+    Damageable->ShieldRegenerationPerSecond = 7.0f;
 }
 
 void AGFEnemyShip::BeginPlay()
