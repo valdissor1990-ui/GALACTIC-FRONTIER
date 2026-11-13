@@ -11,6 +11,9 @@ var _system_id: String = "aurelia"
 var _theme: Dictionary = {}
 var _planet_visual: MeshInstance3D
 var _planet_atmosphere: MeshInstance3D
+var _companion_planet: MeshInstance3D
+var _companion_rings: MeshInstance3D
+var _companion_moon: MeshInstance3D
 
 
 func _ready() -> void:
@@ -20,10 +23,11 @@ func _ready() -> void:
 	_build_starfield()
 	_build_nebulae()
 	_build_planet()
+	_build_companion_worlds()
 	_build_asteroid_field()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_instance_valid(_starfield):
 		return
 	var camera := get_viewport().get_camera_3d()
@@ -50,6 +54,13 @@ func _process(_delta: float) -> void:
 		_planet_visual.global_position = planet_position
 	if is_instance_valid(_planet_atmosphere):
 		_planet_atmosphere.global_position = planet_position
+	if is_instance_valid(_companion_planet):
+		_companion_planet.global_position = camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
+		_companion_planet.rotate_y(delta * 0.003)
+	if is_instance_valid(_companion_rings):
+		_companion_rings.global_transform = camera.global_transform * Transform3D(Basis(Vector3.RIGHT, deg_to_rad(68.0)), Vector3(430.0, -92.0, -1320.0))
+	if is_instance_valid(_companion_moon):
+		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
 
 
 
@@ -290,6 +301,68 @@ func _build_planet() -> void:
 	add_child(atmosphere)
 
 
+
+
+func _build_companion_worlds() -> void:
+	# A second, ringed gas giant and its moon provide a strong distant landmark.
+	# They are camera-relative sky bodies, not nearby collision geometry.
+	var giant := MeshInstance3D.new()
+	giant.name = "NacreonGasGiant"
+	var giant_mesh := SphereMesh.new()
+	giant_mesh.radius = 1.0
+	giant_mesh.height = 2.0
+	giant_mesh.radial_segments = 96
+	giant_mesh.rings = 48
+	var giant_material := StandardMaterial3D.new()
+	giant_material.albedo_color = Color(0.48, 0.34, 0.24)
+	giant_material.roughness = 0.9
+	giant_material.metallic = 0.0
+	giant_material.emission_enabled = true
+	giant_material.emission = Color(0.08, 0.035, 0.018)
+	giant_material.emission_energy_multiplier = 0.12
+	giant_mesh.material = giant_material
+	giant.mesh = giant_mesh
+	giant.scale = Vector3.ONE * 82.0
+	_companion_planet = giant
+	add_child(giant)
+
+	var ring := MeshInstance3D.new()
+	ring.name = "NacreonRings"
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 1.24
+	ring_mesh.outer_radius = 1.86
+	ring_mesh.rings = 96
+	ring_mesh.ring_segments = 12
+	var ring_material := StandardMaterial3D.new()
+	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ring_material.albedo_color = Color(0.68, 0.54, 0.38, 0.58)
+	ring_material.emission_enabled = true
+	ring_material.emission = Color(0.12, 0.075, 0.035)
+	ring_material.emission_energy_multiplier = 0.18
+	ring_material.roughness = 0.88
+	ring_mesh.material = ring_material
+	ring.mesh = ring_mesh
+	ring.scale = Vector3.ONE * 100.0
+	_companion_rings = ring
+	add_child(ring)
+
+	var moon := MeshInstance3D.new()
+	moon.name = "NacreonMoon"
+	var moon_mesh := SphereMesh.new()
+	moon_mesh.radius = 1.0
+	moon_mesh.height = 2.0
+	moon_mesh.radial_segments = 32
+	moon_mesh.rings = 16
+	var moon_material := StandardMaterial3D.new()
+	moon_material.albedo_color = Color(0.34, 0.39, 0.46)
+	moon_material.roughness = 0.96
+	moon_mesh.material = moon_material
+	moon.mesh = moon_mesh
+	moon.scale = Vector3.ONE * 18.0
+	_companion_moon = moon
+	add_child(moon)
+
 func _create_planet_texture() -> Texture2D:
 	const WIDTH := 768
 	const HEIGHT := 384
@@ -389,16 +462,31 @@ void fragment() {
 
 
 func _random_asteroid_position() -> Vector3:
-	var position := Vector3.ZERO
-	for attempt in range(100):
-		position = Vector3(
-			_rng.randf_range(-155.0, 155.0),
-			_rng.randf_range(-88.0, 88.0),
-			_rng.randf_range(-250.0, 80.0)
-		)
-		if _distance_to_route(position) > 26.0:
-			return position
-	return Vector3(70.0, -88.0, -100.0)
+	var route_points: Array[Vector3] = [
+		Vector3(0.0, 0.0, 90.0),
+		Vector3(0.0, 18.0, -13500.0),
+		Vector3(520.0, -28.0, -33000.0),
+		Vector3(0.0, 0.0, 90.0)
+	]
+	for attempt in range(160):
+		var segment_index := _rng.randi_range(0, route_points.size() - 2)
+		var start := route_points[segment_index]
+		var end := route_points[segment_index + 1]
+		var forward := (end - start).normalized()
+		var center := start.lerp(end, _rng.randf_range(0.08, 0.92))
+		var reference_axis := Vector3.UP if absf(forward.dot(Vector3.UP)) < 0.92 else Vector3.RIGHT
+		var side := forward.cross(reference_axis).normalized()
+		var vertical := forward.cross(side).normalized()
+		var angle := _rng.randf_range(0.0, TAU)
+		var radius := _rng.randf_range(110.0, 720.0)
+		var offset := side * cos(angle) * radius + vertical * sin(angle) * radius
+		var candidate := center + offset + forward * _rng.randf_range(-90.0, 90.0)
+		# Keep the actual navigation corridor clear while populating the full
+		# 33 km flight route instead of leaving every asteroid at the carrier.
+		var route_distance := _distance_to_route(candidate)
+		if route_distance >= 82.0 and route_distance <= 760.0:
+			return candidate
+	return Vector3(220.0, 160.0, -16500.0)
 
 
 func _distance_to_route(point: Vector3) -> float:
