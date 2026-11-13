@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Dense open-space backdrop: sky, belts, ring, debris, gravity lens mass.
+## Dense open-space backdrop with procedural planet/rock materials.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -115,13 +115,11 @@ func _setup_sky_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.28
-
 	env.tonemap_mode = gq.tonemap_mode() if gq else Environment.TONE_MAP_MODE_ACES
 	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.94
 	env.tonemap_white = gq.tonemap_white() if gq else 7.5
 	if gq and gq.has_method("apply_tonemap_extras"):
 		gq.apply_tonemap_extras(env)
-
 	env.glow_enabled = true
 	if gq and gq.has_method("apply_glow_levels"):
 		gq.apply_glow_levels(env)
@@ -137,7 +135,6 @@ func _setup_sky_environment() -> void:
 	env.glow_hdr_scale = gq.glow_hdr_scale() if gq else 2.0
 	env.glow_hdr_luminance_cap = gq.glow_hdr_luminance_cap() if gq else 12.0
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-
 	env.adjustment_enabled = gq.adjustment_enabled() if gq else true
 	if env.adjustment_enabled:
 		env.adjustment_contrast = gq.adjustment_contrast() if gq else 1.04
@@ -147,7 +144,6 @@ func _setup_sky_environment() -> void:
 	if enable_ssao:
 		env.ssao_radius = 1.0
 		env.ssao_intensity = 1.2
-
 	_world_env.environment = env
 	add_child(_world_env)
 
@@ -168,7 +164,6 @@ func _setup_lights() -> void:
 		_key_light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 		_key_light.directional_shadow_max_distance = 280.0
 	add_child(_key_light)
-
 	var fill := DirectionalLight3D.new()
 	fill.name = "FillLight"
 	fill.rotation_degrees = Vector3(15, -120, 0)
@@ -184,14 +179,110 @@ func _setup_planets() -> void:
 	if gq:
 		segs = gq.planet_segments()
 	var giant_pos := Vector3(-90, 40, -260)
-	_add_planet("GasGiant", giant_pos, 48.0, Color(0.15, 0.28, 0.42), Color(0.05, 0.12, 0.2), 0.15, 0.85, segs)
+	_add_gas_giant("GasGiant", giant_pos, 48.0, segs)
 	_add_ice_ring("GasGiantRing", giant_pos, 58.0, 78.0, Color(0.55, 0.6, 0.72, 0.35))
-	_add_planet("RockyWorld", Vector3(120, -30, -200), 18.0, Color(0.35, 0.22, 0.16), Color(0.08, 0.05, 0.04), 0.05, 0.92, segs)
-	_add_planet("IceWorld", Vector3(-40, -55, -380), 12.0, Color(0.55, 0.62, 0.7), Color(0.12, 0.16, 0.22), 0.05, 0.55, maxi(segs - 8, 16))
+	_add_rocky_planet(
+		"RockyWorld", Vector3(120, -30, -200), 18.0, segs,
+		Color(0.18, 0.12, 0.09), Color(0.35, 0.24, 0.16), Color(0.55, 0.5, 0.45),
+		0.2, Color(0.4, 0.55, 0.85)
+	)
+	_add_rocky_planet(
+		"IceWorld", Vector3(-40, -55, -380), 12.0, maxi(segs - 8, 16),
+		Color(0.25, 0.3, 0.35), Color(0.45, 0.52, 0.58), Color(0.75, 0.82, 0.9),
+		0.7, Color(0.55, 0.7, 0.95)
+	)
+
+
+func _add_gas_giant(planet_name: String, pos: Vector3, radius: float, segments: int) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = planet_name
+	mi.position = pos
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = segments
+	mesh.rings = maxi(segments / 2, 8)
+	mi.mesh = mesh
+	var mat := ShaderMaterial.new()
+	var shader := load("res://assets/shaders/planet_gas.gdshader") as Shader
+	if shader:
+		mat.shader = shader
+		mat.set_shader_parameter("band_color_a", Color(0.12, 0.22, 0.38))
+		mat.set_shader_parameter("band_color_b", Color(0.22, 0.35, 0.48))
+		mat.set_shader_parameter("band_color_c", Color(0.4, 0.3, 0.2))
+		mat.set_shader_parameter("storm_color", Color(0.55, 0.32, 0.18))
+		mat.set_shader_parameter("band_scale", 11.0)
+		mat.set_shader_parameter("storm_amount", 0.4)
+	else:
+		var fallback := StandardMaterial3D.new()
+		fallback.albedo_color = Color(0.15, 0.28, 0.42)
+		mat = fallback
+	mi.set_surface_override_material(0, mat)
+	mi.visibility_range_end = 2500.0
+	add_child(mi)
+	_add_atmosphere(planet_name + "Atmo", pos, radius * 1.045, Color(0.35, 0.55, 1.0), 1.2, segments)
+
+
+func _add_rocky_planet(
+	planet_name: String, pos: Vector3, radius: float, segments: int,
+	low_c: Color, mid_c: Color, high_c: Color,
+	ice_caps: float, atmo_color: Color
+) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = planet_name
+	mi.position = pos
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = segments
+	mesh.rings = maxi(segments / 2, 8)
+	mi.mesh = mesh
+	var mat := ShaderMaterial.new()
+	var shader := load("res://assets/shaders/planet_rocky.gdshader") as Shader
+	if shader:
+		mat.shader = shader
+		mat.set_shader_parameter("low_color", low_c)
+		mat.set_shader_parameter("mid_color", mid_c)
+		mat.set_shader_parameter("high_color", high_c)
+		mat.set_shader_parameter("ice_caps", ice_caps)
+	else:
+		var fallback := StandardMaterial3D.new()
+		fallback.albedo_color = mid_c
+		mat = fallback
+	mi.set_surface_override_material(0, mat)
+	mi.visibility_range_end = 2500.0
+	add_child(mi)
+	_add_atmosphere(planet_name + "Atmo", pos, radius * 1.06, atmo_color, 0.9, segments)
+
+
+func _add_atmosphere(
+	atmo_name: String, pos: Vector3, radius: float,
+	color: Color, intensity: float, segments: int
+) -> void:
+	var mi := MeshInstance3D.new()
+	mi.name = atmo_name
+	mi.position = pos
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = maxi(segments / 2, 16)
+	mesh.rings = maxi(segments / 4, 8)
+	mi.mesh = mesh
+	var mat := ShaderMaterial.new()
+	var shader := load("res://assets/shaders/planet_atmosphere.gdshader") as Shader
+	if shader == null:
+		return
+	mat.shader = shader
+	mat.set_shader_parameter("atmosphere_color", color)
+	mat.set_shader_parameter("intensity", intensity)
+	mat.set_shader_parameter("falloff", 3.6)
+	mat.set_shader_parameter("density", 0.9)
+	mi.set_surface_override_material(0, mat)
+	mi.visibility_range_end = 2500.0
+	add_child(mi)
 
 
 func _setup_lens_mass() -> void:
-	# Compact anomaly off the gas-giant limb — fly toward (-55, 25, -200) to see lensing
 	var script := load("res://scripts/environment/gravity_lens_mass.gd") as Script
 	if script == null:
 		return
@@ -204,32 +295,6 @@ func _setup_lens_mass() -> void:
 	if "lens_radius" in mass:
 		mass.set("lens_radius", 0.24)
 	add_child(mass)
-
-
-func _add_planet(
-	planet_name: String, pos: Vector3, radius: float,
-	albedo: Color, emission: Color, metallic: float, roughness: float,
-	segments: int = 40
-) -> void:
-	var mi := MeshInstance3D.new()
-	mi.name = planet_name
-	mi.position = pos
-	var mesh := SphereMesh.new()
-	mesh.radius = radius
-	mesh.height = radius * 2.0
-	mesh.radial_segments = segments
-	mesh.rings = maxi(segments / 2, 8)
-	mi.mesh = mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = albedo
-	mat.metallic = metallic
-	mat.roughness = roughness
-	mat.emission_enabled = true
-	mat.emission = emission
-	mat.emission_energy_multiplier = 0.4
-	mi.set_surface_override_material(0, mat)
-	mi.visibility_range_end = 2500.0
-	add_child(mi)
 
 
 func _add_ice_ring(ring_name: String, center: Vector3, inner_r: float, outer_r: float, color: Color) -> void:
@@ -282,10 +347,19 @@ func _spawn_rock_field(
 	rock.radial_segments = 7
 	rock.rings = 4
 	mm.mesh = rock
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = albedo
-	mat.roughness = 0.95
-	mat.metallic = 0.08
+	var mat := ShaderMaterial.new()
+	var shader := load("res://assets/shaders/rock_surface.gdshader") as Shader
+	if shader:
+		mat.shader = shader
+		mat.set_shader_parameter("base_color", albedo)
+		mat.set_shader_parameter("dark_color", albedo.darkened(0.45))
+		mat.set_shader_parameter("highlight_color", albedo.lightened(0.25))
+		mat.set_shader_parameter("noise_scale", 6.5)
+	else:
+		var fallback := StandardMaterial3D.new()
+		fallback.albedo_color = albedo
+		fallback.roughness = 0.95
+		mat = fallback
 	rock.material = mat
 	for i in count:
 		var angle := _rng.randf() * TAU
