@@ -24,6 +24,7 @@ on:
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
       - chatgpt/grok-completion-full-2026-11
+      - chatgpt/fractal-noise-planet-nebula-pass
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -37,6 +38,7 @@ on:
       - chatgpt/m01-m05-story-integration
       - chatgpt/campaign-story-integration
       - chatgpt/space-visual-art-pass
+      - chatgpt/grok-completion-full-2026-11
   workflow_dispatch:
 
 permissions:
