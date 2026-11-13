@@ -320,19 +320,18 @@ func _build_companion_worlds() -> void:
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
-void fragment() {
-	uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
-	uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
-	uniform vec4 band_highlight = vec4(0.76, 0.62, 0.46, 1.0);
+uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
+uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
+uniform vec4 band_highlight = vec4(0.76, 0.62, 0.46, 1.0);
 
-	void fragment() {
-		float latitude = UV.y;
-		float warp = sin(UV.x * 18.0 + sin(latitude * 21.0) * 1.8) * 0.012;
-		float broad_bands = sin((latitude + warp) * 92.0);
-		float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
-		float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands);
-		vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
-		ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
+void fragment() {
+	float latitude = UV.y;
+	float warp = sin(UV.x * 18.0 + sin(latitude * 21.0) * 1.8) * 0.012;
+	float broad_bands = sin((latitude + warp) * 92.0);
+	float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
+	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands);
+	vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
+	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
 	ROUGHNESS = 0.91;
 	METALLIC = 0.0;
 }
