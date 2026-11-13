@@ -53,36 +53,44 @@ func complete_objective(objective_id: String, choice_id: String = "") -> Diction
 			break
 	if objective.is_empty():
 		return _failure("Objective does not belong to active mission: %s" % objective_id)
+
 	var required_count := maxi(1, int(objective.get("count", 1)))
-	var current_progress := int(objective_progress.get(objective_id, 0)) if required_count > 1 else (1 if bool(objective_progress.get(objective_id, false)) else 0)
+	var previous_value: Variant = objective_progress.get(objective_id, 0 if required_count > 1 else false)
+	var current_progress := int(previous_value) if required_count > 1 else (1 if bool(previous_value) else 0)
 	if current_progress >= required_count:
 		return {"ok": true, "duplicate": true, "mission_completed": false, "progress": current_progress, "required": required_count}
+
 	if str(objective.get("type", "")) == "choice":
 		var choices: Dictionary = definition.get("choices", {})
 		if choice_id.is_empty() or not choices.has(choice_id):
 			return _failure("A valid choice_id is required for this objective.")
+
 	current_progress += 1
 	objective_progress[objective_id] = current_progress if required_count > 1 else true
 	if str(objective.get("type", "")) == "choice":
 		objective_progress[objective_id + "::choice"] = choice_id
 	var objective_done := current_progress >= required_count
-	objective_progress_changed.emit(mission_id, objective_id, current_progress, required_count)
-	if objective_done:
-		objective_completed.emit(mission_id, objective_id)
 	var mission_done := objective_done and _all_required_objectives_complete(definition)
+
 	if mission_done:
 		var selected_choice := ""
 		for candidate in definition.get("objectives", []):
 			if str(candidate.get("type", "")) == "choice":
 				selected_choice = str(objective_progress.get(str(candidate.get("id", "")) + "::choice", ""))
 				break
-		MissionCatalog.apply_completion(mission_id, story_state, selected_choice)
+		if not MissionCatalog.apply_completion(mission_id, story_state, selected_choice):
+			objective_progress[objective_id] = previous_value
+			return _failure("Mission completion was rejected by the campaign state.")
+
+	if mission_done:
 		objective_progress.clear()
 		mission_completed.emit(mission_id)
+	objective_progress_changed.emit(mission_id, objective_id, current_progress, required_count)
+	if objective_done:
+		objective_completed.emit(mission_id, objective_id)
 	_persist()
 	campaign_state_changed.emit()
 	return {"ok": true, "mission_completed": mission_done, "objective_completed": objective_done, "progress": current_progress, "required": required_count, "mission_id": mission_id, "objective_id": objective_id}
-
 
 
 ## Translate world/gameplay events into catalog objective progress.
@@ -110,6 +118,7 @@ func report_gameplay_event(event_type: String, target_id: String = "", amount: i
 	}
 	if not accepted_types.has(normalized_event):
 		return _failure("Unsupported gameplay event: %s" % normalized_event)
+
 	var definition := MissionCatalog.get_mission(story_state.active_mission_id)
 	var matched: Array[String] = []
 	var results: Array[Dictionary] = []
@@ -121,18 +130,32 @@ func report_gameplay_event(event_type: String, target_id: String = "", amount: i
 		var expected_target := str(objective.get("target", ""))
 		if not expected_target.is_empty() and expected_target != target_id:
 			continue
+		if _is_objective_complete(objective_id, objective):
+			continue
+
+		# One world event advances one matching objective. This prevents a single
+		# generic "talk" or "scan" event from satisfying multiple story beats.
 		matched.append(objective_id)
 		for event_index in range(amount):
 			var result := complete_objective(objective_id, choice_id)
 			results.append(result)
 			if not result.get("ok", false) or result.get("objective_completed", false):
 				break
+		break
+
 	return {
 		"ok": true,
 		"matched_objectives": matched,
 		"results": results,
 		"mission_completed": story_state.active_mission_id.is_empty(),
 	}
+
+
+func _is_objective_complete(objective_id: String, objective: Dictionary) -> bool:
+	var required_count := maxi(1, int(objective.get("count", 1)))
+	var value: Variant = objective_progress.get(objective_id, 0 if required_count > 1 else false)
+	var progress := int(value) if required_count > 1 else (1 if bool(value) else 0)
+	return progress >= required_count
 
 
 func get_objectives() -> Array[Dictionary]:
