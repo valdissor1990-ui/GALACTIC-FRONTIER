@@ -2,6 +2,7 @@
 #include "GFPlayerShipPawn.h"
 #include "GFSpaceHUD.h"
 #include "GFMissionDirector.h"
+#include "EngineUtils.h"
 
 AGFGameModeBase::AGFGameModeBase()
 {
@@ -19,7 +20,6 @@ void AGFGameModeBase::BeginPlay()
         return;
     }
 
-    // Avoid double-spawn if level already placed a director.
     for (TActorIterator<AGFMissionDirector> It(GetWorld()); It; ++It)
     {
         return;
