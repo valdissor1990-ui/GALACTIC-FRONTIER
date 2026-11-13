@@ -39,6 +39,7 @@
 - [Реестр сторонних компонентов и лицензий](docs/THIRD_PARTY_NOTICES.md)
 - [Система локальных сохранений и профиля](docs/SAVE_SYSTEM.md)
 - [Направление корабельной графики](docs/SHIP_ART_DIRECTION.md)
+- [Отчёт о производстве семи кораблей в Blender](docs/ASSET_PRODUCTION_REPORT.md)
 
 ## Неизменяемые правила
 
