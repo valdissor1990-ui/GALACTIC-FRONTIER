@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/flight/test_flight.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/demo/gameplay_showcase_director.gd" id="2"]
+
+[node name="GameplayShowcase" type="Node3D"]
+script = ExtResource("2")
+
+[node name="Flight" parent="." instance=ExtResource("1")]
