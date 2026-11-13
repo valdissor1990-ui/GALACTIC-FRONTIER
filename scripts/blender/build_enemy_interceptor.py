@@ -20,16 +20,29 @@ def ensure_glb_file_image(image):
     os.makedirs(temp_dir, exist_ok=True)
     safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
     image_path = os.path.join(temp_dir, safe_name + ".png")
-    image.filepath_raw = image_path
-    image.file_format = "PNG"
-    image.save()
+    original_path = image.filepath_raw
+    try:
+        image.filepath_raw = image_path
+        image.file_format = "PNG"
+        image.save()
+    finally:
+        image.filepath_raw = original_path
     if not os.path.isfile(image_path) or os.path.getsize(image_path) < 128:
         raise RuntimeError("GLB texture staging failed: " + image_path)
+
+    # Restore the generated image's original path before loading. Otherwise
+    # Blender may resolve the same datablock by filepath instead of creating a
+    # file-backed image source for the glTF exporter.
     file_image = bpy.data.images.load(image_path, check_existing=False)
+    if file_image.source != "FILE":
+        raise RuntimeError("GLB texture did not reload as FILE: %s (%s)" %
+                           (export_name, file_image.source))
+    if not file_image.has_data:
+        file_image.reload()
+    if not file_image.has_data:
+        raise RuntimeError("GLB texture reload has no pixel data: " + export_name)
     file_image.name = export_name
     file_image.colorspace_settings.name = image.colorspace_settings.name
-    if file_image.source != "FILE" or not file_image.has_data:
-        raise RuntimeError("GLB texture is not file-backed: " + export_name)
     file_image.pack()
     print("GF_GLTF_IMAGE_READY", export_name, file_image.source,
           tuple(file_image.size), os.path.getsize(image_path))
