@@ -8,22 +8,30 @@ const FLYABLE_SHIPS := {
 	"player_fighter": {
 		"path": "res://assets/models/ships/player_fighter.glb",
 		"scale": 0.30,
-		"price": 0
+		"price": 0,
+		"flight_config": "res://resources/ships/player_ship.tres",
+		"stats": {"hull": 100.0, "shield": 60.0, "shield_regen": 8.0, "shots_per_second": 3.0, "projectile_speed": 180.0, "projectile_damage": 18.0}
 	},
 	"raider_interceptor": {
 		"path": "res://assets/models/ships/enemy_fighter.glb",
 		"scale": 0.30,
-		"price": 2500
+		"price": 2500,
+		"flight_config": "res://resources/ships/raider_interceptor.tres",
+		"stats": {"hull": 85.0, "shield": 45.0, "shield_regen": 7.0, "shots_per_second": 3.8, "projectile_speed": 210.0, "projectile_damage": 16.0}
 	},
 	"aegis_heavy_fighter": {
 		"path": "res://assets/models/ships/heavy_fighter.glb",
 		"scale": 0.28,
-		"price": 5000
+		"price": 5000,
+		"flight_config": "res://resources/ships/aegis_heavy_fighter.tres",
+		"stats": {"hull": 165.0, "shield": 125.0, "shield_regen": 9.0, "shots_per_second": 2.8, "projectile_speed": 170.0, "projectile_damage": 25.0}
 	},
 	"bastion_bomber": {
 		"path": "res://assets/models/ships/bomber.glb",
 		"scale": 0.26,
-		"price": 7500
+		"price": 7500,
+		"flight_config": "res://resources/ships/bastion_bomber.tres",
+		"stats": {"hull": 200.0, "shield": 85.0, "shield_regen": 5.0, "shots_per_second": 1.8, "projectile_speed": 160.0, "projectile_damage": 42.0}
 	}
 }
 
@@ -135,6 +143,17 @@ func get_selected_ship_model_path() -> String:
 
 func get_selected_ship_scale() -> float:
 	return float(FLYABLE_SHIPS[selected_ship_id].scale)
+
+
+func get_selected_ship_flight_config_path() -> String:
+	return str(FLYABLE_SHIPS[selected_ship_id].flight_config)
+
+
+func get_selected_ship_stats() -> Dictionary:
+	var stats: Variant = FLYABLE_SHIPS[selected_ship_id].get("stats", {})
+	if stats is Dictionary:
+		return stats.duplicate(true)
+	return {}
 
 
 func _save_profile() -> bool:

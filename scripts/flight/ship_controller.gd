@@ -18,6 +18,7 @@ var _is_destroyed: bool = false
 
 
 func _ready() -> void:
+	_apply_profile_configuration()
 	if flight_config == null:
 		push_error("ShipFlightConfig is not assigned to PlayerShip.")
 		return
@@ -27,6 +28,37 @@ func _ready() -> void:
 	if damageable != null:
 		damageable.destroyed.connect(_on_destroyed, CONNECT_ONE_SHOT)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _apply_profile_configuration() -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		return
+
+	var config_path := str(profile.call("get_selected_ship_flight_config_path"))
+	if not config_path.is_empty():
+		var selected_config := load(config_path) as ShipFlightConfig
+		if selected_config != null:
+			flight_config = selected_config
+		else:
+			push_error("Selected ship flight config could not be loaded: " + config_path)
+
+	var ship_stats: Dictionary = profile.call("get_selected_ship_stats")
+	var damageable := get_node_or_null("Damageable") as Damageable
+	if damageable != null and not ship_stats.is_empty():
+		damageable.max_hull = float(ship_stats.get("hull", damageable.max_hull))
+		damageable.max_shield = float(ship_stats.get("shield", damageable.max_shield))
+		damageable.shield_regen_per_second = float(ship_stats.get("shield_regen", damageable.shield_regen_per_second))
+		damageable.current_hull = damageable.max_hull
+		damageable.current_shield = damageable.max_shield
+		damageable.hull_changed.emit(damageable.current_hull, damageable.max_hull)
+		damageable.shield_changed.emit(damageable.current_shield, damageable.max_shield)
+
+	var weapon := get_node_or_null("WeaponSystem") as WeaponSystem
+	if weapon != null and not ship_stats.is_empty():
+		weapon.shots_per_second = float(ship_stats.get("shots_per_second", weapon.shots_per_second))
+		weapon.projectile_speed = float(ship_stats.get("projectile_speed", weapon.projectile_speed))
+		weapon.projectile_damage = float(ship_stats.get("projectile_damage", weapon.projectile_damage))
 
 
 func _notification(what: int) -> void:
