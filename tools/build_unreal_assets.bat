@@ -35,7 +35,6 @@ if not defined BLENDER_EXE (
 if not defined UE_EDITOR_EXE (
   for %%I in (
     "%ProgramFiles%\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe"
-    "%ProgramFiles%\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe"
   ) do if exist "%%~I" set "UE_EDITOR_EXE=%%~I"
 )
 if not defined UE_EDITOR_EXE (
