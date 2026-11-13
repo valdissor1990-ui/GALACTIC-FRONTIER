@@ -35,6 +35,11 @@ void UGFShipFlightComponent::SetBoostRequested(const bool bRequested)
     bBoostRequested = bRequested;
 }
 
+void UGFShipFlightComponent::SetBrakeRequested(const bool bRequested)
+{
+    bBrakeRequested = bRequested;
+}
+
 void UGFShipFlightComponent::SetFlightDisabled(const bool bDisabled)
 {
     bFlightDisabled = bDisabled;
@@ -46,6 +51,7 @@ void UGFShipFlightComponent::SetFlightDisabled(const bool bDisabled)
         PendingMouseDelta = FVector2D::ZeroVector;
         Velocity = FVector::ZeroVector;
         bBoostRequested = false;
+        bBrakeRequested = false;
     }
 }
 
@@ -81,7 +87,7 @@ void UGFShipFlightComponent::TickComponent(
     }
     else
     {
-        const float EffectiveDrag = bBoostRequested && !bBoosting ? BrakeDrag : Drag;
+        const float EffectiveDrag = bBrakeRequested ? BrakeDrag : Drag;
         Velocity *= FMath::Exp(-EffectiveDrag * DeltaTime);
     }
 
