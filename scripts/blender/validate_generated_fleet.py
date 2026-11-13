@@ -146,6 +146,9 @@ def validate_one(slug, output_dir):
     try:
         result["blend"] = inspect_blend(paths["blend"])
         result["glb"] = inspect_glb(paths["glb"])
+        if result["glb"]["mesh_definitions"] != 1 or result["glb"]["mesh_nodes"] != 1:
+            raise ValueError("Unreal-ready ship GLB must contain exactly one complete StaticMesh; got %s definitions / %s nodes" %
+                             (result["glb"]["mesh_definitions"], result["glb"]["mesh_nodes"]))
         result["preview_bytes"] = os.path.getsize(paths["preview"])
     except Exception as error:
         result["errors"].append(type(error).__name__ + ": " + str(error))
