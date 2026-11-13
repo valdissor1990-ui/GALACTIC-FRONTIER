@@ -100,7 +100,7 @@ func _process(delta: float) -> void:
 		_companion_planet.rotate_y(delta * 0.003)
 	if is_instance_valid(_companion_rings):
 		var ring_position := camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
-		var ring_basis := camera.global_basis * Basis(Vector3.RIGHT, deg_to_rad(68.0))
+		var ring_basis := camera.global_basis * Basis(Vector3.RIGHT, deg_to_rad(32.0))
 		_companion_rings.global_transform = Transform3D(ring_basis.scaled(Vector3.ONE * 100.0), ring_position)
 	if is_instance_valid(_companion_moon):
 		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
@@ -1075,7 +1075,7 @@ func _build_comet_landmark() -> void:
 	nucleus_material.emission_energy_multiplier = 0.34
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
-	nucleus.scale = Vector3(8.0, 6.0, 7.0)
+	nucleus.scale = Vector3(14.0, 10.0, 12.0)
 	_comet_root.add_child(nucleus)
 
 	var coma := MeshInstance3D.new()
@@ -1103,13 +1103,13 @@ void fragment() {
 	coma_material.set_shader_parameter("coma_tint", Color(0.38, 0.72, 1.0, 0.24))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
-	coma.scale = Vector3(14.0, 11.0, 12.0)
+	coma.scale = Vector3(26.0, 20.0, 23.0)
 	_comet_root.add_child(coma)
 
 	var tail := MeshInstance3D.new()
 	tail.name = "CometIonTail"
 	var tail_mesh := QuadMesh.new()
-	tail_mesh.size = Vector2(42.0, 220.0)
+	tail_mesh.size = Vector2(62.0, 420.0)
 	var tail_shader := Shader.new()
 	tail_shader.code = """
 shader_type spatial;
@@ -1132,7 +1132,7 @@ void fragment() {
 	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
 	tail_mesh.material = tail_material
 	tail.mesh = tail_mesh
-	tail.position = Vector3(0.0, 105.0, 2.0)
+	tail.position = Vector3(0.0, 205.0, 2.0)
 	_comet_root.add_child(tail)
 
 
