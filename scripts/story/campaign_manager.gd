@@ -3,6 +3,7 @@ class_name CampaignManager
 ## Runtime bridge between gameplay events, M01-M05 objectives and persistent story state.
 
 signal mission_started(mission_id: String)
+signal objective_progress_changed(mission_id: String, objective_id: String, progress: int, required: int)
 signal objective_completed(mission_id: String, objective_id: String)
 signal mission_completed(mission_id: String)
 signal campaign_state_changed
@@ -65,6 +66,7 @@ func complete_objective(objective_id: String, choice_id: String = "") -> Diction
 	if str(objective.get("type", "")) == "choice":
 		objective_progress[objective_id + "::choice"] = choice_id
 	var objective_done := current_progress >= required_count
+	objective_progress_changed.emit(mission_id, objective_id, current_progress, required_count)
 	if objective_done:
 		objective_completed.emit(mission_id, objective_id)
 	var mission_done := objective_done and _all_required_objectives_complete(definition)
@@ -80,6 +82,56 @@ func complete_objective(objective_id: String, choice_id: String = "") -> Diction
 	_persist()
 	campaign_state_changed.emit()
 	return {"ok": true, "mission_completed": mission_done, "objective_completed": objective_done, "progress": current_progress, "required": required_count, "mission_id": mission_id, "objective_id": objective_id}
+
+
+
+## Translate world/gameplay events into catalog objective progress.
+## Supported events: talk, undock, reach_target, scan, dock, destroy,
+## deliver, protect, survive, timer_elapsed.
+func report_gameplay_event(event_type: String, target_id: String = "", amount: int = 1, choice_id: String = "") -> Dictionary:
+	if story_state.active_mission_id.is_empty():
+		return _failure("There is no active mission.")
+	if amount <= 0:
+		return _failure("Event amount must be greater than zero.")
+	var normalized_event := event_type.strip_edges().to_lower()
+	var accepted_types: Dictionary = {
+		"talk": ["talk"],
+		"undock": ["undock"],
+		"reach_target": ["goto"],
+		"goto": ["goto"],
+		"scan": ["scan"],
+		"dock": ["dock"],
+		"destroy": ["destroy", "survive_or_destroy"],
+		"deliver": ["deliver"],
+		"protect": ["protect"],
+		"survive": ["survive", "survive_or_destroy"],
+		"timer_elapsed": ["survive_timer", "survive_or_destroy"],
+	}
+	if not accepted_types.has(normalized_event):
+		return _failure("Unsupported gameplay event: %s" % normalized_event)
+	var definition := MissionCatalog.get_mission(story_state.active_mission_id)
+	var matched: Array[String] = []
+	var results: Array[Dictionary] = []
+	for objective in definition.get("objectives", []):
+		var objective_id := str(objective.get("id", ""))
+		var objective_type := str(objective.get("type", ""))
+		if objective_type not in accepted_types[normalized_event]:
+			continue
+		var expected_target := str(objective.get("target", ""))
+		if not expected_target.is_empty() and expected_target != target_id:
+			continue
+		matched.append(objective_id)
+		for event_index in range(amount):
+			var result := complete_objective(objective_id, choice_id)
+			results.append(result)
+			if not result.get("ok", false) or result.get("objective_completed", false):
+				break
+	return {
+		"ok": true,
+		"matched_objectives": matched,
+		"results": results,
+		"mission_completed": story_state.active_mission_id.is_empty(),
+	}
 
 
 func get_objectives() -> Array[Dictionary]:
