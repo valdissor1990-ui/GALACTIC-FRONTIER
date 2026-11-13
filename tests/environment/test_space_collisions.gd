@@ -48,10 +48,10 @@ func _run() -> void:
 	sky_camera.position = Vector3(120.0, 34.0, -240.0)
 	sky_camera.current = true
 	root.add_child(sky_camera)
+	sky_camera.make_current()
 	await process_frame
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
-	print("WORLD_CAMERA_DEBUG camera=", sky_camera.global_position, " actual=", giant.global_position, " expected=", expected_giant_position)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
 	var rings := environment.get_node("NacreonRings") as MeshInstance3D
 	_check(is_equal_approx(rings.global_basis.x.length(), 100.0), "planetary rings retain their full visual scale while following the camera")
