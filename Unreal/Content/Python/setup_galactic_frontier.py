@@ -46,16 +46,14 @@ def import_existing_fleet():
     return imported
 
 
-def find_player_static_mesh(imported_paths):
+def find_static_mesh(imported_paths, token):
     candidates = []
     for object_path in imported_paths:
         asset = unreal.EditorAssetLibrary.load_asset(object_path)
         if isinstance(asset, unreal.StaticMesh):
             candidates.append((object_path.lower(), asset))
-    preferred = [item for item in candidates if "player_fighter" in item[0]]
-    if preferred:
-        return preferred[0][1]
-    return candidates[0][1] if candidates else None
+    preferred = [item for item in candidates if token in item[0]]
+    return preferred[0][1] if preferred else None
 
 
 def spawn_lighting():
@@ -79,18 +77,13 @@ def spawn_lighting():
             component.recapture_sky()
 
 
-def create_flight_test_level(player_mesh):
+def create_flight_test_level(player_mesh, imported):
     level_path = "/Game/GF/Maps/L_FlightTest"
     if not unreal.EditorLevelLibrary.new_level(level_path):
         log("Could not create level " + level_path)
         return False
 
     spawn_lighting()
-    player_start = unreal.EditorLevelLibrary.spawn_actor_from_class(
-        unreal.PlayerStart, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
-    if player_start:
-        player_start.set_actor_label("GF_PlayerStart")
-
     pawn_class = unreal.load_class(None, "/Script/GalacticFrontier.GFPlayerShipPawn")
     if not pawn_class:
         unreal.log_error("[GF Setup] C++ class GFPlayerShipPawn not found. Compile the project and rerun.")
@@ -102,12 +95,27 @@ def create_flight_test_level(player_mesh):
         log("Failed to spawn GFPlayerShipPawn")
         return False
     pawn.set_actor_label("Player Fighter Mk.I")
+    pawn.set_editor_property("auto_possess_player", unreal.AutoPossessPlayer.PLAYER_0)
     mesh_component = pawn.get_component_by_class(unreal.StaticMeshComponent)
     if mesh_component and player_mesh:
         mesh_component.set_static_mesh(player_mesh)
         mesh_component.set_collision_profile_name("BlockAll")
     elif not player_mesh:
         unreal.log_warning("[GF Setup] Player Fighter mesh was not found; pawn will be a placeholder.")
+
+    enemy_class = unreal.load_class(None, "/Script/GalacticFrontier.GFEnemyShip")
+    enemy_mesh = find_static_mesh(imported, "enemy_fighter")
+    if enemy_class:
+        enemy = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            enemy_class, unreal.Vector(6500, 0, 0), unreal.Rotator(0, 180, 0))
+        if enemy:
+            enemy.set_actor_label("First hostile fighter")
+            enemy_component = enemy.get_component_by_class(unreal.StaticMeshComponent)
+            if enemy_component and enemy_mesh:
+                enemy_component.set_static_mesh(enemy_mesh)
+                enemy_component.set_collision_profile_name("BlockAll")
+            if hasattr(enemy, "set_combat_target"):
+                enemy.set_combat_target(pawn)
     unreal.EditorLevelLibrary.save_current_level()
     unreal.EditorAssetLibrary.save_directory("/Game/GF", only_if_is_dirty=False, recursive=True)
     log("Created " + level_path)
@@ -119,8 +127,8 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
     imported = import_existing_fleet()
-    player_mesh = find_player_static_mesh(imported)
-    create_flight_test_level(player_mesh)
+    player_mesh = find_static_mesh(imported, "player_fighter")
+    create_flight_test_level(player_mesh, imported)
     log("Setup finished. Inspect the imported GLB materials and verify scale/orientation before visual acceptance.")
 
 
