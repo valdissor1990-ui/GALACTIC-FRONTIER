@@ -53,6 +53,9 @@ public:
     float InteractionRange = 9500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
+    float ScanDurationSeconds = 3.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
     int32 WavesPerEncounter = 3;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
@@ -91,6 +94,7 @@ private:
     int32 WaveIndex = 0;
     int32 EnemiesRemaining = 0;
     float NextWaveDelay = -1.0f;
+    float ScanProgressSeconds = 0.0f;
 
     void BindMissionInput();
     void HandleInteract();
