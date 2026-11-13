@@ -95,6 +95,7 @@ Implemented in C++ source (not yet compiled in the Unreal toolchain):
 - Enemy fighter approach/strafe/retreat AI, vertical evasion, predictive lead targeting and firing behavior.
 - Ported catalogs for four flyable ships, five upgrade modules and three contracts; local profile supports ship purchase/selection, module purchase, contract unlock/selection and story flag persistence. Selected ship stats and module multipliers are applied to the player pawn.
 - Initial The Silent Relay flow: relay interaction, three waves at relay, wreck interaction, three waves at wreck, return-to-carrier completion and 5000-credit reward.
+- Mission return destination is now an explicit editable `CarrierPosition` property; return-range validation and the return objective marker both use it instead of hard-coding world origin. The level still needs its actual carrier location configured in the Editor.
 - Local pilot SaveGame data with schema field, migration hook and backup slot.
 - Native HUD with velocity, hull, shields, boost, target and mission stage.
 - Editor Python setup script imports existing ship/environment GLBs, inventories every imported StaticMesh path, flags multi-mesh sources, creates a flight-test map and spawns PlayerStart plus a mission director. It may assign a uniquely identified enemy mesh to the director. It does not yet assemble complete multi-node ships, assign the Player Fighter to the pawn, or verify imported asset paths/materials/transforms in the Editor.
