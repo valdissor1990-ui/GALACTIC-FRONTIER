@@ -3,6 +3,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
+#include "GFPlayerShipPawn.h"
+#include "GFShipFlightComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 AGFEnemyShip::AGFEnemyShip()
@@ -14,16 +16,26 @@ AGFEnemyShip::AGFEnemyShip()
     Damageable = CreateDefaultSubobject<UGFDamageableComponent>(TEXT("Damageable"));
     Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
     Tags.Add(TEXT("CombatTarget"));
+
+    // Match the Godot enemy combat tuning, converted from metres to cm.
+    Weapon->ShotsPerSecond = 1.6f;
+    Weapon->ProjectileSpeed = 16000.0f;
+    Weapon->ProjectileDamage = 12.0f;
 }
 
 void AGFEnemyShip::BeginPlay()
 {
     Super::BeginPlay();
+    StrafeSign = FMath::RandBool() ? 1.0f : -1.0f;
+    StrafeTimer = FMath::FRandRange(0.6f, 1.8f);
+    EvasionPhase = FMath::FRandRange(0.0f, 2.0f * PI);
     if (Damageable) Damageable->OnDestroyed.AddDynamic(this, &AGFEnemyShip::HandleDestroyed);
 }
 
 void AGFEnemyShip::HandleDestroyed()
 {
+    CombatState = EGFEnemyCombatState::Disabled;
+    Velocity = FVector::ZeroVector;
     if (Weapon) Weapon->StopFiring();
     SetActorTickEnabled(false);
     SetLifeSpan(2.5f);
@@ -37,9 +49,9 @@ void AGFEnemyShip::SetCombatTarget(AActor* Target)
 void AGFEnemyShip::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-    AActor* Target = CombatTarget.Get();
-    if (!Damageable || Damageable->IsDestroyed()) return;
+    if (!Damageable || Damageable->IsDestroyed() || DeltaSeconds <= 0.0f) return;
 
+    AActor* Target = CombatTarget.Get();
     if (!IsValid(Target))
     {
         Target = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -51,26 +63,142 @@ void AGFEnemyShip::Tick(const float DeltaSeconds)
     const float Distance = ToTarget.Size();
     if (Distance <= 1.0f) return;
 
-    const FVector Direction = ToTarget / Distance;
-    const FRotator DesiredRotation = Direction.Rotation();
-    SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaSeconds, 2.5f));
+    UpdateCombatState(Distance);
+    EvasionPhase = FMath::Fmod(EvasionPhase + DeltaSeconds * 2.1f, 2.0f * PI);
 
-    if (Distance > PreferredRange)
+    const FVector AimDirection = CalculateLeadDirection(GetActorLocation(), Target->GetActorLocation(), GetTargetVelocity(Target));
+    if (!AimDirection.IsNearlyZero())
     {
-        AddActorWorldOffset(Direction * ApproachSpeed * DeltaSeconds, true);
+        const FRotator DesiredRotation = AimDirection.Rotation();
+        SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaSeconds, 2.5f));
     }
 
-    if (Distance <= PreferredRange * 1.35f)
+    UpdateMovement(DeltaSeconds, ToTarget, Distance);
+    UpdateWeapon(Distance, AimDirection);
+}
+
+void AGFEnemyShip::UpdateCombatState(const float Distance)
+{
+    if (Damageable->GetHullRatio() <= RetreatHullRatio || Distance < StrafeDistance * 0.45f)
     {
-        if (!bWeaponActive && Weapon)
+        CombatState = EGFEnemyCombatState::Retreat;
+    }
+    else if (Distance > ApproachDistance)
+    {
+        CombatState = EGFEnemyCombatState::Approach;
+    }
+    else
+    {
+        CombatState = EGFEnemyCombatState::Strafe;
+    }
+}
+
+void AGFEnemyShip::UpdateMovement(const float DeltaSeconds, const FVector& ToTarget, const float Distance)
+{
+    const FVector DirectDirection = ToTarget.GetSafeNormal();
+    FVector DesiredDirection = FVector::ZeroVector;
+
+    switch (CombatState)
+    {
+        case EGFEnemyCombatState::Approach:
+            DesiredDirection = DirectDirection;
+            break;
+        case EGFEnemyCombatState::Strafe:
         {
-            Weapon->StartFiring();
-            bWeaponActive = true;
+            StrafeTimer -= DeltaSeconds;
+            if (StrafeTimer <= 0.0f)
+            {
+                StrafeSign *= -1.0f;
+                StrafeTimer = FMath::FRandRange(1.2f, 2.4f);
+            }
+            const FVector Side = GetActorRightVector() * StrafeSign;
+            const FVector Hold = DirectDirection * FMath::Clamp((Distance - StrafeDistance) * 0.000015f, -1.0f, 1.0f);
+            const FVector Vertical = FVector::UpVector * FMath::Sin(EvasionPhase) * 0.28f;
+            DesiredDirection = (Side + Hold + Vertical).GetSafeNormal();
+            break;
         }
+        case EGFEnemyCombatState::Retreat:
+            DesiredDirection = -DirectDirection;
+            break;
+        default:
+            DesiredDirection = FVector::ZeroVector;
+            break;
     }
-    else if (bWeaponActive && Weapon)
+
+    const FVector DesiredVelocity = DesiredDirection * MaximumSpeed;
+    Velocity = FMath::VInterpConstantTo(Velocity, DesiredVelocity, DeltaSeconds, Acceleration);
+    if (!Velocity.IsNearlyZero())
+    {
+        FHitResult Hit;
+        AddActorWorldOffset(Velocity * DeltaSeconds, true, &Hit);
+        if (Hit.IsValidBlockingHit()) Velocity = FVector::VectorPlaneProject(Velocity, Hit.Normal);
+    }
+}
+
+void AGFEnemyShip::UpdateWeapon(const float Distance, const FVector& AimDirection)
+{
+    const bool bCanFire = CombatState != EGFEnemyCombatState::Retreat &&
+        Distance <= FireRange && !AimDirection.IsNearlyZero() &&
+        FVector::DotProduct(GetActorForwardVector(), AimDirection) >= FMath::Cos(FMath::DegreesToRadians(FireAngleDegrees));
+
+    if (bCanFire && !bWeaponActive && Weapon)
+    {
+        Weapon->StartFiring();
+        bWeaponActive = true;
+    }
+    else if (!bCanFire && bWeaponActive && Weapon)
     {
         Weapon->StopFiring();
         bWeaponActive = false;
     }
+}
+
+FVector AGFEnemyShip::GetTargetVelocity(const AActor* Target) const
+{
+    if (const AGFPlayerShipPawn* Player = Cast<AGFPlayerShipPawn>(Target))
+    {
+        return Player->Flight ? Player->Flight->GetVelocity() : FVector::ZeroVector;
+    }
+    return FVector::ZeroVector;
+}
+
+FVector AGFEnemyShip::CalculateLeadDirection(
+    const FVector& Origin,
+    const FVector& TargetPosition,
+    const FVector& TargetVelocity) const
+{
+    const FVector Relative = TargetPosition - Origin;
+    const float ProjectileSpeed = Weapon ? Weapon->ProjectileSpeed : 16000.0f;
+    if (Relative.IsNearlyZero() || ProjectileSpeed <= 1.0f) return FVector::ZeroVector;
+
+    const double A = TargetVelocity.SizeSquared() - FMath::Square(ProjectileSpeed);
+    const double B = 2.0 * FVector::DotProduct(Relative, TargetVelocity);
+    const double C = Relative.SizeSquared();
+    const double FallbackTime = FMath::Sqrt(C) / ProjectileSpeed;
+    double InterceptTime = FallbackTime;
+
+    if (FMath::Abs(A) < 0.0001)
+    {
+        if (FMath::Abs(B) > 0.0001)
+        {
+            const double LinearTime = -C / B;
+            if (LinearTime > 0.0) InterceptTime = LinearTime;
+        }
+    }
+    else
+    {
+        const double Discriminant = B * B - 4.0 * A * C;
+        if (Discriminant >= 0.0)
+        {
+            const double Root = FMath::Sqrt(Discriminant);
+            const double T1 = (-B - Root) / (2.0 * A);
+            const double T2 = (-B + Root) / (2.0 * A);
+            double Best = TNumericLimits<double>::Max();
+            if (T1 > 0.0) Best = FMath::Min(Best, T1);
+            if (T2 > 0.0) Best = FMath::Min(Best, T2);
+            if (Best < TNumericLimits<double>::Max()) InterceptTime = Best;
+        }
+    }
+
+    return (Relative + TargetVelocity * InterceptTime).GetSafeNormal();
 }
