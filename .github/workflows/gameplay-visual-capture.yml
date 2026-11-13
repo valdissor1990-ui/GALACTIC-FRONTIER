@@ -8,7 +8,6 @@ on:
       - chatgpt/ship-art-production
       - chatgpt/fullhd-showcase-qa
       - chatgpt/cockpit-camera-polish
-      - chatgpt/cockpit-view-quality-pass
     paths:
       - "scenes/**"
       - "scripts/**"
