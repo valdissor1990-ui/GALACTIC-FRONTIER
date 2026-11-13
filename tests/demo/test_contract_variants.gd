@@ -26,7 +26,7 @@ func _run() -> void:
 	var pending_payload_backup: Variant = save_manager.get("pending_mission_payload")
 	save_manager.set("pending_mission_payload", {})
 
-	var demo := load("res://scenes/demo/ten_minute_demo.tscn").instantiate()
+	var demo: Node3D = load("res://scenes/demo/ten_minute_demo.tscn").instantiate() as Node3D
 	demo.add_to_group("qa_demo_driver")
 	root.add_child(demo)
 	await process_frame
