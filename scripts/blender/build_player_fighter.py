@@ -19,6 +19,35 @@ import os
 import sys
 from mathutils import Vector
 
+
+def ensure_uvs(root):
+    """Create a smart UV layout for every mesh that lacks a UV layer."""
+    meshes = [obj for obj in root.children_recursive if obj.type == "MESH" and len(obj.data.polygons) > 0]
+    missing = [obj for obj in meshes if len(obj.data.uv_layers) == 0]
+    if not missing:
+        return
+    active = bpy.context.view_layer.objects.active
+    if active is not None and active.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in missing:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = missing[0]
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(
+        angle_limit=math.radians(66.0),
+        island_margin=0.018,
+        area_weight=0.0,
+        correct_aspect=True,
+        scale_to_bounds=False,
+    )
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    if active is not None and active.name in bpy.data.objects:
+        bpy.context.view_layer.objects.active = active
+    print("UV_UNWRAP_COMPLETE", len(missing), "of", len(meshes), "mesh objects")
+
 # Ubuntu's packaged Blender may use the system Python package directory for
 # optional glTF exporter dependencies such as NumPy.
 SYSTEM_PYTHON_PACKAGES = "/usr/lib/python3/dist-packages"
@@ -574,6 +603,7 @@ def main():
 
     root = create_ship(materials)
     add_integrated_surface_detail(root, materials)
+    ensure_uvs(root)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.
