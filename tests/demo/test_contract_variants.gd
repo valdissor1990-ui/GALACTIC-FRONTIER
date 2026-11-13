@@ -21,6 +21,8 @@ func _run() -> void:
 	profile.completed_mission_ids.append("silent_relay")
 	profile.active_contract_id = "vesper_salvage"
 	profile.call("_save_profile")
+	var save_manager := root.get_node("GameSave")
+	var checkpoint_backup: Dictionary = save_manager.call("load_slot", "silent_relay")
 
 	var demo := load("res://scenes/demo/ten_minute_demo.tscn").instantiate()
 	demo.add_to_group("qa_demo_driver")
@@ -60,9 +62,13 @@ func _run() -> void:
 	profile.installed_modules = backup["installed_modules"].duplicate(true)
 	profile.active_contract_id = str(backup["active_contract_id"])
 	profile.call("_save_profile")
+	if bool(checkpoint_backup.get("ok", false)):
+		save_manager.call("save_slot", "silent_relay", checkpoint_backup.get("payload", {}))
+	else:
+		save_manager.call("delete_slot", "silent_relay")
 
 	if _failures.is_empty():
-		print("CONTRACT_VARIANTS_TEST_PASS assertions=12")
+		print("CONTRACT_VARIANTS_TEST_PASS assertions=13")
 		quit(0)
 	else:
 		for failure in _failures:
