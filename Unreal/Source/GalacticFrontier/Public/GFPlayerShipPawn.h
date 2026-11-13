@@ -9,6 +9,7 @@ class USpringArmComponent;
 class UStaticMeshComponent;
 class UGFShipFlightComponent;
 class UGFDamageableComponent;
+class UGFWeaponComponent;
 
 UCLASS()
 class GALACTICFRONTIER_API AGFPlayerShipPawn : public APawn
@@ -36,6 +37,9 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship")
     TObjectPtr<UGFDamageableComponent> Damageable;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship")
+    TObjectPtr<UGFWeaponComponent> Weapon;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|Camera")
     TObjectPtr<USpringArmComponent> ChaseArm;
 
@@ -61,6 +65,8 @@ private:
     void SetBoostReleased();
     void SetBrakePressed();
     void SetBrakeReleased();
+    void SetFirePressed();
+    void SetFireReleased();
     void SetCameraTogglePressed();
 
     float ForwardInput = 0.0f;
