@@ -123,6 +123,24 @@ func _run_showcase() -> void:
 		if is_instance_valid(mission._service_layer):
 			mission._service_layer.queue_free()
 		profile.set("credits", original_credits)
+		var original_completed := profile.completed_mission_ids.duplicate()
+		var original_active_contract := profile.active_contract_id
+		profile.completed_mission_ids.clear()
+		profile.completed_mission_ids.append("silent_relay")
+		profile.completed_mission_ids.append("vesper_salvage")
+		profile.active_contract_id = "kestrel_patrol"
+		profile.call("_save_profile")
+		var contract_board := load("res://scenes/ui/contract_board.tscn").instantiate()
+		get_tree().root.add_child(contract_board)
+		await get_tree().process_frame
+		await get_tree().create_timer(0.25).timeout
+		await _capture_screenshot("contract-board.png")
+		contract_board.queue_free()
+		await get_tree().process_frame
+		profile.completed_mission_ids.clear()
+		for mission_id in original_completed:
+			profile.completed_mission_ids.append(str(mission_id))
+		profile.active_contract_id = original_active_contract
 		profile.call("_save_profile")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
 
