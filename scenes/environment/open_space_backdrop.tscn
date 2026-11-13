@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/environment/open_space_backdrop.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/environment/parallax_nebula_layer.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/environment/chunk_rock_field.gd" id="3"]
 
 [node name="OpenSpaceBackdrop" type="Node3D"]
 script = ExtResource("1")
@@ -11,3 +12,11 @@ belt_width = 55.0
 belt_height = 18.0
 
 [node name="ParallaxNebulaLayer" parent="." instance=ExtResource("2")]
+
+[node name="ChunkRockField" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("3")
+count = 90
+radius = 125.0
+width = 38.0
+height = 12.0
+vis_end = 155.0
