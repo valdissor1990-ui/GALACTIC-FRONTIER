@@ -168,8 +168,7 @@ func _update_mission(delta: float) -> void:
 				stage = MissionStage.SCAN_WRECK
 				_set_radio("ORBITAL CONTROL", "The wreck is broadcasting a data pulse. Scan it with F.")
 		MissionStage.RECOVER_SALVAGE:
-			if _distance_to_objective() <= 55.0:
-				_set_radio("SALVAGE CONTROL", "Cargo pod in range. Press F to secure the recovered container.")
+			pass
 		MissionStage.PATROL_SWEEP:
 			if _distance_to_objective() <= 85.0:
 				_advance_patrol_waypoint()
