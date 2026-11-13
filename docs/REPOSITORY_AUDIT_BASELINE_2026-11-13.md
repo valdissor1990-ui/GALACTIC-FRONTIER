@@ -154,3 +154,56 @@ README прямо перечисляет как ещё не реализован
 - PR #90 and #91 both target space-visual-art-pass; PR #90 has 140 commits on top of that base, PR #91 has 12. PR #93 and #94 are stacked ship-quality follow-ups.
 
 Это означает, что проект нуждается в управляемом integration train. Сначала выбрать один рабочий baseline (вероятно ten-minute vertical slice + reviewed space art + verified campaign fixes), затем переносить изменения по тематическим пакетам. Нельзя делать merge всех веток или считать самый большой commit count признаком самого правильного состояния.
+
+
+## 10. Актуальные проверки интеграционной ветки и ship pipeline
+
+### Godot / Windows — PR #90 head c4ce910
+
+GitHub Actions run 43478272851 (head SHA c4ce91083f535fddd0316599b8fbe10c7ba11413) завершился SUCCESS:
+- Godot 4.7.2 import/parser;
+- flight и visual-flight scene smoke;
+- FlightModel, camera, pause/mouse, docking;
+- space collision, route safety, audio;
+- enemy combat AI, combat systems, projectile sweep;
+- ship visual fallback;
+- graphics quality presets;
+- story M01-M05 и campaign runtime;
+- save manager и mission resume;
+- demo mission, failure/retry;
+- hangar, player ship selection, ship modules, contract progression;
+- main-menu navigation и Continue;
+- main menu, bootstrap, ten-minute demo scene;
+- scan всех сцен и внешних зависимостей;
+- import всех семи GLB через Godot runtime parser;
+- Windows Desktop export;
+- Windows executable smoke test.
+
+Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43478272851
+
+Отдельный визуальный workflow run 43478273435 на том же SHA ещё выполняется; его результат не считать PASS до завершения и осмотра артефактов:
+https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43478273435
+
+### Ship art — актуальный блокер PR #91
+
+- Run 43474224259 на branch chatgpt/player-fighter-hero-detail, SHA fcf0b58b78a41fb80f7d05bef5377606f1d8c1c1, завершился FAILURE.
+- Все семь Blender-генераторов завершились успешно.
+- Blender validator отклонил все семь GLB: в каждом после обратного glTF import найдено 0 embedded image textures при минимальном требовании 3.
+- Godot import и publish assets были корректно пропущены после провала validator.
+- Артефакт диагностики загружен: artifact ID 14062964373.
+
+Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43474224259
+
+Предыдущий успешный run 43473442128 на SHA 05fb9e2cf856237497ec3be922e7197045b70efd относится к более раннему состоянию той же ветки. Его 7/7 PASS и preview images не являются доказательством для нового HEAD. Именно его preview PNG использовались в первом визуальном осмотре раздела 8.
+
+### Исправления, отправленные на проверку
+
+- PR #93: face-projected UV вместо XY-only UV и проверка вырожденных/non-finite UV faces.
+- PR #94: геометрия внутренней кабины, кресло, ремни, консоли, органы управления, воздухозаборники и механика сопел.
+- PR #95: перевод generated/packed PBR maps в file-backed PNG перед GLB экспортом; явный PNG export; проверка подготовки изображений; concurrency ship-art workflow разделён по веткам, чтобы глобальная очередь не отменяла ожидающие независимые сборки.
+
+Run 43478941870 запущен на раннем промежуточном SHA workflow-файла; следующий run 43479039175 создан после обновления генераторов и должен проверять окончательный набор изменений:
+- https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43478941870
+- https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43479039175
+
+До завершения второго run исправление экспорта текстур считать IN PROGRESS, не PASS.
