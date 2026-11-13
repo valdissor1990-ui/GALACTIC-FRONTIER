@@ -1,6 +1,7 @@
 #include "GFSpaceHUD.h"
 
 #include "Engine/Canvas.h"
+#include "CanvasItem.h"
 #include "Engine/Font.h"
 #include "Engine/Engine.h"
 #include "GFPlayerShipPawn.h"
