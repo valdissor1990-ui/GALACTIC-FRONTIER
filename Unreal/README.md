@@ -38,6 +38,15 @@ Before first use, compile the C++ project once in UE 5.8.4. Install Blender 4.5 
 
 Run `tools/build_unreal_assets.bat` from Windows. Follow the `[GF Setup] PIPELINE` messages in Unreal's Output Log. This automates rebuilding and sequential import; the pre-import check is structural only and does **not** prove visual acceptance or automatically assemble every multi-part ship into its final actor. GLB-to-StaticMesh node mapping, transform conversion and Editor visual validation remain separate acceptance gates.
 
+
+### Cloud execution (no local Blender required)
+
+The GitHub Actions workflow `.github/workflows/build-3d-assets.yml` runs automatically when Blender production scripts change on the Unreal migration branch. It downloads Blender 4.5.3 on a GitHub-hosted runner, builds all seven ships in order, validates the outputs, generates the space backdrop and four planets, and publishes the validated assets back into the migration branch under `assets/models`, `art_source/ships` and `assets/previews`. It also uploads a 30-day artifact package and writes a build report.
+
+The workflow is intended to remove the need to install or run Blender locally. It does not require a local user command.
+
+**Unreal Editor import and C++ compilation remain separate:** the GitHub-hosted runner does not contain Unreal Engine 5.8.4. The Python import script is prepared, but actual import, shader/material verification, C++ compilation and gameplay testing are not claimed as complete until an Unreal 5.8.4 runner is available.
+
 ## Setup
 
 1. Compile in UE 5.8.4 once.  
