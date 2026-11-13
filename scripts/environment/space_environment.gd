@@ -969,9 +969,25 @@ func _create_planet_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
+func _glb_uses_unsupported_draco(source_path: String) -> bool:
+	var file := FileAccess.open(source_path, FileAccess.READ)
+	if file == null or file.get_length() < 20:
+		return false
+	file.seek(12)
+	var chunk_length := file.get_32()
+	var chunk_type := file.get_32()
+	if chunk_type != 0x4E4F534A or chunk_length <= 0 or chunk_length > file.get_length() - file.get_position():
+		return false
+	var json_chunk := file.get_buffer(chunk_length).get_string_from_utf8()
+	return json_chunk.contains("KHR_draco_mesh_compression")
+
+
 func _load_glb_scene(source_path: String) -> Node3D:
 	if not FileAccess.file_exists(source_path):
 		push_warning("GLB asset is missing: %s" % source_path)
+		return null
+	if _glb_uses_unsupported_draco(source_path):
+		push_warning("GLB uses Draco compression unsupported by stock Godot; procedural fallback selected: %s" % source_path)
 		return null
 	var document := GLTFDocument.new()
 	var state := GLTFState.new()
@@ -1434,17 +1450,86 @@ func _build_orbital_station_landmark() -> void:
 	# NASA's detailed ISS model adds a recognizable human-made landmark to the
 	# deep-space route. It is visual-only and follows the camera like other sky
 	# landmarks, so it never changes flight physics or mission collision.
-	var station := _load_glb_scene("res://assets/models/environment/nasa_iss_station.glb")
-	if station == null:
-		push_warning("NASA ISS model unavailable; skipping orbital station landmark")
-		return
 	_orbital_station_root = Node3D.new()
 	_orbital_station_root.name = "OrbitalStationLandmark"
-	station.name = "NASA_ISS_Visual"
-	station.scale = Vector3.ONE * 0.62
-	station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
+	var station := _load_glb_scene("res://assets/models/environment/nasa_iss_station.glb")
+	if station == null:
+		station = _build_procedural_orbital_station()
+		station.name = "ProceduralISS"
+	else:
+		station.name = "NASA_ISS_Visual"
+		station.scale = Vector3.ONE * 0.62
+		station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
 	_orbital_station_root.add_child(station)
 	add_child(_orbital_station_root)
+
+
+func _build_procedural_orbital_station() -> Node3D:
+	var station := Node3D.new()
+	station.name = "ProceduralISS"
+	var structure := StandardMaterial3D.new()
+	structure.albedo_color = Color(0.48, 0.57, 0.66)
+	structure.metallic = 0.82
+	structure.roughness = 0.34
+	var solar := StandardMaterial3D.new()
+	solar.albedo_color = Color(0.018, 0.075, 0.16)
+	solar.metallic = 0.48
+	solar.roughness = 0.28
+	solar.emission_enabled = true
+	solar.emission = Color(0.015, 0.07, 0.16)
+	solar.emission_energy_multiplier = 0.22
+
+	var truss := MeshInstance3D.new()
+	truss.name = "MainTruss"
+	var truss_mesh := BoxMesh.new()
+	truss_mesh.size = Vector3(58.0, 1.6, 1.6)
+	truss.mesh = truss_mesh
+	truss.material_override = structure
+	station.add_child(truss)
+
+	for x_position in [-16.0, -5.0, 8.0, 19.0]:
+		var module := MeshInstance3D.new()
+		module.name = "PressurizedModule_%d" % int(x_position)
+		var module_mesh := CylinderMesh.new()
+		module_mesh.top_radius = 3.0
+		module_mesh.bottom_radius = 3.0
+		module_mesh.height = 10.0
+		module_mesh.radial_segments = 20
+		module.mesh = module_mesh
+		module.rotation_degrees.z = 90.0
+		module.position = Vector3(x_position, 0.0, 0.0)
+		module.material_override = structure
+		station.add_child(module)
+
+	for side in [-1.0, 1.0]:
+		for bay in [-1.0, 1.0]:
+			var panel := MeshInstance3D.new()
+			panel.name = "SolarArray_%s_%s" % [str(side), str(bay)]
+			var panel_mesh := BoxMesh.new()
+			panel_mesh.size = Vector3(20.0, 0.22, 8.0)
+			panel.mesh = panel_mesh
+			panel.position = Vector3(side * 13.0, bay * 15.0, 0.0)
+			panel.material_override = solar
+			station.add_child(panel)
+			var spar := MeshInstance3D.new()
+			var spar_mesh := BoxMesh.new()
+			spar_mesh.size = Vector3(1.0, 34.0, 1.0)
+			spar.mesh = spar_mesh
+			spar.position = Vector3(side * 13.0, bay * 15.0, 0.0)
+			spar.material_override = structure
+			station.add_child(spar)
+
+	var antenna := MeshInstance3D.new()
+	antenna.name = "CommunicationsAntenna"
+	var antenna_mesh := CylinderMesh.new()
+	antenna_mesh.top_radius = 0.12
+	antenna_mesh.bottom_radius = 0.24
+	antenna_mesh.height = 16.0
+	antenna.mesh = antenna_mesh
+	antenna.position = Vector3(-25.0, 8.0, 0.0)
+	antenna.material_override = structure
+	station.add_child(antenna)
+	return station
 
 
 func _build_distant_traffic() -> void:
