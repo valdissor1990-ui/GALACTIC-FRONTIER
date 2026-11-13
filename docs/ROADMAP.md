@@ -4,25 +4,30 @@
 
 ## Phase 0 — Project foundation
 - [x] Создать отдельный private GitHub repository.
-- [ ] Зафиксировать мастер-план и инструкцию Grok.
-- [ ] Получить независимый аудит Grok.
-- [ ] Зафиксировать стабильную версию Godot 4.x.
-- [ ] Добавить notices для сторонних лицензий при появлении зависимостей.
-- [ ] Настроить бесплатный CI, если доступен подходящий runner.
+- [x] Зафиксировать мастер-план и инструкцию Grok.
+- [x] Получить независимый аудит Grok — [отчёт](AUDIT_GROK_2026-11-11.md), проверенный commit `725167438d1f04cd6771fdfc1bfa06315a06246a`.
+- [x] Зафиксировать Godot 4.7.2-stable; Godot 4.8 beta не использовать для production.
+- [x] Создать `THIRD_PARTY_NOTICES.md`; заполнить при добавлении первого стороннего компонента.
+- [x] Настроить GitHub Actions CI на Godot 4.7.2: импорт/парсинг, headless smoke tests, Windows export и запуск EXE на Windows runner. Дополнительный PR-trigger для `phase-1/flight-prototype` и запуск тестов FlightModel добавлены; FlightModel tests PASS в CI run #39.
 Выход: документация согласована, стек и лицензии определены.
 
-## Phase 1 — Flight prototype
-- [ ] Создать минимальный Godot-проект.
-- [ ] Создать стартовую тестовую сцену.
-- [ ] Создать корабль и chase camera.
-- [ ] Реализовать yaw/pitch/roll и тягу по осям.
-- [ ] Реализовать инерцию, торможение и стабилизацию.
-- [ ] Добавить boost.
-- [ ] Добавить cockpit camera и переключение.
-- [ ] Добавить базовый HUD и настройки ввода.
-- [ ] Проверить движение при разных FPS.
-- [ ] Запустить сцену и зафиксировать runtime-результат.
-Выход: корабль управляется предсказуемо, камеры работают, критических runtime-ошибок нет.
+## Phase 1 — Flight prototype (IN PROGRESS; source code added, runtime NOT VERIFIED)
+- [x] Создать минимальный Godot-проект (`project.godot`) под Godot 4.7.2-stable — Godot parse NOT RUN.
+- [x] Создать стартовые сцены (`scenes/bootstrap/main.tscn` и `scenes/flight/test_flight.tscn`) — scene import/open NOT RUN.
+- [x] Создать один корабль на базе `CharacterBody3D` с ручной инерцией и chase camera — runtime NOT RUN.
+- [x] Вынести параметры корабля в Resource; не создавать заранее пустые папки и глобальные singleton-системы.
+- [x] Реализовать исходный вариант yaw/pitch/roll и тяги по осям — tuning/runtime NOT RUN.
+- [x] Реализовать исходный вариант инерции, торможения и стабилизации — tuning/runtime NOT RUN.
+- [x] Добавить boost с восстанавливаемым запасом энергии — tuning/runtime NOT RUN.
+- [x] Добавить cockpit camera и переключение — camera runtime NOT RUN.
+- [x] Добавить базовый HUD и стартовые Input Map controls.
+- [x] Добавить паузу и изменение чувствительности мыши клавишами [ / ]. Полное переназначение клавиш пока не реализовано.
+- [x] Добавить Windows Desktop export preset — export NOT RUN.
+- [ ] Интегрировать отдельные headless-тесты `FlightModel.integrate_velocity()` из PR #3 после финального review (Godot 4.7.2 CI execution PASS: run #39, 9 assertions, exit code 0; документация тестов обновлена в коммите Grok `d1054adcc15ac9bebb20ff6f41d954adfc47a6ec`; PR пока открыт).
+- [ ] Проверить движение при разных FPS и сохранение скорости/вращения при переключении камер. PR #4 исправляет двойное затухание угловой скорости; CI run #42 PASS, интерактивная проверка NOT RUN.
+- [ ] Запустить сцену и зафиксировать интерактивный runtime-результат.
+- [ ] Проверить Windows export на реальной Windows-системе; CI headless EXE launch уже PASS, но это не ручной тест.
+Выход: корабль управляется предсказуемо, камеры работают, критических runtime-ошибок нет. До фактического запуска все runtime/export пункты остаются NOT RUN.
 
 ## Phase 2 — Combat vertical slice
 - [ ] Выбор и захват цели.

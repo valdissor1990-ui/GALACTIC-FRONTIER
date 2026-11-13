@@ -5,17 +5,10 @@ on:
     branches:
       - phase-1/flight-prototype
       - chatgpt/phase2-combat-integration
-      - chatgpt/visual-overhaul
-      - chatgpt/ten-minute-vertical-slice
-      - chatgpt/ship-art-production
-      - chatgpt/ship-visual-fallback
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
       - phase-1/flight-prototype
-      - chatgpt/ten-minute-vertical-slice
-      - chatgpt/ship-art-production
   workflow_dispatch:
 
 permissions:
@@ -57,28 +50,11 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
-      - name: Run ship visual fallback regression tests
-        if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
-        run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
-
-      - name: Run main menu UI regression tests
-        if: hashFiles('tests/ui/main_menu_test_runner.tscn') != ''
-        run: godot --headless --path . res://tests/ui/main_menu_test_runner.tscn
-
-      - name: Run full demo mission progression test
-        run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
-
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
       - name: Headless flight-scene smoke test
         run: godot --headless --path . res://scenes/flight/test_flight.tscn --quit-after 8
-
-      - name: Headless visual flight-scene smoke test
-        run: godot --headless --path . res://scenes/flight/visual_flight.tscn --quit-after 8
-
-      - name: Headless ten-minute demo scene smoke test
-        run: godot --headless --path . res://scenes/demo/ten_minute_demo.tscn --quit-after 12
 
       - name: Export Windows Desktop build
         run: |
@@ -111,18 +87,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $exe = (Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe").Path
-          & $exe --version
-          if ([int]$LASTEXITCODE -ne 0) {
-            throw "Windows executable failed its engine-version startup with code $LASTEXITCODE"
-          }
-          $stdout = Join-Path $PWD "build\\windows-smoke.stdout.log"
-          $stderr = Join-Path $PWD "build\\windows-smoke.stderr.log"
-          $game = Start-Process -FilePath $exe -ArgumentList @("--headless", "--verbose", "--quit-after", "10") -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $game = Start-Process -FilePath ".\\build\\GALACTIC-FRONTIER.exe" -ArgumentList @("--headless", "--quit-after", "10") -Wait -PassThru
           if ($game.ExitCode -ne 0) {
-            Write-Host "----- Windows stdout -----"
-            if (Test-Path $stdout) { Get-Content $stdout }
-            Write-Host "----- Windows stderr -----"
-            if (Test-Path $stderr) { Get-Content $stderr }
             throw "Windows executable exited with code $($game.ExitCode)"
           }

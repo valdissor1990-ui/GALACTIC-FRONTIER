@@ -1,0 +1,255 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="3"]
+[ext_resource type="Resource" path="res://resources/ships/player_ship.tres" id="4"]
+
+[ext_resource type="PackedScene" path="res://scenes/combat/projectile.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/combat/weapon_system.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/combat/targeting_system.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/combat/damageable.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/ui/combat_hud.gd" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="10"]
+[ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
+
+[sub_resource type="Environment" id="Environment_space"]
+background_mode = 1
+background_color = Color(0.004, 0.008, 0.025, 1)
+ambient_light_source = 1
+ambient_light_color = Color(0.24, 0.31, 0.48, 1)
+ambient_light_energy = 0.35
+tonemap_mode = 2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ship"]
+radius = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_hull"]
+size = Vector3(1.15, 0.48, 3.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nose"]
+size = Vector3(0.72, 0.34, 1.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wings"]
+size = Vector3(3.1, 0.12, 1.05)
+
+[sub_resource type="BoxMesh" id="BoxMesh_engine"]
+size = Vector3(0.34, 0.34, 0.8)
+
+[sub_resource type="SphereMesh" id="SphereMesh_planet"]
+radius = 1.0
+height = 2.0
+radial_segments = 48
+rings = 24
+
+[sub_resource type="StandardMaterial3D" id="Material_planet"]
+albedo_color = Color(0.055, 0.16, 0.29, 1)
+metallic = 0.12
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="Material_hull"]
+albedo_color = Color(0.12, 0.22, 0.34, 1)
+metallic = 0.72
+roughness = 0.32
+
+[sub_resource type="StandardMaterial3D" id="Material_accent"]
+albedo_color = Color(0.05, 0.72, 0.92, 1)
+metallic = 0.55
+roughness = 0.28
+emission_enabled = true
+emission = Color(0.02, 0.28, 0.52, 1)
+emission_energy_multiplier = 1.4
+
+[node name="TestFlight" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_space")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-28, 32, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="DistantPlanet" type="MeshInstance3D" parent="."]
+position = Vector3(0, 18, -190)
+scale = Vector3(28, 28, 28)
+mesh = SubResource("SphereMesh_planet")
+surface_material_override/0 = SubResource("Material_planet")
+
+[node name="PlayerShip" type="CharacterBody3D" parent="."]
+script = ExtResource("1")
+flight_config = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerShip"]
+shape = SubResource("SphereShape3D_ship")
+
+[node name="Visual" type="Node3D" parent="PlayerShip"]
+
+[node name="Hull" type="MeshInstance3D" parent="PlayerShip/Visual"]
+mesh = SubResource("BoxMesh_hull")
+surface_material_override/0 = SubResource("Material_hull")
+
+[node name="Nose" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0, 0.02, -2.1)
+mesh = SubResource("BoxMesh_nose")
+surface_material_override/0 = SubResource("Material_accent")
+
+[node name="Wings" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0, -0.08, 0.25)
+mesh = SubResource("BoxMesh_wings")
+surface_material_override/0 = SubResource("Material_hull")
+
+[node name="LeftEngine" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-0.38, 0, 1.72)
+mesh = SubResource("BoxMesh_engine")
+surface_material_override/0 = SubResource("Material_accent")
+
+[node name="RightEngine" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0.38, 0, 1.72)
+mesh = SubResource("BoxMesh_engine")
+surface_material_override/0 = SubResource("Material_accent")
+
+[node name="CameraRig" type="Node3D" parent="PlayerShip"]
+script = ExtResource("2")
+
+[node name="ChaseCamera" type="Camera3D" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 2.8, 8.5)
+rotation_degrees = Vector3(12, 0, 0)
+current = true
+fov = 74.0
+
+[node name="CockpitCamera" type="Camera3D" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 0.38, -0.65)
+fov = 88.0
+
+[node name="Damageable" type="Node" parent="PlayerShip"]
+script = ExtResource("8")
+
+[node name="TargetingSystem" type="Node3D" parent="PlayerShip"]
+script = ExtResource("7")
+
+[node name="WeaponSystem" type="Node3D" parent="PlayerShip"]
+script = ExtResource("6")
+projectile_scene = ExtResource("5")
+muzzle_path = NodePath("Muzzle")
+
+[node name="Muzzle" type="Marker3D" parent="PlayerShip/WeaponSystem"]
+position = Vector3(0, 0, -2.8)
+
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+ship_path = NodePath("../PlayerShip")
+
+[node name="Telemetry" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 370.0
+offset_bottom = 190.0
+
+[node name="Panel" type="PanelContainer" parent="HUD/Telemetry"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Margin" type="MarginContainer" parent="HUD/Telemetry/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="HUD/Telemetry/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
+layout_mode = 2
+text = "GALACTIC FRONTIER  /  FLIGHT TEST"
+
+[node name="SpeedLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
+layout_mode = 2
+text = "SPEED  000.0 m/s"
+
+[node name="ModeLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
+layout_mode = 2
+text = "CAMERA  CHASE"
+
+[node name="BoostLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
+layout_mode = 2
+text = "BOOST  100%"
+
+[node name="SensitivityLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
+layout_mode = 2
+text = "MOUSE  0.12"
+
+[node name="PausePanel" type="PanelContainer" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -55.0
+offset_right = 180.0
+offset_bottom = 55.0
+
+[node name="PauseLabel" type="Label" parent="HUD/PausePanel"]
+layout_mode = 2
+text = "PAUSED\nPress ESC to resume"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CombatHUD" type="CanvasLayer" parent="."]
+script = ExtResource("9")
+targeting_system_path = NodePath("../PlayerShip/TargetingSystem")
+damageable_path = NodePath("../PlayerShip/Damageable")
+
+[node name="CombatPanel" type="PanelContainer" parent="CombatHUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -430.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 168.0
+
+[node name="Margin" type="MarginContainer" parent="CombatHUD/CombatPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="CombatHUD/CombatPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="TargetLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
+layout_mode = 2
+text = "TARGET  NO TARGET"
+
+[node name="TargetStatusLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
+layout_mode = 2
+text = "STATUS  —"
+
+[node name="ShieldLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
+layout_mode = 2
+text = "SHIELDS  100%"
+
+[node name="HullLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
+layout_mode = 2
+text = "HULL  100%"
+
+[node name="CombatEncounterController" type="Node" parent="."]
+script = ExtResource("11")
+enemy_scene = ExtResource("10")
+player_path = NodePath("../PlayerShip")
+spawn_position = Vector3(0, 0, -80)
+respawn_delay = 4.0
