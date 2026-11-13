@@ -5,6 +5,7 @@
 #include "GFMissionDirector.generated.h"
 
 class AGFEnemyShip;
+class APawn;
 class UStaticMesh;
 class UStaticMeshComponent;
 
