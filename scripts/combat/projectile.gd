@@ -9,6 +9,7 @@ class_name CombatProjectile
 var _direction: Vector3 = Vector3.FORWARD
 var _source: Node3D
 var _remaining_lifetime: float = 5.0
+var _impacted: bool = false
 
 
 func configure(direction: Vector3, source: Node3D, projectile_speed: float, projectile_damage: float) -> void:
@@ -47,9 +48,10 @@ func _sweep_for_impact(motion: Vector3) -> bool:
 
 	# Nine parallel rays approximate the projectile's 0.12 m spherical radius.
 	# This avoids discrete overlap tunnelling without allocating physics bodies.
-	var right := _direction.cross(Vector3.UP).normalized()
-	if right.length_squared() <= 0.0001:
-		right = _direction.cross(Vector3.RIGHT).normalized()
+	var right_raw := _direction.cross(Vector3.UP)
+	if right_raw.length_squared() <= 0.0001:
+		right_raw = _direction.cross(Vector3.RIGHT)
+	var right := right_raw.normalized()
 	var up := _direction.cross(right).normalized()
 	var radius := 0.12
 	var diagonal := radius * 0.70710678
@@ -139,8 +141,9 @@ func _create_trail() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if body == null or _is_source_or_child(body):
+	if _impacted or body == null or _is_source_or_child(body):
 		return
+	_impacted = true
 
 	var audio_manager := get_node_or_null("/root/AudioManager")
 	if audio_manager != null:
