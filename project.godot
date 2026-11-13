@@ -1,5 +1,5 @@
 ; Engine configuration file.
-; GALACTIC FRONTIER — high-fidelity Windows visual target.
+; GALACTIC FRONTIER — Full HD 1920x1080 rendering target.
 ; Target engine: Godot 4.7.2-stable, Forward+ desktop renderer.
 
 config_version=5
@@ -12,8 +12,9 @@ config/description="Original single-player space action RPG prototype."
 config/version="0.1.0"
 
 [display]
-window/size/viewport_width=1600
-window/size/viewport_height=900
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+; Keep a manageable windowed startup size; render viewport remains Full HD.
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
