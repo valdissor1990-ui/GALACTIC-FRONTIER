@@ -1,0 +1,99 @@
+name: DeepSeek Engineering Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_file:
+        description: Task file in repository
+        required: true
+        default: docs/deepseek/MISSION_01_FLEET.md
+      model:
+        description: DeepSeek model
+        required: true
+        default: deepseek-flash
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: deepseek-agent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deepseek-engineering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Create isolated branch
+        id: branch
+        run: |
+          BRANCH="deepseek/mission-${GITHUB_RUN_ID}"
+          git switch -c "$BRANCH"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+      - name: Ask DeepSeek to implement mission
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ inputs.model }}
+          DEEPSEEK_TASK_FILE: ${{ inputs.task_file }}
+        run: python scripts/ai/deepseek_agent.py
+      - name: Install Blender 4.5.16
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xz-utils file libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
+          curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+          sudo mkdir -p /opt/blender
+          sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
+          sudo ln -sf /opt/blender/blender /usr/local/bin/blender
+          blender --version
+      - name: Run all available fleet generators
+        run: |
+          set -euo pipefail
+          mkdir -p build/deepseek-blender
+          for script in scripts/blender/build_player_fighter.py scripts/blender/build_enemy_interceptor.py scripts/blender/build_fleet_expansion.py; do
+            if [ -f "$script" ]; then PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python "$script" -- --output-dir build/deepseek-blender; fi
+          done
+          find build/deepseek-blender -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort
+          test "$(find build/deepseek-blender -name '*.glb' | wc -l)" -ge 2
+          test "$(find build/deepseek-blender -name '*preview.png' | wc -l)" -ge 2
+      - name: Upload Blender models and visual previews for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-fleet-visual-qa
+          path: build/deepseek-blender/**
+          if-no-files-found: error
+          retention-days: 14
+      - name: Install Godot 4.7.2 and export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Validate patch and import Godot project
+        run: |
+          set -euo pipefail
+          test -n "$(git status --porcelain)"
+          git diff --check
+          godot --version
+          godot --headless --editor --path . --quit
+      - name: Commit changes
+        run: |
+          git config user.name 'deepseek-agent[bot]'
+          git config user.email 'deepseek-agent[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'DeepSeek: implement fleet production mission'
+      - name: Push isolated branch
+        run: git push origin "${{ steps.branch.outputs.name }}"
+      - name: Open Draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
+        run: |
+          gh pr create --draft --base "${GITHUB_REF_NAME}" --head "$BRANCH_NAME" --title 'DeepSeek: Fleet production mission' --body 'Automated proposal. Draft only; requires independent review, Blender build, Godot CI and visual QA. Not merged.'
