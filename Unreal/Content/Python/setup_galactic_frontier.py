@@ -269,7 +269,7 @@ def import_glb(source_path: Path, destination_path: str):
 
 
 def import_existing_fleet():
-    """Run a deterministic, strictly sequential ship -> environment -> planet queue.
+    """Run a deterministic, strictly sequential ship -> environment -> space -> planet queue.
 
     AssetImportTask is synchronous in this Editor Python workflow. The next
     source is not submitted until the previous task has returned and its result
