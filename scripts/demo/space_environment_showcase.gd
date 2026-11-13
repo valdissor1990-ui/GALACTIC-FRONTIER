@@ -17,6 +17,7 @@ const SHOTS: Array[Dictionary] = [
 
 func _ready() -> void:
 	_camera.current = true
+	_camera.make_current()
 	_camera.far = 50000.0
 	_environment.set("showcase_mode", true)
 	call_deferred("_capture_sequence")
@@ -30,6 +31,34 @@ func _capture_sequence() -> void:
 		push_error("SPACE_SHOWCASE_DIRECTORY_FAILED: %s" % error_string(directory_error))
 		get_tree().quit(1)
 		return
+
+	# Save a temporary camera/geometry diagnostic before the art-directed views.
+	_camera.make_current()
+	_camera.force_update_transform()
+	var diagnostic_sphere := MeshInstance3D.new()
+	diagnostic_sphere.name = "ShowcaseCameraDiagnostic"
+	var diagnostic_mesh := SphereMesh.new()
+	diagnostic_mesh.radius = 12.0
+	diagnostic_mesh.height = 24.0
+	var diagnostic_material := StandardMaterial3D.new()
+	diagnostic_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	diagnostic_material.albedo_color = Color(1.0, 0.04, 0.02)
+	diagnostic_material.emission_enabled = true
+	diagnostic_material.emission = Color(1.0, 0.04, 0.02)
+	diagnostic_material.emission_energy_multiplier = 1.5
+	diagnostic_mesh.material = diagnostic_material
+	diagnostic_sphere.mesh = diagnostic_mesh
+	diagnostic_sphere.global_position = Vector3(-138.0, 54.0, -465.0)
+	_environment.add_child(diagnostic_sphere)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var diagnostic_image := get_viewport().get_texture().get_image()
+	var diagnostic_error := diagnostic_image.save_png(output_directory + "/space-camera-diagnostic.png")
+	print("SPACE_SHOWCASE_CAMERA_ACTIVE=", get_viewport().get_camera_3d() == _camera,
+		" diagnostic_save=", diagnostic_error,
+		" children=", _environment.get_child_count())
+	diagnostic_sphere.queue_free()
+	await get_tree().process_frame
 
 	for shot in SHOTS:
 		_camera.fov = float(shot.get("fov", 60.0))
@@ -65,6 +94,7 @@ func _capture_sequence() -> void:
 		_camera.look_at(target_position, Vector3.UP)
 		print("SPACE_SHOWCASE_CAMERA=", shot["name"], " pos=", camera_position, " target=", target_position)
 		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
 		await get_tree().create_timer(1.15).timeout
 		var screenshot := get_viewport().get_texture().get_image()
 		var file_path := output_directory + "/space-" + str(shot["name"]) + ".png"
