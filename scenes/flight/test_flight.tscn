@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -12,6 +12,8 @@
 [ext_resource type="Script" path="res://scripts/ui/combat_hud.gd" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="10"]
 [ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
+[ext_resource type="Script" path="res://scripts/graphics/dynamic_resolution.gd" id="12"]
+[ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="13"]
 
 [sub_resource type="Environment" id="Environment_space"]
 background_mode = 1
@@ -61,6 +63,12 @@ emission = Color(0.02, 0.28, 0.52, 1)
 emission_energy_multiplier = 1.4
 
 [node name="TestFlight" type="Node3D"]
+
+[node name="DynamicResolution" type="Node" parent="."]
+script = ExtResource("12")
+
+[node name="ScreenPostFx" type="CanvasLayer" parent="."]
+script = ExtResource("13")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_space")
@@ -138,6 +146,7 @@ position = Vector3(0, 0, -2.8)
 
 
 [node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
 script = ExtResource("3")
 ship_path = NodePath("../PlayerShip")
 
@@ -205,6 +214,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CombatHUD" type="CanvasLayer" parent="."]
+layer = 11
 script = ExtResource("9")
 targeting_system_path = NodePath("../PlayerShip/TargetingSystem")
 damageable_path = NodePath("../PlayerShip/Damageable")
