@@ -12,6 +12,8 @@ Target a polished 2018–2020 AAA-era real-time game presentation at Full HD (19
 - Purposeful cockpit glazing and framing, readable engine architecture, weapon mounts and navigation/sensor hardware.
 - PBR materials with controlled roughness/metalness variation, subtle micro-surface detail and restrained emissive elements.
 - Lighting that reveals form without crushing the hull into black or clipping emissive surfaces into flat neon shapes.
+- Ship armor uses procedural, object-space micro-normal and roughness breakup; keep the effect subtle enough that it reads as machined metal rather than noisy stone.
+- The flight backdrop keeps its planet and nebula landmarks camera-relative across the full mission route, with a restrained blue fill light to preserve readable shadow-side hull detail.
 - Performance-conscious geometry and materials suitable for Godot Forward+.
 - Texture budget: generally 1K for small/secondary assets and up to 2K for hero ships and major environment surfaces. Do not author 4K textures for the first playable release.
 - Capture and review gameplay at 1920×1080. Target stable 60 FPS on a reasonable mid-range Windows gaming PC; profile before increasing geometry, texture size or post-processing.
@@ -56,6 +58,7 @@ The four small fighter-class ships can be selected in the hangar. The other thre
 
 ## Known visual work remaining
 
+- The current pass adds procedural micro-surface PBR breakup to all five fleet-expansion classes and the Raider, plus a controlled space fill light, persistent planetary landmark and warm/cool showroom lighting. Generated GLBs and Full HD captures still need CI validation and visual inspection before acceptance.
 - The current screenshots demonstrate framing and asset integration, but the ships and environment still need further surface-detail, lighting, animation and effects refinement to approach the target.
 - The demo's Full HD captures are deterministic QA output, not a substitute for a human art review.
 - 4K textures and 4K rendering are explicitly out of scope for the first playable release.
