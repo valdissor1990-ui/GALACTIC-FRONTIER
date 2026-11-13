@@ -35,6 +35,21 @@ func _run() -> void:
 	failed_loader.call("_show_fallback_visuals")
 	_check(fallback_mesh.visible, "fallback mesh becomes visible after a runtime load failure")
 
+	# Exercise the real failure path: a missing GLB must automatically restore
+	# the hidden blockout meshes instead of leaving the ship invisible.
+	var missing_parent := Node3D.new()
+	missing_parent.name = "Visual"
+	var missing_fallback := _make_hidden_fallback("MissingGLBFallback")
+	var missing_loader := Node3D.new()
+	missing_loader.set_script(loader_script)
+	missing_loader.set("source_path", "res://assets/models/ships/__missing_test_asset__.glb")
+	missing_parent.add_child(missing_fallback)
+	missing_parent.add_child(missing_loader)
+	root.add_child(missing_parent)
+	await process_frame
+	_check(missing_fallback.visible, "missing GLB automatically restores the ship blockout")
+	missing_parent.queue_free()
+
 	if _failed == 0:
 		print("SHIP_VISUAL_FALLBACK_TEST_PASS: %d assertions" % _passed)
 		quit(0)
