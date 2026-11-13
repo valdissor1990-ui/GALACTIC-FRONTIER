@@ -285,6 +285,10 @@ def add_weighted_normals(obj):
 def finish_mesh(obj, material, bevel=0.0, smooth=False):
     if material:
         obj.data.materials.append(material)
+    # Primitive meshes (spheres, cylinders, bolts and service hardware) also
+    # need a real UV layer; default primitive UVs are inconsistent after joins.
+    if obj.type == "MESH":
+        add_detail_uv(obj.data)
     if bevel > 0.0:
         modifier = obj.modifiers.new("Machined edge radii", "BEVEL")
         modifier.width = bevel
