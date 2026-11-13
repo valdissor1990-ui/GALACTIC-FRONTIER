@@ -850,6 +850,9 @@ void fragment() {
 	var field := MultiMeshInstance3D.new()
 	field.name = "AsteroidField"
 	field.multimesh = asteroid_multimesh
+	# The mesh instances span a 33 km route; without an explicit world AABB,
+	# Godot culls the MultiMesh using only the unit-sphere source mesh bounds.
+	field.custom_aabb = AABB(Vector3(-1500.0, -1500.0, -35000.0), Vector3(3000.0, 3000.0, 36000.0))
 	for index in range(total_asteroid_count):
 		var position: Vector3
 		if index < asteroid_count:
@@ -950,6 +953,7 @@ void fragment() {
 	_cosmic_dust = MultiMeshInstance3D.new()
 	_cosmic_dust.name = "InterplanetaryDust"
 	_cosmic_dust.multimesh = dust_multimesh
+	_cosmic_dust.custom_aabb = AABB(Vector3(-4000.0, -4000.0, -36000.0), Vector3(8000.0, 8000.0, 37000.0))
 	var dust_palettes: Array[Color] = [
 		Color(0.28, 0.48, 0.82), Color(0.46, 0.62, 0.92),
 		Color(0.72, 0.48, 0.34), Color(0.42, 0.72, 0.72),
