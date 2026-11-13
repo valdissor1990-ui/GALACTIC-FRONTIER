@@ -284,3 +284,22 @@ Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43480389
 - Starfield и ChromaticStarClusters создаются через `_make_multimesh()`, получают instance transforms на расстоянии 520–1040 units, но в текущем коде не получают явный `custom_aabb`.
 - Это вероятный источник frustum-culling звёздного поля. Требуется проверить после нового Forward+ capture и при подтверждении добавить bounds примерно ±1100 для starfield и ±1300 для clusters.
 - Не считать это доказанной первопричиной пустого синего кадра: в capture c4ce910 также были проблемы с активным viewport environment и visibility/cull mask, которые уже получили отдельные исправления в b3b74.
+
+
+## 13. Сюжет M01–M05: definitions/runtime manager есть, gameplay wiring неполный
+
+Статический просмотр `mission_catalog.gd`, `campaign_manager.gd`, `story_state.gd` и `demo_mission_director.gd` выявил:
+- `MissionCatalog` действительно содержит M01–M05, требования по предыдущим миссиям, флаги, выборы и отношения.
+- `CampaignManager` умеет стартовать миссию, принимать события, проверять objectives, сохранять состояние и завершать миссию.
+- `DemoMissionDirector._begin_story_campaign_if_available()` автоматически стартует только `m01`, и только для контракта `silent_relay`.
+- `DemoMissionDirector._is_story_mission_active()` проверяет конкретный mission_id, но `_report_story_event()` жёстко ограничен `m01`.
+- Основной mission director всё ещё один большой файл (~50 KB) со смешанными обязанностями: контракты, миссия, docking, station services, story dialogue, saves, HUD и combat orchestration.
+
+Следствие: успешные M01–M05 CampaignManager tests доказывают работу модели кампании, но не доказывают, что M02–M05 полностью проходимы в реальном gameplay. Нужен отдельный runtime mission router / reusable MissionRunner, который преобразует gameplay events в objectives активной миссии, плюс конкретные сценовые set-pieces/actors для targets M02–M05. Проверять фактический прохождение каждого задания, а не только state-machine tests.
+
+Статус:
+- MissionCatalog M01–M05: DONE (данные существуют).
+- CampaignManager state/save API: DONE / PARTIAL (unit/integration tests проходят, но не равны полному игровому прохождению).
+- M01 story hook в demo director: PARTIAL.
+- M02–M05 gameplay wiring and set-pieces: NOT VERIFIED / PARTIAL.
+- MissionDirector decomposition into MissionDefinition + MissionRunner: NOT STARTED.
