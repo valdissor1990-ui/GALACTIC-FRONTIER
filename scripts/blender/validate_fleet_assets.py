@@ -163,7 +163,7 @@ def count_embedded_glb_images(path):
             raise ValueError("GLB chunk extends beyond file boundary")
         chunk = data[chunk_start:chunk_end]
         if chunk_type == 0x4E4F534A:
-            document = json.loads(chunk.decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+            document = json.loads(chunk.decode("utf-8").rstrip(" \t\r\n\0"))
         elif chunk_type == 0x004E4942:
             binary_length = chunk_length
         offset = chunk_end
