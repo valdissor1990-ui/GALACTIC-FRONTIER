@@ -39,6 +39,18 @@ func _run() -> void:
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
+	var sky_camera := Camera3D.new()
+	sky_camera.position = Vector3(120.0, 34.0, -240.0)
+	sky_camera.current = true
+	root.add_child(sky_camera)
+	await process_frame
+	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
+	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
+	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
+	var rings := environment.get_node("NacreonRings") as MeshInstance3D
+	_check(is_equal_approx(rings.global_basis.x.length(), 100.0), "planetary rings retain their full visual scale while following the camera")
+	sky_camera.queue_free()
+	await process_frame
 	var route_hit := _ray(ROUTE_START, ROUTE_END)
 	_check(route_hit.is_empty(), "the relay approach corridor must remain clear of solid obstacles")
 	var planet := environment.get_node_or_null("AureliaCollision") as StaticBody3D
