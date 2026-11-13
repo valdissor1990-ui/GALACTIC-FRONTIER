@@ -66,7 +66,7 @@ func _build_gravity_lens_landmark() -> void:
 	lens.set_script(load("res://scripts/environment/gravity_lens_mass.gd"))
 	lens.set("lens_strength", 0.75)
 	lens.set("lens_radius", 0.12)
-	lens.set("show_debug_core", true)
+	lens.set("show_debug_core", false)
 	lens.position = Vector3(-240.0, 72.0, -430.0)
 	add_child(lens)
 
