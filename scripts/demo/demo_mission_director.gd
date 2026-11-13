@@ -29,6 +29,13 @@ var _service_layer: CanvasLayer
 var _service_status_label: Label
 var _service_stats_label: Label
 var _service_buttons: Dictionary = {}
+var _active_contract: Dictionary = {}
+var _contract_id: String = "silent_relay"
+var _contract_name: String = "The Silent Relay"
+var _system_name: String = "Aurelia Reach"
+var _mission_reward: int = 5000
+var _waves_per_encounter: int = 3
+var _enemy_health_multiplier: float = 1.0
 var _mission_label: Label
 var _objective_label: Label
 var _radio_label: Label
@@ -48,14 +55,15 @@ func _ready() -> void:
 
 
 func _initialize_mission() -> void:
+	_load_active_contract()
 	if encounter != null:
 		encounter.set_process(false)
 		encounter.set_physics_process(false)
 	_build_station()
 	_build_navigation_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
 	_build_mission_hud()
-	_set_radio("ORBITAL CONTROL", "Pilot, the relay stopped transmitting. Approach the beacon and scan its core.")
-	print("MISSION_READY: THE SILENT RELAY")
+	_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
+	print("MISSION_READY: ", _contract_name, " | SYSTEM: ", _system_name, " | WAVES: ", _waves_per_encounter * 2)
 	var save_manager := _get_save_manager()
 	var pending_payload: Variant = save_manager.get("pending_mission_payload") if save_manager != null else {}
 	if pending_payload is Dictionary and not pending_payload.is_empty():
@@ -63,6 +71,22 @@ func _initialize_mission() -> void:
 		call_deferred("_restore_pending_checkpoint", pending_payload)
 	else:
 		_save_checkpoint("mission start")
+
+
+
+func _load_active_contract() -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		_active_contract = {"id": "silent_relay", "name": "The Silent Relay", "system_id": "aurelia", "reward": 5000, "waves_per_encounter": 3, "enemy_health_multiplier": 1.0}
+	else:
+		_active_contract = profile.call("get_active_contract")
+		var system: Dictionary = profile.call("get_active_system")
+		_system_name = str(system.get("name", "Aurelia Reach"))
+	_contract_id = str(_active_contract.get("id", "silent_relay"))
+	_contract_name = str(_active_contract.get("name", "The Silent Relay"))
+	_mission_reward = int(_active_contract.get("reward", 5000))
+	_waves_per_encounter = clampi(int(_active_contract.get("waves_per_encounter", 3)), 3, 5)
+	_enemy_health_multiplier = clampf(float(_active_contract.get("enemy_health_multiplier", 1.0)), 1.0, 1.5)
 
 
 func _restore_pending_checkpoint(payload: Dictionary) -> void:
@@ -163,9 +187,9 @@ func _complete_wreck_scan() -> void:
 
 func _spawn_wave() -> void:
 	wave_index += 1
-	var count := 2 if wave_index < 3 else 3
+	var count := 2 if wave_index < _waves_per_encounter else 3
 	if stage == MissionStage.DEFEND_WRECK:
-		count = 3 if wave_index < 2 else 4
+		count = 3 if wave_index < _waves_per_encounter else 4
 	enemies_remaining = count
 	_set_radio("TACTICAL", "Hostile wave %d. Break their attack and protect the data." % wave_index)
 	for index in range(count):
@@ -178,8 +202,8 @@ func _spawn_wave() -> void:
 		var spawn := player.global_position + Vector3(cos(angle) * radius, _rng.randf_range(-35.0, 35.0), sin(angle) * radius - 70.0)
 		var damageable := enemy.get_node_or_null("Damageable") as Damageable
 		if damageable != null:
-			damageable.max_hull = 125.0 + wave_index * 18.0
-			damageable.max_shield = 75.0 + wave_index * 12.0
+			damageable.max_hull = (125.0 + wave_index * 18.0) * _enemy_health_multiplier
+			damageable.max_shield = (75.0 + wave_index * 12.0) * _enemy_health_multiplier
 		world.add_child(enemy)
 		enemy.global_position = spawn
 		if enemy.has_method("set_player"):
@@ -197,7 +221,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 	enemies_remaining = maxi(0, enemies_remaining - 1)
 	if enemies_remaining > 0:
 		return
-	if stage == MissionStage.DEFEND_RELAY and wave_index < 3:
+	if stage == MissionStage.DEFEND_RELAY and wave_index < _waves_per_encounter:
 		_next_wave_timer = 22.0
 	elif stage == MissionStage.DEFEND_RELAY:
 		stage = MissionStage.INVESTIGATE_WRECK
@@ -205,7 +229,7 @@ func _on_enemy_destroyed(enemy: Node3D) -> void:
 		_move_beacon(WRECK_POSITION, Color(1.0, 0.62, 0.18))
 		_set_radio("ORBITAL CONTROL", "Relay secured. A debris trail leads to a second signal source. Investigate.")
 		_save_checkpoint("relay secured")
-	elif stage == MissionStage.DEFEND_WRECK and wave_index < 3:
+	elif stage == MissionStage.DEFEND_WRECK and wave_index < _waves_per_encounter:
 		_next_wave_timer = 18.0
 	elif stage == MissionStage.DEFEND_WRECK:
 		stage = MissionStage.RETURN_HOME
@@ -225,10 +249,10 @@ func _update_hud() -> void:
 	match stage:
 		MissionStage.OUTBOUND: objective = "FLY TO THE SILENT RELAY"
 		MissionStage.SCAN_RELAY: objective = "SCAN RELAY CORE  [F]"
-		MissionStage.DEFEND_RELAY: objective = "DEFEND THE RELAY  |  WAVE %d/3  |  HOSTILES %d" % [wave_index, enemies_remaining]
+		MissionStage.DEFEND_RELAY: objective = "DEFEND THE RELAY  |  WAVE %d/%d  |  HOSTILES %d" % [wave_index, _waves_per_encounter, enemies_remaining]
 		MissionStage.INVESTIGATE_WRECK: objective = "INVESTIGATE THE WRECK"
 		MissionStage.SCAN_WRECK: objective = "SCAN DATA CORE  [F]"
-		MissionStage.DEFEND_WRECK: objective = "DEFEND RECOVERED DATA  |  WAVE %d/3  |  HOSTILES %d" % [wave_index, enemies_remaining]
+		MissionStage.DEFEND_WRECK: objective = "DEFEND RECOVERED DATA  |  WAVE %d/%d  |  HOSTILES %d" % [wave_index, _waves_per_encounter, enemies_remaining]
 		MissionStage.RETURN_HOME: objective = "RETURN TO THE ORBITAL CARRIER"
 		MissionStage.DOCKING: objective = "DOCK WITH THE CARRIER  [E]"
 		MissionStage.DOCKED: objective = "CARRIER MAINTENANCE SERVICES"
@@ -237,23 +261,23 @@ func _update_hud() -> void:
 	_objective_label.text = objective
 	_distance_label.text = "NAV  %05.0f m" % _distance_to_objective()
 	_timer_label.text = "%02d:%02d" % [int(mission_seconds) / 60, int(mission_seconds) % 60]
-	var total_waves := 6
+	var total_waves := _waves_per_encounter * 2
 	var completed_waves := 0
 	if stage == MissionStage.DEFEND_RELAY:
 		completed_waves = wave_index - 1
 	elif stage == MissionStage.INVESTIGATE_WRECK or stage == MissionStage.SCAN_WRECK:
-		completed_waves = 3
+		completed_waves = _waves_per_encounter
 	elif stage == MissionStage.DEFEND_WRECK:
-		completed_waves = 3 + wave_index - 1
+		completed_waves = _waves_per_encounter + wave_index - 1
 	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.DOCKING or stage == MissionStage.DOCKED or stage == MissionStage.COMPLETE:
-		completed_waves = 6
+		completed_waves = total_waves
 	if stage == MissionStage.DOCKING:
 		var alignment := (-player.global_transform.basis.z).normalized().dot(Vector3.BACK)
 		_progress_label.text = "DOCKING APPROACH  |  SPEED %0.0f / 18 m/s  |  ALIGN %0.0f%%  |  PRESS E" % [player.velocity.length(), clampf(alignment, -1.0, 1.0) * 100.0]
 	elif stage == MissionStage.DOCKED:
 		_progress_label.text = "CARRIER SERVICES  |  HULL REPAIR  •  SHIELD RECHARGE  •  BOOST REFILL  •  WEAPON RECALIBRATION"
 	else:
-		_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [completed_waves, total_waves]
+		_progress_label.text = "%s  /  %s   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [_contract_name.to_upper(), _system_name.to_upper(), completed_waves, total_waves]
 
 
 func _build_mission_hud() -> void:
@@ -491,7 +515,7 @@ func _complete_docking(qa_mode: bool = false) -> void:
 
 	var profile := get_node_or_null("/root/GameProfile")
 	if profile != null:
-		mission_reward_credits = int(profile.call("complete_mission", "silent_relay", 5000))
+		mission_reward_credits = int(profile.call("complete_mission", _contract_id, _mission_reward))
 	var save_manager := _get_save_manager()
 	if save_manager != null:
 		save_manager.call("delete_slot", "silent_relay")
@@ -756,6 +780,7 @@ func _save_checkpoint(reason: String = "manual") -> bool:
 	var damageable := player.get_node_or_null("Damageable") as Damageable
 	var payload := {
 		"mission_id": "silent_relay",
+		"contract_id": _contract_id,
 		"stage": int(stage),
 		"wave_index": wave_index,
 		"mission_seconds": mission_seconds,
@@ -795,13 +820,15 @@ func _load_checkpoint() -> bool:
 func restore_from_save(payload: Dictionary) -> bool:
 	if str(payload.get("mission_id", "")) != "silent_relay":
 		return false
+	if str(payload.get("contract_id", _contract_id)) != _contract_id:
+		return false
 	var saved_stage := int(payload.get("stage", -1))
 	if saved_stage < MissionStage.OUTBOUND or saved_stage > MissionStage.DOCKING:
 		return false
 	stage = saved_stage
 	wave_index = maxi(0, int(payload.get("wave_index", 0)))
 	mission_seconds = maxf(0.0, float(payload.get("mission_seconds", 0.0)))
-	enemies_destroyed = clampi(int(payload.get("enemies_destroyed", 0)), 0, 18)
+	enemies_destroyed = clampi(int(payload.get("enemies_destroyed", 0)), 0, 100)
 	player.global_position = _vector_from_payload(payload.get("player_position", []), player.global_position)
 	player.global_rotation = _vector_from_payload(payload.get("player_rotation", []), player.global_rotation)
 	player.velocity = _vector_from_payload(payload.get("player_velocity", []), Vector3.ZERO)
