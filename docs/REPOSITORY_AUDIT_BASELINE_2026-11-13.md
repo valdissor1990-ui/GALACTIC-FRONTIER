@@ -207,3 +207,34 @@ Run 43478941870 запущен на раннем промежуточном SHA 
 - https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43479039175
 
 До завершения второго run исправление экспорта текстур считать IN PROGRESS, не PASS.
+
+
+## 11. Сверка с утверждённым графическим эталоном 2022 и Full HD roadmap
+
+Прочитаны документы `docs/GRAPHICS_TARGET_2022.md`, `docs/GRAPHICS_2022_ACCEPTANCE_MATRIX.md`, `docs/VISUAL_TARGET.md`, `docs/FLEET_VISUAL_QA_2026-11-13.md`, `docs/FULLHD_2026_IMPLEMENTATION_ROADMAP.md`.
+
+Обязательные цели проекта:
+- Forward+ / Vulkan, Full HD 1920×1080.
+- 60 FPS / 16.7 ms target на GTX 1660 / RX 580 class hardware — цель, пока не подтверждённая физическим GPU профилированием.
+- Hero textures до 2K, вторичные ассеты обычно 1K, mipmaps, anisotropic filtering, GPU compression.
+- PBR: albedo, tangent normal, ORM, emissive; реальные GLB embedded images.
+- UV checker/texel density/overlap validation.
+- LOD0/LOD1/LOD2 и measured budgets по каждому классу.
+- 6 ракурсов каждого корабля и реальные Forward+ screenshots.
+
+### Явные P0/P1 задачи из Full HD roadmap, которые нельзя потерять
+
+- Full HD viewport/UI anchors/safe areas и RU/EN localization.
+- Forward+ Vulkan capture pipeline; старые Compatibility/OpenGL captures не считать продуктовой приёмкой.
+- Swept projectile collision и regression test для быстрого снаряда против тонкой цели.
+- Детерминированные seed для gameplay RNG, encounter и environment layouts.
+- Ограничить projectile lights и применять SSAO по сценам, не вслепую.
+- Mesh consolidation, LOD0/1/2 и budgets для всех кораблей.
+- PBR texture pipeline: albedo/normal/ORM/emissive, Blender high-to-low bake, UV density/overlap validation.
+- ACES/tonemap, restrained glow, MSAA/TAA evaluation и grading LUT.
+- Planet atmosphere/surface maps и VFX engines/shields/hull damage.
+- Превратить большой `demo_mission_director.gd` в data-driven MissionDefinition + reusable MissionRunner.
+- Хранить story flags в persistent PlayerProfile, а не в flight/combat scripts.
+- Добавить station set-pieces, seeded NPC traffic, AI LOD и economy tables.
+
+Эти задачи включены в master prompt как обязательные пакеты, а не факультативные идеи.
