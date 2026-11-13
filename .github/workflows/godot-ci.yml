@@ -50,6 +50,10 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Run M01-M05 story regression tests
+        if: hashFiles('tests/story/test_m01_m05_story.gd') != ''
+        run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
+
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
 
