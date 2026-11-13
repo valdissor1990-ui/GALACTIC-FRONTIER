@@ -133,7 +133,6 @@ func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 			environment.adjustment_contrast = quality.adjustment_contrast()
 			environment.adjustment_saturation = quality.adjustment_saturation()
 		quality.apply_tonemap_extras(environment)
-		quality.apply_glow_levels(environment)
 
 	if is_instance_valid(_stellar_key_light):
 		_stellar_key_light.shadow_enabled = quality.shadow_enabled()
