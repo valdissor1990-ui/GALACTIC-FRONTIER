@@ -130,7 +130,7 @@ func _run_showcase() -> void:
 		profile.completed_mission_ids.append("vesper_salvage")
 		profile.active_contract_id = "kestrel_patrol"
 		profile.call("_save_profile")
-		var contract_board := load("res://scenes/ui/contract_board.tscn").instantiate()
+		var contract_board: Control = load("res://scenes/ui/contract_board.tscn").instantiate() as Control
 		get_tree().root.add_child(contract_board)
 		await get_tree().process_frame
 		await get_tree().create_timer(0.25).timeout
