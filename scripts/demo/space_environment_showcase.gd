@@ -17,6 +17,7 @@ const SHOTS: Array[Dictionary] = [
 
 func _ready() -> void:
 	_camera.current = true
+	_camera.make_current()
 	_camera.far = 50000.0
 	_environment.set("showcase_mode", true)
 	call_deferred("_capture_sequence")
@@ -30,6 +31,65 @@ func _capture_sequence() -> void:
 		push_error("SPACE_SHOWCASE_DIRECTORY_FAILED: %s" % error_string(directory_error))
 		get_tree().quit(1)
 		return
+
+	# Aim the camera at the first shot before placing the marker, and explicitly
+	# include all 3D render layers so the diagnostic tests the actual viewport.
+	var first_shot: Dictionary = SHOTS[0]
+	_camera.global_position = first_shot["camera"]
+	_camera.look_at(first_shot["target"], Vector3.UP)
+	_camera.cull_mask = 0xFFFFFFFF
+	_camera.force_update_transform()
+	_environment.visible = true
+	var diagnostic_sphere := MeshInstance3D.new()
+	diagnostic_sphere.name = "ShowcaseCameraDiagnostic"
+	var diagnostic_mesh := SphereMesh.new()
+	diagnostic_mesh.radius = 12.0
+	diagnostic_mesh.height = 24.0
+	var diagnostic_material := StandardMaterial3D.new()
+	diagnostic_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	diagnostic_material.albedo_color = Color(1.0, 0.04, 0.02)
+	diagnostic_material.emission_enabled = true
+	diagnostic_material.emission = Color(1.0, 0.04, 0.02)
+	diagnostic_material.emission_energy_multiplier = 1.5
+	diagnostic_mesh.material = diagnostic_material
+	diagnostic_sphere.mesh = diagnostic_mesh
+	diagnostic_sphere.layers = 1
+	var marker_position := _camera.global_position + (-_camera.global_basis.z * 80.0)
+	diagnostic_sphere.position = marker_position
+	add_child(diagnostic_sphere)
+	await get_tree().process_frame
+	await get_tree().create_timer(0.2).timeout
+	var diagnostic_image := get_viewport().get_texture().get_image()
+	var diagnostic_error := diagnostic_image.save_png(output_directory + "/space-camera-diagnostic.png")
+	var viewport_environment := get_viewport().world_3d.environment
+	print("SPACE_SHOWCASE_CAMERA_ACTIVE=", get_viewport().get_camera_3d() == _camera,
+		" cull_mask=", _camera.cull_mask,
+		" diagnostic_save=", diagnostic_error,
+		" environment_visible=", _environment.visible,
+		" environment_position=", _environment.global_position,
+		" viewport_background_mode=", viewport_environment.background_mode if viewport_environment != null else -1,
+		" viewport_background_color=", viewport_environment.background_color if viewport_environment != null else Color.BLACK,
+		" children=", _environment.get_child_count())
+	var visible_mesh_children := 0
+	var has_world_environment := false
+	var world_environment_names: Array[String] = []
+	var environment_background_mode := -1
+	for child in _environment.get_children():
+		if child is MeshInstance3D and child.name != "ShowcaseCameraDiagnostic" and child.mesh != null and child.visible:
+			visible_mesh_children += 1
+		if child is WorldEnvironment:
+			has_world_environment = true
+			world_environment_names.append(child.name)
+			if child.environment != null:
+				environment_background_mode = child.environment.background_mode
+	print("SPACE_SHOWCASE_VISIBLE_MESH_CHILDREN=", visible_mesh_children,
+		" camera_position=", _camera.global_position,
+		" camera_forward=", -_camera.global_basis.z,
+		" world_environment=", has_world_environment,
+		" world_environment_names=", world_environment_names,
+		" background_mode=", environment_background_mode)
+	diagnostic_sphere.queue_free()
+	await get_tree().process_frame
 
 	for shot in SHOTS:
 		_camera.fov = float(shot.get("fov", 60.0))

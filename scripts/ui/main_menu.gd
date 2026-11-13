@@ -82,6 +82,18 @@ func _build_menu() -> void:
 	hangar.custom_minimum_size = Vector2(390, 48)
 	hangar.pressed.connect(_open_hangar)
 	layout.add_child(hangar)
+
+	var graphics_quality := get_node_or_null("/root/GraphicsQuality")
+	if graphics_quality != null:
+		var quality_button := Button.new()
+		quality_button.name = "GraphicsQualityButton"
+		quality_button.custom_minimum_size = Vector2(390, 42)
+		quality_button.text = "  GRAPHICS QUALITY  /  " + str(graphics_quality.call("get_preset_name")).to_upper()
+		quality_button.pressed.connect(func() -> void:
+			graphics_quality.call("cycle_preset")
+			quality_button.text = "  GRAPHICS QUALITY  /  " + str(graphics_quality.call("get_preset_name")).to_upper()
+		)
+		layout.add_child(quality_button)
 	var save_manager := get_node_or_null("/root/GameSave")
 	var saved_game: Dictionary = save_manager.call("load_slot", "silent_relay") if save_manager != null else {"ok": false}
 	if _is_valid_checkpoint(saved_game):
@@ -114,7 +126,7 @@ func _build_menu() -> void:
 		_rollback_button.pressed.connect(_confirm_rollback)
 		layout.add_child(_rollback_button)
 	var controls := Label.new()
-	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F5 — SAVE     F9 — LOAD"
+	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F10 — GRAPHICS     F5 — SAVE     F9 — LOAD"
 	controls.add_theme_font_size_override("font_size", 12)
 	controls.add_theme_color_override("font_color", Color("#7294a8"))
 	layout.add_child(controls)

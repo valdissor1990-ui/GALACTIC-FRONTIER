@@ -43,7 +43,7 @@ func _sweep_for_impact(motion: Vector3) -> bool:
 		return false
 	var space := get_world_3d().direct_space_state
 	var excluded: Array[RID] = []
-	if _source is CollisionObject3D:
+	if is_instance_valid(_source) and _source is CollisionObject3D:
 		excluded.append((_source as CollisionObject3D).get_rid())
 
 	# Nine parallel rays approximate the projectile's 0.12 m spherical radius.
@@ -95,7 +95,7 @@ func _sweep_for_impact(motion: Vector3) -> bool:
 
 
 func _create_trail() -> void:
-	var hostile := _source != null and _source.is_in_group("hostile_fighters")
+	var hostile := is_instance_valid(_source) and _source.is_in_group("hostile_fighters")
 	var tint := Color(1.0, 0.16, 0.045) if hostile else Color(0.08, 0.66, 1.0)
 	var trail := GPUParticles3D.new()
 	trail.name = "EnergyTrail"
@@ -141,7 +141,7 @@ func _create_trail() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if _impacted or body == null or _is_source_or_child(body):
+	if _impacted or not is_instance_valid(body) or _is_source_or_child(body):
 		return
 	_impacted = true
 
@@ -151,16 +151,16 @@ func _on_body_entered(body: Node3D) -> void:
 	var damageable := _find_damageable(body)
 	if damageable != null:
 		damageable.call("take_damage", damage)
-	var tint := Color(1.0, 0.16, 0.045) if (_source != null and _source.is_in_group("hostile_fighters")) else Color(0.08, 0.66, 1.0)
+	var tint := Color(1.0, 0.16, 0.045) if (is_instance_valid(_source) and _source.is_in_group("hostile_fighters")) else Color(0.08, 0.66, 1.0)
 	CombatEffects.spawn_burst(get_tree().current_scene, global_position, tint, 0.55)
 	queue_free()
 
 
 func _is_source_or_child(node: Node) -> bool:
-	if _source == null:
+	if not is_instance_valid(node) or not is_instance_valid(_source):
 		return false
 	var current: Node = node
-	while current != null:
+	while is_instance_valid(current):
 		if current == _source:
 			return true
 		current = current.get_parent()
@@ -168,8 +168,10 @@ func _is_source_or_child(node: Node) -> bool:
 
 
 func _find_damageable(node: Node) -> Node:
+	if not is_instance_valid(node):
+		return null
 	var current: Node = node
-	while current != null:
+	while is_instance_valid(current):
 		if current.has_method("take_damage"):
 			return current
 		var component := current.get_node_or_null("Damageable")

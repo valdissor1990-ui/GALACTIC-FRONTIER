@@ -18,8 +18,20 @@ func _run() -> void:
 	await physics_frame
 	var obstacles := get_nodes_in_group("space_obstacles")
 	_check(obstacles.size() >= 100, "planet and asteroid collision proxies must be registered")
+	var quality := root.get_node_or_null("GraphicsQuality")
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
+	if quality != null:
+		var expected_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
+		var starfield := environment.get_node_or_null("Starfield") as MultiMeshInstance3D
+		_check(starfield != null and starfield.multimesh.instance_count == expected_stars, "starfield instance count follows the active quality preset")
+		var expected_base_asteroids: int = roundi(float(environment.get("_system_asteroid_density")) * float(quality.asteroid_count()) / 160.0)
+		var expected_asteroids: int = expected_base_asteroids + 28
+		var actual_asteroids: int = asteroid_field.multimesh.instance_count if asteroid_field != null else -1
+		_check(environment.asteroid_count == expected_base_asteroids, "system asteroid density scales with active preset")
+		_check(asteroid_field != null and actual_asteroids == expected_asteroids, "asteroid count follows active preset (actual=%d expected=%d base=%d)" % [actual_asteroids, expected_asteroids, environment.asteroid_count])
+		var quality_planet := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
+		_check(quality_planet != null and (quality_planet.mesh as SphereMesh).radial_segments == quality.planet_segments() * 2, "planet tessellation follows the active quality preset")
 	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
 	_check(asteroid_field != null and asteroid_field.custom_aabb.size.z >= 36000.0, "asteroid MultiMesh bounds cover the full 33 km route for correct frustum culling")
 	if asteroid_field != null:
@@ -27,10 +39,15 @@ func _run() -> void:
 		var outer_sector_count := 0
 		var route_clear := true
 		var asteroid_proxy_count := 0
+		var variant_proxy_count := 0
 		for obstacle in obstacles:
 			if not str(obstacle.name).begins_with("AsteroidCollision_"):
 				continue
-			asteroid_proxy_count += 1
+			var collision_index := str(obstacle.name).trim_prefix("AsteroidCollision_").to_int()
+			if collision_index < asteroid_field.multimesh.instance_count:
+				asteroid_proxy_count += 1
+			else:
+				variant_proxy_count += 1
 			var asteroid_position := (obstacle as Node3D).global_position
 			var route_distance := float(environment.call("_distance_to_route", asteroid_position))
 			if route_distance < 82.0 or route_distance > 760.0:
@@ -39,11 +56,19 @@ func _run() -> void:
 				relay_sector_count += 1
 			elif asteroid_position.z <= -20000.0:
 				outer_sector_count += 1
-		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each batched asteroid has one matching collision proxy")
+		_check(asteroid_proxy_count == asteroid_field.multimesh.instance_count, "each base MultiMesh asteroid has one matching collision proxy")
+		_check(variant_proxy_count == 18, "each Kenney meteor variant has one matching collision proxy")
 		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
 		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
 		_check(route_clear, "every asteroid remains outside the marked flight corridor")
 	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
+	var gas_giant := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
+	var gas_material := gas_giant.mesh.surface_get_material(0) as StandardMaterial3D if gas_giant != null else null
+	_check(gas_material != null and gas_material.albedo_texture != null, "authored 2K gas-giant texture loads through Image API")
+	_check(asteroid_field != null and not (asteroid_field.multimesh.mesh is SphereMesh), "NASA asteroid GLB geometry is used instead of sphere fallback")
+	_check(environment.has_node("OrbitalStationLandmark/NASA_ISS_Visual") or environment.has_node("OrbitalStationLandmark/ProceduralISS"), "orbital station uses NASA GLB or the stock-Godot procedural fallback")
+	_check(environment.has_node("CivilianCargoA") and environment.has_node("CivilianMiner") and environment.has_node("CivilianCourier"), "Kenney civilian traffic GLBs are loaded")
+	_check(environment.has_node("DerelictWreckLandmark/KenneyDerelictTurret"), "Kenney derelict turret GLB is loaded")
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
@@ -64,7 +89,10 @@ func _run() -> void:
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
-	_check(dust_field != null and dust_field.multimesh.instance_count == 2400, "2400 interplanetary dust flakes are populated in one batched MultiMesh")
+	var expected_dust_count := 2400
+	if quality != null:
+		expected_dust_count = maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
+	_check(dust_field != null and dust_field.multimesh.instance_count == expected_dust_count, "%d interplanetary dust flakes match the active quality preset" % expected_dust_count)
 	_check(dust_field != null and dust_field.multimesh.use_custom_data, "interplanetary dust uses per-instance spectral tint and shimmer data")
 	_check(dust_field != null and dust_field.multimesh.mesh.material is ShaderMaterial, "interplanetary dust uses one shared shader material rather than per-particle nodes")
 	var sky_camera := Camera3D.new()

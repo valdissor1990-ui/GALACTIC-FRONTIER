@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3]
+[gd_scene load_steps=45 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -14,6 +14,9 @@
 [ext_resource type="Script" path="res://scripts/combat/combat_encounter_controller.gd" id="11"]
 [ext_resource type="Script" path="res://scripts/audio/engine_audio.gd" id="12"]
 [ext_resource type="Shader" path="res://shaders/space/test_flight_star_sky.gdshader" id="13"]
+[ext_resource type="Script" path="res://scripts/graphics/dynamic_resolution.gd" id="14"]
+[ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/vfx/gravitational_lens_fx.gd" id="16"]
 
 
 [sub_resource type="BoxMesh" id="BoxMesh_wing_panel"]
@@ -154,6 +157,15 @@ emission = Color(0.02, 0.28, 0.52, 1)
 emission_energy_multiplier = 1.4
 
 [node name="TestFlight" type="Node3D"]
+
+[node name="DynamicResolution" type="Node" parent="."]
+script = ExtResource("14")
+
+[node name="ScreenPostFx" type="CanvasLayer" parent="."]
+script = ExtResource("15")
+
+[node name="GravitationalLensFx" type="Node" parent="."]
+script = ExtResource("16")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_space")
@@ -332,6 +344,7 @@ position = Vector3(0, 0, -2.8)
 
 
 [node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
 script = ExtResource("3")
 ship_path = NodePath("../PlayerShip")
 
@@ -401,6 +414,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CombatHUD" type="CanvasLayer" parent="."]
+layer = 11
 script = ExtResource("9")
 targeting_system_path = NodePath("../PlayerShip/TargetingSystem")
 damageable_path = NodePath("../PlayerShip/Damageable")

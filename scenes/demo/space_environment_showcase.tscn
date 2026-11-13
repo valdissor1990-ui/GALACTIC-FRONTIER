@@ -8,6 +8,7 @@ script = ExtResource("1")
 
 [node name="SpaceEnvironment" parent="." instance=ExtResource("2")]
 showcase_mode = true
+asteroid_count = 64
 
 [node name="ShowcaseCamera" type="Camera3D" parent="."]
 current = true

@@ -1,7 +1,7 @@
 extends SceneTree
-## Captures the actual primitive-based flight test scene, not the separate mission showcase.
+## Captures the production visual flight scene with GLB player and enemy ships.
 
-const SCENE_PATH := "res://scenes/flight/test_flight.tscn"
+const SCENE_PATH := "res://scenes/flight/visual_flight.tscn"
 
 
 func _initialize() -> void:

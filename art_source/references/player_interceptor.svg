@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1100" viewBox="0 0 1600 1100">
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#101b2b"/><stop offset="1" stop-color="#07101b"/></linearGradient><linearGradient id="hull" x2="0" y2="1"><stop stop-color="#b8c8d2"/><stop offset=".45" stop-color="#526879"/><stop offset="1" stop-color="#1c2c3b"/></linearGradient><linearGradient id="wing" x2="0" y2="1"><stop stop-color="#8fa7b6"/><stop offset="1" stop-color="#263849"/></linearGradient></defs>
+<rect width="1600" height="1100" fill="url(#bg)"/><g fill="#d9e8f1" opacity=".4"><circle cx="120" cy="80" r="2"/><circle cx="300" cy="150" r="1.5"/><circle cx="1400" cy="120" r="2"/><circle cx="1300" cy="450" r="1.5"/><circle cx="220" cy="850" r="1.5"/><circle cx="1500" cy="900" r="2"/></g>
+<g font-family="Arial,sans-serif" fill="#dce9f0"><text x="70" y="65" font-size="28" letter-spacing="5">GALACTIC FRONTIER / FLIGHT SYSTEMS</text><text x="70" y="105" font-size="16" fill="#79cbe7" letter-spacing="3">CONCEPT 01 — PLAYER INTERCEPTOR / BLOCKOUT TARGET</text></g>
+<g stroke="#8fc6d9" stroke-width="2" fill="none" opacity=".8"><path d="M70 135H1530"/><path d="M70 1010H1530"/></g>
+<!-- top view -->
+<g transform="translate(470 530)" stroke="#c6d7df" stroke-width="3" stroke-linejoin="round">
+<path fill="url(#hull)" d="M0 -350 L48 -250 L70 -110 L420 65 L440 125 L105 70 L85 210 L45 270 L0 235 L-45 270 L-85 210 L-105 70 L-440 125 L-420 65 L-70 -110 L-48 -250Z"/>
+<path fill="#273e50" d="M0 -315 L28 -180 L22 150 L0 225 L-22 150 L-28 -180Z"/>
+<path fill="#1a2d3c" d="M-55 -80 L-365 75 L-120 10Z M55 -80 L365 75 L120 10Z"/>
+<path fill="#6c8798" d="M-32 -230 L0 -300 L32 -230 L20 -100 L-20 -100Z"/>
+<path fill="#142b3c" d="M-45 -80 L-23 -120 L23 -120 L45 -80 L25 15 L-25 15Z"/>
+<path fill="#0b1723" d="M-26 -75 L0 -105 L26 -75 L18 -20 L-18 -20Z"/>
+<path fill="#182b38" d="M-410 78 L-350 91 L-300 105 L-360 115Z M410 78 L350 91 L300 105 L360 115Z"/>
+<path fill="#0c1a27" d="M-70 178 L-35 215 L-15 230 L-75 250Z M70 178 L35 215 L15 230 L75 250Z"/>
+<path fill="#f5a45c" stroke="#f5a45c" d="M-18 220 L-8 220 L-8 255 L-18 255Z M18 220 L8 220 L8 255 L18 255Z"/>
+<path fill="#39c9f5" stroke="#39c9f5" d="M-8 -155 L0 -175 L8 -155 L5 -125 L-5 -125Z"/>
+<path fill="none" stroke="#4fd5f7" stroke-width="7" d="M-15 258 L-15 310 M15 258 L15 310"/>
+</g>
+<g font-family="Arial" font-size="17" fill="#b9d7e4" stroke="#70b6cf" stroke-width="1.5"><path d="M500 205 L680 170 L780 170" fill="none"/><text x="790" y="176" stroke="none">Armoured central spine</text><path d="M145 590 L95 700 L70 700" fill="none"/><text x="70" y="730" stroke="none">Swept delta wings</text><path d="M485 780 L670 850 L770 850" fill="none"/><text x="780" y="856" stroke="none">Twin vectoring engines</text><path d="M470 420 L720 370 L800 370" fill="none"/><text x="810" y="376" stroke="none">Recessed cockpit canopy</text></g>
+<g transform="translate(1120 330)" font-family="Arial" fill="#dce9f0"><text x="0" y="-110" font-size="22" letter-spacing="3">DESIGN LANGUAGE</text><text x="0" y="-65" font-size="17" fill="#83cde4">ROLE / MULTI-PURPOSE INTERCEPTOR</text><text x="0" y="-15" font-size="16">• Wide swept wing planform</text><text x="0" y="20" font-size="16">• Narrow armored fuselage</text><text x="0" y="55" font-size="16">• Twin separated engine nacelles</text><text x="0" y="90" font-size="16">• Blue-white exhaust, amber signals</text><text x="0" y="125" font-size="16">• Layered replaceable armor panels</text><text x="0" y="200" font-size="14" fill="#82a8ba">MATERIAL PALETTE</text><rect x="0" y="220" width="54" height="24" fill="#60798a"/><rect x="62" y="220" width="54" height="24" fill="#1d303f"/><rect x="124" y="220" width="54" height="24" fill="#4acdf4"/><rect x="186" y="220" width="54" height="24" fill="#eaa15c"/><text x="0" y="280" font-size="13" fill="#829ba9">Top-view silhouette target — not final mesh topology.</text></g>
+<g font-family="Arial" fill="#8eaab8" font-size="14"><text x="70" y="1045">GF-01 / REV A / ORIGINAL CONCEPT STUDY</text><text x="1530" y="1045" text-anchor="end">ORTHOGRAPHIC TOP VIEW</text></g></svg>

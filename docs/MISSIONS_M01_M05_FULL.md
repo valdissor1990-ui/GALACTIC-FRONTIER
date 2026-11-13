@@ -4,7 +4,7 @@
 **Code:** `scripts/story/*`, `tests/story/test_m01_m05_story.gd`  
 **Branch:** `grok/m01-m05-story-pack`
 
-Runtime UI/scene hooks are **not** fully wired; data + logic are ready for ChatGPT integration.
+Runtime integration is present in CampaignManager, demo_mission_director and the bilingual dialogue overlay. M01 is exercised in the playable Silent Relay demo; M02–M05 remain data-driven campaign progression and are not yet full standalone playable missions.
 
 ---
 
@@ -81,18 +81,18 @@ Pick revisit node by flags when player talks again at Port Solace / Vesper drop.
 godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
 ```
 
-Status until CI runs: **NOT RUN** in this environment.
+Regression tests run in Godot CI as part of the campaign integration workflow.
 
 ---
 
-## Programmer wiring checklist
+## Runtime integration status
 
-1. Autoload or session owns one `StoryState`.
-2. On save: merge `story.to_save_dict()` into payload.
-3. On load: `story.from_save_dict(payload)`.
-4. Mission tracker reads `MissionCatalog.get_mission` objectives; call `apply_completion` on success.
-5. Dialogue UI reads `DialogueM01M05.get_node` and shows `text.ru` or `text.en` by locale.
-6. Do not modify SaveManager schema version without migration.
+- `Campaign` autoload owns `StoryState` and `CampaignManager`.
+- Campaign objective progress is persisted through the versioned `GameSave` slot.
+- Gameplay events are routed to objective types and target IDs; one event advances one matching objective.
+- The playable Silent Relay demo starts M01, presents bilingual Quinn dialogue and reports flight/scan/docking milestones.
+- M02–M05 definitions and dialogue are present; their dedicated world locations, NPC scenes and complete playable mission loops remain future content work.
+- Do not modify SaveManager schema version without migration.
 
 ---
 

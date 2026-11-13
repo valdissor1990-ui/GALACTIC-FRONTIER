@@ -143,6 +143,7 @@ func _run_showcase() -> void:
 		profile.active_contract_id = original_active_contract
 		profile.call("_save_profile")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
+	get_tree().quit()
 
 
 func _move_to_objective(distance: float) -> void:

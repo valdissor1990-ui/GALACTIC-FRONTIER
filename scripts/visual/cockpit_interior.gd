@@ -56,31 +56,31 @@ func _create_materials() -> void:
 
 
 func _build_dashboard() -> void:
-	_box("Instrument fascia", Vector3(0.0, -0.39, -1.28), Vector3(1.72, 0.16, 0.62), _armor, Vector3(-9.0, 0.0, 0.0))
-	_box("Central display housing", Vector3(0.0, -0.205, -1.53), Vector3(0.62, 0.36, 0.12), _panel, Vector3(-8.0, 0.0, 0.0))
-	_box("Port display housing", Vector3(-0.59, -0.22, -1.45), Vector3(0.42, 0.30, 0.10), _panel, Vector3(-10.0, 0.0, 0.0))
-	_box("Starboard display housing", Vector3(0.59, -0.22, -1.45), Vector3(0.42, 0.30, 0.10), _panel, Vector3(-10.0, 0.0, 0.0))
-	_quad("Primary flight display", Vector3(0.0, -0.19, -1.598), Vector2(0.50, 0.255), _screen)
-	_quad("Port tactical display", Vector3(-0.59, -0.205, -1.506), Vector2(0.33, 0.205), _screen)
-	_quad("Starboard systems display", Vector3(0.59, -0.205, -1.506), Vector2(0.33, 0.205), _screen)
-	_box("Lower console", Vector3(0.0, -0.57, -1.02), Vector3(1.34, 0.10, 0.56), _panel, Vector3(-12.0, 0.0, 0.0))
+	_box("Instrument fascia", Vector3(0.0, -0.46, -1.96), Vector3(1.50, 0.12, 0.48), _armor, Vector3(-9.0, 0.0, 0.0))
+	_box("Central display housing", Vector3(0.0, -0.25, -1.80), Vector3(0.56, 0.30, 0.10), _panel, Vector3(-8.0, 0.0, 0.0))
+	_box("Port display housing", Vector3(-0.53, -0.25, -1.72), Vector3(0.38, 0.25, 0.08), _panel, Vector3(-10.0, 0.0, 0.0))
+	_box("Starboard display housing", Vector3(0.53, -0.25, -1.72), Vector3(0.38, 0.25, 0.08), _panel, Vector3(-10.0, 0.0, 0.0))
+	_quad("Primary flight display", Vector3(0.0, -0.25, -1.68), Vector2(0.46, 0.22), _screen)
+	_quad("Port tactical display", Vector3(-0.53, -0.25, -1.62), Vector2(0.31, 0.18), _screen)
+	_quad("Starboard systems display", Vector3(0.53, -0.25, -1.62), Vector2(0.31, 0.18), _screen)
+	_box("Lower console", Vector3(0.0, -0.66, -1.52), Vector3(1.18, 0.08, 0.42), _panel, Vector3(-12.0, 0.0, 0.0))
 	for side in [-1.0, 1.0]:
-		_box("Side instrument console %s" % side, Vector3(side * 0.91, -0.23, -0.88), Vector3(0.20, 0.54, 0.92), _armor, Vector3(-8.0, side * -8.0, 0.0))
-		_box("Side console light strip %s" % side, Vector3(side * 0.80, -0.06, -1.04), Vector3(0.025, 0.36, 0.025), _screen)
+		_box("Side instrument console %s" % side, Vector3(side * 0.79, -0.30, -1.34), Vector3(0.15, 0.42, 0.72), _armor, Vector3(-8.0, side * -8.0, 0.0))
+		_box("Side console light strip %s" % side, Vector3(side * 0.70, -0.13, -1.46), Vector3(0.018, 0.28, 0.018), _screen)
 		for index in range(4):
 			var button_material := _amber if index == 3 else _screen
-			_box("Console key %s %s" % [side, index], Vector3(side * (0.66 + (index % 2) * 0.10), -0.48, -1.08 + float(index / 2) * 0.13), Vector3(0.065, 0.025, 0.065), button_material)
+			_box("Console key %s %s" % [side, index], Vector3(side * (0.60 + (index % 2) * 0.09), -0.50, -1.43 + float(index / 2) * 0.11), Vector3(0.065, 0.025, 0.065), button_material)
 
 
 func _build_canopy_frame() -> void:
-	# The forward camera sits just ahead of the instrument fascia. Keep the canopy
-	# structure farther forward so its side rails frame the view instead of
-	# intersecting the camera or disappearing behind it.
+	# The pilot camera sits behind the instrument fascia. Keep the canopy
+	# rails outside the central sightline and use thin forward pillars to frame
+	# the view without blocking the dashboard or the flight path.
 	for side in [-1.0, 1.0]:
-		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -2.62), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
-		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.55), Vector3(0.09, 0.12, 4.15), _canopy_frame, Vector3(0.0, 0.0, side * 4.0))
-		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.82, -2.28), Vector3(0.055, 0.055, 0.78), _canopy_frame, Vector3(-8.0, side * 12.0, 0.0))
-	_box("Canopy cross member", Vector3(0.0, 0.88, -2.55), Vector3(1.55, 0.05, 0.07), _canopy_frame)
+		_box("Forward canopy pillar %s" % side, Vector3(side * 0.96, 0.25, -2.62), Vector3(0.038, 0.76, 0.05), _canopy_frame, Vector3(-13.0, side * -7.0, 0.0))
+		_box("Side canopy rail %s" % side, Vector3(side * 1.55, 0.32, -0.55), Vector3(0.035, 0.07, 3.85), _canopy_frame, Vector3(0.0, 0.0, side * 3.0))
+		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.74, -2.28), Vector3(0.035, 0.035, 0.58), _canopy_frame, Vector3(-8.0, side * 12.0, 0.0))
+	_box("Canopy cross member", Vector3(0.0, 0.80, -2.55), Vector3(1.36, 0.035, 0.05), _canopy_frame)
 	_box("Rear canopy arch", Vector3(0.0, 0.46, 0.42), Vector3(1.72, 0.12, 0.10), _panel)
 
 
@@ -92,13 +92,13 @@ func _build_controls() -> void:
 		stick_mesh.bottom_radius = 0.045
 		stick_mesh.height = 0.32
 		stick.mesh = stick_mesh
-		stick.position = Vector3(side * 0.48, -0.40, -0.78)
+		stick.position = Vector3(side * 0.44, -0.42, -1.16)
 		stick.material_override = _armor
 		add_child(stick)
-		_box("Flight control grip %s" % side, Vector3(side * 0.48, -0.24, -0.78), Vector3(0.14, 0.11, 0.13), _panel)
+		_box("Flight control grip %s" % side, Vector3(side * 0.44, -0.28, -1.16), Vector3(0.14, 0.11, 0.13), _panel)
 	for index in range(8):
 		var x := -0.52 + float(index) * 0.15
-		_box("Lower console key %d" % index, Vector3(x, -0.505, -0.86), Vector3(0.075, 0.025, 0.075), _amber if index in [1, 6] else _screen)
+		_box("Lower console key %d" % index, Vector3(x, -0.56, -1.43), Vector3(0.075, 0.025, 0.075), _amber if index in [1, 6] else _screen)
 
 
 func _build_holographic_hud() -> void:
@@ -116,9 +116,9 @@ func _build_holographic_hud() -> void:
 	_box("HUD vertical line", Vector3(0.0, 0.10, -3.1), Vector3(0.008, 0.48, 0.008), _white)
 	var target_label := Label3D.new()
 	target_label.text = "TARGET  /  NAV  /  SYSTEMS"
-	target_label.position = Vector3(-0.78, 0.40, -3.05)
-	target_label.font_size = 28
-	target_label.pixel_size = 0.0024
+	target_label.position = Vector3(-0.44, 0.34, -3.05)
+	target_label.font_size = 18
+	target_label.pixel_size = 0.0018
 	target_label.modulate = Color(0.28, 0.78, 1.0)
 	target_label.outline_size = 0
 	add_child(target_label)

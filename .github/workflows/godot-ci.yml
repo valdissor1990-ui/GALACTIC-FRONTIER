@@ -23,6 +23,7 @@ on:
       - chatgpt/dialogue-choice-overlay-m01
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
+      - chatgpt/grok-completion-full-2026-11
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -35,6 +36,7 @@ on:
       - chatgpt/campaign-objectives
       - chatgpt/m01-m05-story-integration
       - chatgpt/campaign-story-integration
+      - chatgpt/space-visual-art-pass
   workflow_dispatch:
 
 permissions:
@@ -84,6 +86,12 @@ jobs:
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
+      - name: Run camera rig regression tests
+        run: godot --headless --path . --script res://tests/flight/test_camera_rig.gd
+
+      - name: Run pause and mouse-input regression tests
+        run: godot --headless --path . --script res://tests/flight/test_pause_and_mouse.gd
+
       - name: Run docking alignment and speed-gate tests
         run: godot --headless --path . --script res://tests/flight/test_docking_rules.gd
 
@@ -113,6 +121,9 @@ jobs:
 
       - name: Run updater version and configuration tests
         run: godot --headless --path . --script res://tests/update/test_update_manager.gd
+
+      - name: Run graphics quality preset regression tests
+        run: godot --headless --path . --script res://tests/graphics/test_graphics_quality.gd
 
       - name: Run M01-M05 story progression, dialogue and save tests
         run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
