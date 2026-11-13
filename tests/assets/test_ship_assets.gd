@@ -2,6 +2,8 @@ extends SceneTree
 ## Validates all seven GLB files through Godot's runtime glTF parser.
 ## ResourceLoader import metadata is not required; GLTFDocument reads the binary GLB directly.
 
+const RUNTIME_GLTF_SCRIPT: Script = preload("res://scripts/visual/runtime_gltf_model.gd")
+
 const SHIPS := [
 	"res://assets/models/ships/player_fighter.glb",
 	"res://assets/models/ships/enemy_fighter.glb",
@@ -56,6 +58,11 @@ func _validate_glb(path: String) -> void:
 		_fail(path, "GLTFDocument.generate_scene returned null")
 		return
 
+	var detailed_surfaces := RUNTIME_GLTF_SCRIPT.apply_surface_finish(scene)
+	if detailed_surfaces <= 0:
+		_fail(path, "runtime surface finish did not update any PBR materials")
+		scene.free()
+		return
 	var meshes: Array[MeshInstance3D] = []
 	_collect_meshes(scene, meshes)
 	if meshes.is_empty():
@@ -72,7 +79,7 @@ func _validate_glb(path: String) -> void:
 		return
 
 	_passed += 1
-	print("  PASS  %s — %d mesh nodes, %d surfaces" % [path.get_file(), meshes.size(), valid_surfaces])
+	print("  PASS  %s — %d mesh nodes, %d surfaces, %d detailed materials" % [path.get_file(), meshes.size(), valid_surfaces, detailed_surfaces])
 	scene.free()
 
 
