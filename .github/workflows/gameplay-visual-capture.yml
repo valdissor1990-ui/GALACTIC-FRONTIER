@@ -84,6 +84,7 @@ jobs:
             test -d "$app_data"
             cp "$app_data"/gameplay-*.png build/screenshots/ 2>/dev/null || true
             cp "$app_data"/carrier-services.png build/screenshots/ 2>/dev/null || true
+            cp "$app_data"/contract-board.png build/screenshots/ 2>/dev/null || true
             if [ "$ready" -ne 1 ]; then
               echo "Showcase did not finish within 150 seconds; captured $(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l) screenshots."
               cat build/gameplay-showcase.log
@@ -154,19 +155,20 @@ jobs:
           test -s build/screenshots/contact-sheet.png
           test -s build/screenshots/fleet-hangar.png
           test -s build/screenshots/carrier-services.png
+          test -s build/screenshots/contract-board.png
           python3 - <<'PY'
           from PIL import Image
-          for path in ("build/screenshots/fleet-hangar.png", "build/screenshots/carrier-services.png"):
+          for path in ("build/screenshots/fleet-hangar.png", "build/screenshots/carrier-services.png", "build/screenshots/contract-board.png"):
               image = Image.open(path)
               if image.size != (1920, 1080):
                   raise SystemExit(f"Unexpected Full HD screenshot size: {path} {image.size}")
           PY
           grep -E "FLEET_HANGAR_SHIPS_LOADED=7" build/fleet-hangar.log
           grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
-          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png build/screenshots/carrier-services.png
+          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png build/screenshots/carrier-services.png build/screenshots/contract-board.png
           grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
           grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
-          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 9
+          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 10
           for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
             grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
           done
