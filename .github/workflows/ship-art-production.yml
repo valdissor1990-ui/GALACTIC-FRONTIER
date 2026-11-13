@@ -6,6 +6,7 @@ on:
     branches:
       - chatgpt/ship-art-production
       - chatgpt/fullhd-visual-polish
+      - chatgpt/fractal-noise-planet-nebula-pass
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
