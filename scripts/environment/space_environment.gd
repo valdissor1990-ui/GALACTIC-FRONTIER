@@ -325,7 +325,7 @@ func _load_system_theme() -> void:
 func _build_world_environment() -> void:
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_COLOR
+	environment.background_mode = Environment.BG_SKY
 	environment.background_color = Color(0.002, 0.004, 0.012)
 	var sky := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
@@ -336,6 +336,7 @@ func _build_world_environment() -> void:
 	sky_material.sun_angle_max = 8.0
 	sky.sky_material = sky_material
 	environment.sky = sky
+	environment.background_energy_multiplier = 0.62
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = _theme.get("ambient", Color(0.28, 0.36, 0.54))
 	environment.ambient_light_energy = 1.0
@@ -586,7 +587,7 @@ void fragment() {
 	vec3 spectral_color = mix(cool_cloud, warm_cloud, spectral_mix);
 	ALBEDO = spectral_color * (0.64 + filaments * 0.32);
 	EMISSION = spectral_color * (0.012 + cloud_mass * 0.05 + filaments * 0.03);
-	ALPHA = clamp(density * nebula_tint.a, 0.0, 0.18);
+	ALPHA = clamp(density * nebula_tint.a * 0.42, 0.0, 0.09);
 }
 """
 	var quality := get_node_or_null("/root/GraphicsQuality")
