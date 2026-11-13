@@ -1,6 +1,6 @@
-"""Structural validation for the generated seven-ship production batch.
+"""Structural validation for the generated seven-ship batch and one-mesh Unreal exports.
 
-This is a build-integrity gate, not a visual-quality or Unreal-import acceptance test.
+This is a structural build gate, not a visual-quality or Unreal-import acceptance test. Each exported ship GLB must contain one complete mesh.
 Run inside Blender 4.5 after the ship builders:
   blender --background --python scripts/blender/validate_generated_fleet.py -- --output-dir build/unreal-assets
 """
