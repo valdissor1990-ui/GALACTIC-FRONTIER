@@ -3,9 +3,8 @@
 Run in Unreal Editor: Tools -> Execute Python Script.
 Compile the C++ project once before running this script.
 
-Imports the existing GLB fleet and creates a flight-test level. Import results
-are inventoried per source file; multi-mesh GLBs are deliberately flagged
-rather than silently treated as complete single-mesh ships.
+Imports the existing GLB fleet, creates a flight-test level, and prepares
+/Game/GF/VFX for Niagara systems used by UGFShipVfxComponent.
 """
 from pathlib import Path
 import json
@@ -15,6 +14,16 @@ import unreal
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ASSET_ROOT = PROJECT_ROOT / "assets" / "models"
 CONTENT_ROOT = "/Game/GF"
+VFX_ROOT = CONTENT_ROOT + "/VFX"
+
+# Soft paths expected by UGFShipVfxComponent defaults
+VFX_SYSTEMS = [
+    "NS_EngineThrust",
+    "NS_BoostTrail",
+    "NS_MuzzleFlash",
+    "NS_SpaceDust",
+    "NS_ImpactSpark",
+]
 
 
 def log(message):
@@ -22,11 +31,7 @@ def log(message):
 
 
 def inspect_glb_scene(source_path: Path):
-    """Read the GLB JSON chunk and log the complete source node/mesh hierarchy.
-
-    This does not replace Interchange import. It provides a source-of-truth
-    inventory so assembly can be validated against original node transforms.
-    """
+    """Read the GLB JSON chunk and log the complete source node/mesh hierarchy."""
     try:
         with source_path.open("rb") as stream:
             header = stream.read(12)
@@ -40,7 +45,7 @@ def inspect_glb_scene(source_path: Path):
             json_length, json_type = struct.unpack("<I4s", stream.read(8))
             if json_type != b"JSON" or json_length > total_length - 20:
                 raise ValueError("missing or invalid GLB JSON chunk")
-            document = json.loads(stream.read(json_length).decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+            document = json.loads(stream.read(json_length).decode("utf-8").rstrip(" \t\r\n\0"))
 
         nodes = document.get("nodes", [])
         meshes = document.get("meshes", [])
@@ -169,6 +174,42 @@ def find_static_mesh(imported_paths, token):
     return candidates[0] if candidates else None
 
 
+def create_niagara_placeholders():
+    """Create empty Niagara System assets if missing.
+
+    Full emitter graphs are authored in the Niagara editor (see docs/NIAGARA_VFX.md).
+    This only ensures the soft-path assets exist so ShipVfx does not hard-fail.
+    """
+    unreal.EditorAssetLibrary.make_directory(VFX_ROOT)
+    asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+
+    factory = None
+    try:
+        factory = unreal.NiagaraSystemFactoryNew()
+    except Exception as error:
+        unreal.log_warning("[GF Setup] NiagaraSystemFactoryNew unavailable: " + str(error))
+        log("Create Niagara systems manually under " + VFX_ROOT +
+            " with names: " + ", ".join(VFX_SYSTEMS))
+        return
+
+    for name in VFX_SYSTEMS:
+        asset_path = VFX_ROOT + "/" + name
+        if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
+            log("VFX exists: " + asset_path)
+            continue
+        try:
+            asset = asset_tools.create_asset(name, VFX_ROOT, unreal.NiagaraSystem, factory)
+            if asset:
+                unreal.EditorAssetLibrary.save_asset(asset_path)
+                log("Created Niagara placeholder: " + asset_path)
+            else:
+                unreal.log_warning("[GF Setup] Could not create " + asset_path)
+        except Exception as error:
+            unreal.log_warning("[GF Setup] Niagara create failed for " + name + ": " + str(error))
+
+    log("Niagara placeholders ready. Author emitters + User.Intensity / User.Boost parameters.")
+
+
 def spawn_lighting():
     sun = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.DirectionalLight, unreal.Vector(0, 0, 0), unreal.Rotator(-25, -35, 0))
@@ -227,6 +268,9 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Ships")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
+    unreal.EditorAssetLibrary.make_directory(VFX_ROOT)
+
+    create_niagara_placeholders()
     imported = import_existing_fleet()
 
     player_mesh = find_static_mesh(imported, "player_fighter")
@@ -237,8 +281,7 @@ def main():
         unreal.log_warning("[GF Setup] Player Fighter mesh is missing or ambiguous.")
 
     create_flight_test_level(imported)
-    log("Import inventory complete. Inspect every ship's complete node hierarchy, materials, "
-        "scale, orientation, pivots and collision before acceptance.")
+    log("Import + VFX folder complete. Author Niagara emitters per docs/NIAGARA_VFX.md.")
 
 
 if __name__ == "__main__":
