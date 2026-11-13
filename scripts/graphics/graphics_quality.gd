@@ -1,5 +1,5 @@
 extends Node
-## Global graphics quality + FSR + tonemap/HDR + space detail tables.
+## Global graphics quality + FSR + tonemap/HDR + space detail + lens tables.
 ## Autoload: GraphicsQuality
 ##
 ## Tonemap: Low Filmic | Medium ACES | High AgX
@@ -197,7 +197,7 @@ func adjustment_saturation() -> float:
 			return 1.05
 
 
-# --- Sky detail (space_starfield_sky.gdshader) -------------------------------
+# --- Sky detail -------------------------------------------------------------
 
 func sky_star_density() -> float:
 	match current:
@@ -252,6 +252,45 @@ func sky_galactic_strength() -> float:
 		Preset.HIGH:
 			return 0.5
 	return 0.35
+
+
+# --- Gravitational lens -----------------------------------------------------
+
+func lens_enabled() -> bool:
+	return current != Preset.LOW
+
+
+func lens_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.85
+		Preset.HIGH:
+			return 1.15
+	return 0.85
+
+
+func lens_chroma() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.003
+		Preset.HIGH:
+			return 0.0055
+	return 0.003
+
+
+func lens_ring_boost() -> float:
+	match current:
+		Preset.LOW:
+			return 0.0
+		Preset.MEDIUM:
+			return 0.75
+		Preset.HIGH:
+			return 1.1
+	return 0.75
 
 
 # --- HDR glow ---------------------------------------------------------------
@@ -409,7 +448,6 @@ func vignette_strength() -> float:
 
 
 func asteroid_count() -> int:
-	# Main belt only; inner + outer fields scale from this
 	match current:
 		Preset.LOW:
 			return 120
