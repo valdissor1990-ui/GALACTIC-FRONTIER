@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space backdrop: SC-inspired hierarchical detail (macro sky → meso gas → micro rocks).
+## SC-inspired hierarchy: macro sky → meso gas → dual-LOD rocks → POI.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -77,7 +77,6 @@ func apply_quality(gq: Node) -> void:
 		env.glow_strength = gq.glow_strength()
 		if gq.has_method("apply_glow_levels"):
 			gq.apply_glow_levels(env)
-		# SC-like depth cue — keep almost black
 		if gq.depth_fog_enabled():
 			env.fog_enabled = true
 			env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
@@ -118,11 +117,16 @@ func _apply_view_ranges() -> void:
 		if gi.has_meta("base_view_range"):
 			base = float(gi.get_meta("base_view_range"))
 		gi.visibility_range_end = base * _view_mul
+		if gi.has_meta("base_view_begin"):
+			gi.visibility_range_begin = float(gi.get_meta("base_view_begin")) * _view_mul
 
 
-func _track_range(gi: GeometryInstance3D, base_end: float) -> void:
+func _track_range(gi: GeometryInstance3D, base_end: float, base_begin: float = 0.0) -> void:
 	gi.set_meta("base_view_range", base_end)
+	gi.set_meta("base_view_begin", base_begin)
 	gi.visibility_range_end = base_end * _view_mul
+	gi.visibility_range_begin = base_begin * _view_mul
+	gi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	_range_nodes.append(gi)
 
 
@@ -303,7 +307,6 @@ func _setup_planets() -> void:
 	)
 
 
-## Local gas medium near giant — SC "fly into the cloud" at small scale (FogVolume).
 func _setup_gas_cloud() -> void:
 	_gas_volume = FogVolume.new()
 	_gas_volume.name = "GasGiantCloud"
@@ -432,6 +435,8 @@ func _setup_lens_mass() -> void:
 		mass.set("lens_strength", 1.15)
 	if "lens_radius" in mass:
 		mass.set("lens_radius", 0.24)
+	mass.set_meta("sector_poi", true)
+	mass.set_meta("sector_radius", 220.0)
 	add_child(mass)
 
 
@@ -460,19 +465,29 @@ func _add_ice_ring(ring_name: String, center: Vector3, inner_r: float, outer_r: 
 
 
 func _setup_asteroid_belt() -> void:
-	_spawn_rock_field("AsteroidBelt", asteroid_count, belt_radius, belt_width, belt_height, Color(0.22, 0.2, 0.18), 0.6, 3.4, 900.0)
+	# Dual LOD: near denser + higher segments; far cheaper shell
+	var near_n := maxi(asteroid_count / 3, 40)
+	var far_n := asteroid_count
+	_spawn_rock_field("AsteroidBeltNear", near_n, belt_radius, belt_width * 0.7, belt_height * 0.8,
+		Color(0.24, 0.21, 0.18), 0.7, 3.0, 140.0, 0.0, 10, 6)
+	_spawn_rock_field("AsteroidBeltFar", far_n, belt_radius, belt_width, belt_height,
+		Color(0.2, 0.18, 0.16), 0.8, 3.6, 950.0, 110.0, 5, 3)
 	var inner_n := maxi(asteroid_count / 4, 20)
-	_spawn_rock_field("InnerCluster", inner_n, 55.0, 22.0, 10.0, Color(0.28, 0.24, 0.2), 0.4, 2.0, 400.0)
+	_spawn_rock_field("InnerCluster", inner_n, 55.0, 22.0, 10.0,
+		Color(0.28, 0.24, 0.2), 0.4, 2.0, 160.0, 0.0, 9, 5)
 
 
 func _setup_outer_debris() -> void:
 	var n := maxi(asteroid_count / 3, 24)
-	_spawn_rock_field("OuterDebris", n, 280.0, 90.0, 40.0, Color(0.16, 0.17, 0.2), 0.8, 4.5, 1400.0)
+	_spawn_rock_field("OuterDebris", n, 280.0, 90.0, 40.0,
+		Color(0.16, 0.17, 0.2), 0.8, 4.5, 1400.0, 200.0, 5, 3)
 
 
 func _spawn_rock_field(
 	field_name: String, count: int, radius: float, width: float, height: float,
-	albedo: Color, scale_min: float, scale_max: float, vis_end: float
+	albedo: Color, scale_min: float, scale_max: float,
+	vis_end: float, vis_begin: float = 0.0,
+	segs: int = 7, rings: int = 4
 ) -> void:
 	var multi := MultiMeshInstance3D.new()
 	multi.name = field_name
@@ -482,8 +497,8 @@ func _spawn_rock_field(
 	var rock := SphereMesh.new()
 	rock.radius = 1.0
 	rock.height = 2.0
-	rock.radial_segments = 7
-	rock.rings = 4
+	rock.radial_segments = segs
+	rock.rings = rings
 	mm.mesh = rock
 	var shader_material := ShaderMaterial.new()
 	var mat: Material = shader_material
@@ -511,7 +526,7 @@ func _spawn_rock_field(
 		)).scaled(Vector3(s, s * _rng.randf_range(0.55, 1.25), s * _rng.randf_range(0.7, 1.15)))
 		mm.set_instance_transform(i, Transform3D(basis, pos))
 	multi.multimesh = mm
-	_track_range(multi, vis_end)
+	_track_range(multi, vis_end, vis_begin)
 	add_child(multi)
 
 
@@ -523,4 +538,6 @@ func _setup_relay_beacon() -> void:
 	beacon.name = "SilentRelayBeacon"
 	beacon.position = Vector3(40, 12, -95)
 	beacon.scale = Vector3(1.4, 1.4, 1.4)
+	beacon.set_meta("sector_poi", true)
+	beacon.set_meta("sector_radius", 200.0)
 	add_child(beacon)
