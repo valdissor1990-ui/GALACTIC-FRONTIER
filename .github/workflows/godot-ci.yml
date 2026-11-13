@@ -23,6 +23,7 @@ on:
       - chatgpt/ship-art-production
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
+      - chatgpt/campaign-story-integration
   workflow_dispatch:
 
 permissions:
