@@ -1020,10 +1020,10 @@ func _create_planet_texture() -> Texture2D:
 		var longitude := (float(x) / float(width - 1) - 0.5) * TAU
 		sin_longitudes[x] = sin(longitude)
 		cos_longitudes[x] = cos(longitude)
-	for y in range(HEIGHT):
+	for y in range(height):
 		var latitude_sin := sin_latitudes[y]
 		var latitude_cos := cos_latitudes[y]
-		for x in range(WIDTH):
+		for x in range(width):
 			var direction_x := latitude_cos * cos_longitudes[x]
 			var direction_y := latitude_sin
 			var direction_z := latitude_cos * sin_longitudes[x]
