@@ -530,19 +530,33 @@ float fbm(vec2 p) {
 
 void fragment() {
 	vec2 drift = vec2(TIME * 0.0015, -TIME * 0.0007);
-	float broad = fbm(UV * vec2(3.8, 2.7) + drift);
-	float detail = fbm(UV * vec2(9.4, 6.8) - drift * 0.7 + vec2(0.23, 0.41));
-	float micro = fbm(UV * vec2(21.0, 15.0) + drift * 1.4 + vec2(0.17, 0.63));
+	// Domain warping breaks the procedural noise grid into long, cloud-like structures.
+	float warp_a = fbm(UV * vec2(3.4, 2.6) + drift + vec2(7.1, 2.3));
+	float warp_b = fbm(UV * vec2(2.8, 4.1) - drift * 0.8 + vec2(3.7, 9.2));
+	vec2 warped_uv = UV + (vec2(warp_a, warp_b) - vec2(0.5)) * 0.22;
+	float broad = fbm(warped_uv * vec2(3.8, 2.7) + drift);
+	float detail = fbm(warped_uv * vec2(9.4, 6.8) - drift * 0.7 + vec2(0.23, 0.41));
+	float micro = fbm(warped_uv * vec2(21.0, 15.0) + drift * 1.4 + vec2(0.17, 0.63));
 	float cloud = broad * 0.58 + detail * 0.29 + micro * 0.13;
-	float filaments = smoothstep(0.48, 0.76, cloud);
-	float wisps = smoothstep(0.58, 0.84, detail) * 0.16
-		+ smoothstep(0.70, 0.92, micro) * 0.10;
+	float cloud_mass = smoothstep(0.43, 0.73, cloud);
+	float ridge_signal = 1.0 - abs(detail * 2.0 - 1.0);
+	float filaments = smoothstep(0.48, 0.91, ridge_signal) * 0.30;
+	float wisps = smoothstep(0.62, 0.86, detail) * 0.13
+		+ smoothstep(0.72, 0.94, micro) * 0.09;
+	float dust_noise = fbm(warped_uv * vec2(5.1, 3.4) + vec2(11.0, 4.0));
+	float dust_lanes = smoothstep(0.56, 0.76, dust_noise);
 	vec2 centered = UV * 2.0 - 1.0;
-	float edge_fade = 1.0 - smoothstep(0.60, 1.0, length(centered));
-	float density = clamp((filaments + wisps) * edge_fade, 0.0, 0.82);
-	ALBEDO = nebula_tint.rgb * (0.72 + filaments * 0.28);
-	EMISSION = nebula_tint.rgb * (0.04 + filaments * 0.18);
-	ALPHA = density * nebula_tint.a;
+	float edge_fade = 1.0 - smoothstep(0.58, 1.0, length(centered));
+	float density = clamp((cloud_mass * 0.72 + filaments + wisps)
+		* edge_fade * (1.0 - dust_lanes * 0.42), 0.0, 0.78);
+	float spectral_mix = smoothstep(0.30, 0.72,
+		fbm(warped_uv * vec2(2.4, 1.8) + vec2(4.7, 9.1))) * 0.32;
+	vec3 cool_cloud = nebula_tint.rgb * vec3(0.66, 0.84, 1.16);
+	vec3 warm_cloud = nebula_tint.rgb * vec3(1.22, 0.72, 0.48);
+	vec3 spectral_color = mix(cool_cloud, warm_cloud, spectral_mix);
+	ALBEDO = spectral_color * (0.64 + filaments * 0.32);
+	EMISSION = spectral_color * (0.025 + cloud_mass * 0.11 + filaments * 0.07);
+	ALPHA = clamp(density * nebula_tint.a, 0.0, 0.34);
 }
 """
 	var quality := get_node_or_null("/root/GraphicsQuality")
