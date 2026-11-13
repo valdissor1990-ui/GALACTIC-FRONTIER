@@ -23,6 +23,7 @@ on:
       - chatgpt/ship-art-production
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
+      - chatgpt/m01-m05-story-integration
   workflow_dispatch:
 
 permissions:
@@ -93,6 +94,9 @@ jobs:
 
       - name: Run updater version and configuration tests
         run: godot --headless --path . --script res://tests/update/test_update_manager.gd
+
+      - name: Run M01-M05 story progression, dialogue and save tests
+        run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
 
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
