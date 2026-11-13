@@ -2,7 +2,7 @@ extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses generated geometry and textures only; no network or third-party assets.
 
-@export_range(300, 2400, 100) var star_count: int = 1800
+@export_range(300, 4000, 100) var star_count: int = 3200
 @export_range(40, 220, 10) var asteroid_count: int = 120
 
 var _rng := RandomNumberGenerator.new()
@@ -81,8 +81,8 @@ func _build_world_environment() -> void:
 
 func _build_starfield() -> void:
 	var star_mesh := SphereMesh.new()
-	star_mesh.radius = 0.32
-	star_mesh.height = 0.64
+	star_mesh.radius = 0.38
+	star_mesh.height = 0.76
 	star_mesh.radial_segments = 6
 	star_mesh.rings = 4
 
@@ -98,7 +98,7 @@ func _build_starfield() -> void:
 	for index in range(star_count):
 		var direction := _random_unit_vector()
 		var distance := _rng.randf_range(520.0, 980.0)
-		var size := _rng.randf_range(1.0, 2.8)
+		var size := _rng.randf_range(1.15, 3.4)
 		var transform := Transform3D(Basis.from_scale(Vector3.ONE * size), direction * distance)
 		_starfield.multimesh.set_instance_transform(index, transform)
 	add_child(_starfield)
