@@ -49,8 +49,16 @@ func _build_environment() -> void:
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18.0, 148.0, 0.0)
 	fill.light_color = Color(0.20, 0.46, 0.82)
-	fill.light_energy = 0.72
+	fill.light_energy = 0.58
 	add_child(fill)
+
+	var rim := DirectionalLight3D.new()
+	rim.name = "HangarWarmRim"
+	rim.rotation_degrees = Vector3(-8.0, 72.0, 0.0)
+	rim.light_color = Color(1.0, 0.48, 0.22)
+	rim.light_energy = 0.42
+	rim.shadow_enabled = false
+	add_child(rim)
 
 
 func _build_stage() -> void:
@@ -139,9 +147,16 @@ func _spawn_ship(data: Dictionary) -> bool:
 	var light := OmniLight3D.new()
 	light.position = position + Vector3(0.0, 5.0, 0.0)
 	light.light_color = Color(0.28, 0.55, 0.92)
-	light.light_energy = 1.35
-	light.omni_range = 13.0
+	light.light_energy = 1.10
+	light.omni_range = 15.0
 	add_child(light)
+
+	var warm_fill := OmniLight3D.new()
+	warm_fill.position = position + Vector3(4.0, 1.8, 1.5)
+	warm_fill.light_color = Color(1.0, 0.42, 0.20)
+	warm_fill.light_energy = 0.48
+	warm_fill.omni_range = 10.0
+	add_child(warm_fill)
 	return true
 
 
