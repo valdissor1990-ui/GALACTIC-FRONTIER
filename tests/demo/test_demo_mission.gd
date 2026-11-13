@@ -74,6 +74,9 @@ func _run_test() -> void:
 	player.velocity = Vector3.ZERO
 	_check(director._attempt_docking(), "Aligned, stationary craft inside the port must dock")
 	_check(director.stage == 10, "Successful docking must open carrier maintenance")
+	_check(not demo.get_node("HUD").visible, "Flight telemetry HUD must be hidden behind carrier maintenance")
+	_check(not demo.get_node("CombatHUD").visible, "Combat HUD must be hidden behind carrier maintenance")
+	_check(director._service_layer.visible, "Carrier maintenance overlay must remain visible above the flight scene")
 	var credits_before := profile.get_credits()
 	director._service_hull()
 	_check(is_equal_approx(damageable.current_hull, damageable.max_hull), "Carrier hull repair must restore full hull")
