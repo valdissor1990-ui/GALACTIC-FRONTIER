@@ -25,6 +25,7 @@ var _stellar_key_light: DirectionalLight3D
 var _comet_root: Node3D
 var _derelict_root: Node3D
 var _orbital_station_root: Node3D
+var _traffic_roots: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -43,6 +44,7 @@ func _ready() -> void:
 	_build_comet_landmark()
 	_build_derelict_landmark()
 	_build_orbital_station_landmark()
+	_build_distant_traffic()
 
 
 func _process(delta: float) -> void:
@@ -115,6 +117,10 @@ func _process(delta: float) -> void:
 		_derelict_root.global_transform = derelict_transform
 	if is_instance_valid(_orbital_station_root):
 		_orbital_station_root.global_transform = camera_transform * Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
+	var traffic_offsets: Array[Vector3] = [Vector3(310.0, 82.0, -760.0), Vector3(-420.0, -165.0, -1120.0), Vector3(165.0, 245.0, -1480.0)]
+	var traffic_rotations: Array[float] = [12.0, -36.0, 74.0]
+	for index in range(mini(_traffic_roots.size(), traffic_offsets.size())):
+		_traffic_roots[index].global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(traffic_rotations[index])), traffic_offsets[index])
 
 
 func _update_showcase_landmarks() -> void:
@@ -165,6 +171,10 @@ func _update_showcase_landmarks() -> void:
 		_derelict_root.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
 	if is_instance_valid(_orbital_station_root):
 		_orbital_station_root.global_transform = Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
+	var traffic_offsets: Array[Vector3] = [Vector3(310.0, 82.0, -760.0), Vector3(-420.0, -165.0, -1120.0), Vector3(165.0, 245.0, -1480.0)]
+	var traffic_rotations: Array[float] = [12.0, -36.0, 74.0]
+	for index in range(mini(_traffic_roots.size(), traffic_offsets.size())):
+		_traffic_roots[index].global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(traffic_rotations[index])), traffic_offsets[index])
 
 
 
@@ -1254,6 +1264,29 @@ func _build_orbital_station_landmark() -> void:
 	station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
 	_orbital_station_root.add_child(station)
 	add_child(_orbital_station_root)
+
+
+func _build_distant_traffic() -> void:
+	# Kenney CC0 ships are intentionally used as distant civilian traffic,
+	# not as replacements for the game's hero fighters. Their silhouettes add
+	# scale and life to the system while remaining small in the Full HD frame.
+	var traffic_specs: Array[Dictionary] = [
+		{"path": "res://assets/models/environment/kenney_craft_cargo_a.glb", "name": "CivilianCargoA", "scale": 8.0},
+		{"path": "res://assets/models/environment/kenney_craft_miner.glb", "name": "CivilianMiner", "scale": 7.0},
+		{"path": "res://assets/models/environment/kenney_craft_racer.glb", "name": "CivilianCourier", "scale": 7.5}
+	]
+	for spec in traffic_specs:
+		var packed_scene := load(str(spec.path)) as PackedScene
+		if packed_scene == null:
+			push_warning("Optional Kenney traffic model unavailable: %s" % spec.path)
+			continue
+		var root := Node3D.new()
+		root.name = str(spec.name)
+		var ship := packed_scene.instantiate()
+		ship.scale = Vector3.ONE * float(spec.scale)
+		root.add_child(ship)
+		add_child(root)
+		_traffic_roots.append(root)
 
 
 func _build_derelict_landmark() -> void:

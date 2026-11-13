@@ -55,3 +55,17 @@ The following sources were checked while expanding the asset pool. They are reco
 ### Selection policy
 
 Prefer CC0/public-domain sources for assets intended for direct integration. For NASA and CC BY sources, preserve the relevant usage guidance and attribution. Do not import a resource solely because it is free: check visual consistency with the approved Freelancer-inspired art direction, file size, texture resolution, PBR channel conventions, mesh scale/orientation, and Godot 4.7.2 import results first.
+
+## Kenney Space Kit — distant traffic
+
+- Files:
+  - `assets/models/environment/kenney_craft_cargo_a.glb`
+  - `assets/models/environment/kenney_craft_miner.glb`
+  - `assets/models/environment/kenney_craft_racer.glb`
+  - Additional staged models: `kenney_craft_cargo_b.glb`, `kenney_meteor_detailed.glb`, `kenney_turret_double.glb`
+- Source: [Kenney Space Kit](https://kenney-assets.itch.io/space-kit), mirrored in [Hidencod/tge-assets](https://github.com/Hidencod/tge-assets/tree/main/packs/space-kit).
+- License: CC0 1.0 Universal. Kenney states that the assets may be used in commercial projects without permission or required attribution.
+- Intended use: three low-poly civilian traffic silhouettes, kept distant from the camera; not used to replace player/enemy hero ships.
+- Import: original GLB files, imported by Godot 4.7.2 glTF importer without conversion.
+
+The staged cargo-B, meteor and turret assets are included for future environment dressing but are not instantiated in the current scene.
