@@ -38,9 +38,9 @@ source_path = "res://assets/models/ships/player_fighter.glb"
 model_scale = Vector3(0.30, 0.30, 0.30)
 
 [node name="ChaseCamera" parent="PlayerShip/CameraRig"]
-position = Vector3(0, 2.35, 6.6)
-rotation_degrees = Vector3(-18, 0, 0)
-fov = 66.0
+position = Vector3(0, 2.35, 5.35)
+rotation_degrees = Vector3(-16, 0, 0)
+fov = 60.0
 
 ; Forward-biased cockpit framing keeps the canopy structure out of the central flight view.
 [node name="CockpitCamera" parent="PlayerShip/CameraRig"]
