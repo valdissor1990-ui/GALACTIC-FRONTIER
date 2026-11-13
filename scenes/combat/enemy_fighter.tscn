@@ -1,8 +1,10 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/enemy_combat_ai.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/damageable.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/combat/projectile.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/graphics/ship_visual_builder.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/vfx/hit_flash_fx.gd" id="5"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_body"]
 radius = 1.1
@@ -37,25 +39,8 @@ projectile_scene = ExtResource("3")
 shape = SubResource("SphereShape3D_body")
 
 [node name="Visual" type="Node3D" parent="."]
-
-[node name="Hull" type="MeshInstance3D" parent="Visual"]
-mesh = SubResource("BoxMesh_hull")
-surface_material_override/0 = SubResource("Material_enemy")
-
-[node name="Wings" type="MeshInstance3D" parent="Visual"]
-position = Vector3(0, -0.05, 0.15)
-mesh = SubResource("BoxMesh_wings")
-surface_material_override/0 = SubResource("Material_enemy")
-
-[node name="LeftEngine" type="MeshInstance3D" parent="Visual"]
-position = Vector3(-0.35, 0, 1.35)
-mesh = SubResource("BoxMesh_engine")
-surface_material_override/0 = SubResource("Material_accent")
-
-[node name="RightEngine" type="MeshInstance3D" parent="Visual"]
-position = Vector3(0.35, 0, 1.35)
-mesh = SubResource("BoxMesh_engine")
-surface_material_override/0 = SubResource("Material_accent")
+script = ExtResource("4")
+craft_type = "enemy"
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2")
@@ -63,6 +48,11 @@ max_hull = 80.0
 max_shield = 40.0
 shield_regen_per_second = 5.0
 shield_regen_delay = 3.5
+
+[node name="HitFlashFx" type="Node" parent="."]
+script = ExtResource("5")
+damageable_path = NodePath("../Damageable")
+visual_root_path = NodePath("../Visual")
 
 [node name="Muzzle" type="Marker3D" parent="."]
 position = Vector3(0, 0, -1.6)

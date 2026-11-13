@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/open_space_backdrop.gd" id="1"]
+
+[node name="OpenSpaceBackdrop" type="Node3D"]
+script = ExtResource("1")
+asteroid_count = 220
+belt_radius = 140.0
+belt_width = 55.0
+belt_height = 18.0
