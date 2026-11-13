@@ -1,6 +1,6 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Dense open-space backdrop with procedural planet/rock materials.
+## Open-space backdrop: SC-inspired hierarchical detail (macro sky → meso gas → micro rocks).
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -17,6 +17,9 @@ var _sky_mat: ShaderMaterial
 var _sun_disc_root: Node3D
 var _sun_disc: MeshInstance3D
 var _sun_flare: MeshInstance3D
+var _gas_volume: FogVolume
+var _view_mul: float = 1.0
+var _range_nodes: Array[GeometryInstance3D] = []
 
 
 func _ready() -> void:
@@ -25,10 +28,12 @@ func _ready() -> void:
 	if gq:
 		asteroid_count = gq.asteroid_count()
 		enable_ssao = gq.ssao_enabled()
+		_view_mul = gq.object_view_distance_mul()
 	_setup_sky_environment()
 	_setup_lights()
 	_setup_sun_disc()
 	_setup_planets()
+	_setup_gas_cloud()
 	_setup_asteroid_belt()
 	_setup_outer_debris()
 	if spawn_relay_beacon:
@@ -43,6 +48,8 @@ func apply_quality(gq: Node) -> void:
 	if gq == null:
 		return
 	enable_ssao = gq.ssao_enabled()
+	_view_mul = gq.object_view_distance_mul()
+	_apply_view_ranges()
 	if _sky_mat:
 		_sky_mat.set_shader_parameter("star_density", gq.sky_star_density())
 		_sky_mat.set_shader_parameter("star_brightness", gq.sky_star_brightness())
@@ -70,6 +77,24 @@ func apply_quality(gq: Node) -> void:
 		env.glow_strength = gq.glow_strength()
 		if gq.has_method("apply_glow_levels"):
 			gq.apply_glow_levels(env)
+		# SC-like depth cue — keep almost black
+		if gq.depth_fog_enabled():
+			env.fog_enabled = true
+			env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+			env.fog_density = gq.depth_fog_density()
+			env.fog_light_color = Color(0.08, 0.1, 0.16)
+			env.fog_aerial_perspective = 0.35
+		else:
+			env.fog_enabled = false
+	if _gas_volume:
+		var on := gq.gas_cloud_enabled()
+		_gas_volume.visible = on
+		if on:
+			var mat := _gas_volume.material as FogMaterial
+			if mat:
+				mat.density = gq.gas_cloud_density()
+			var s := gq.gas_cloud_size()
+			_gas_volume.size = Vector3(s, s * 0.55, s)
 	if _sun_disc:
 		var disc_material := _sun_disc.material_override as ShaderMaterial
 		if disc_material:
@@ -83,6 +108,22 @@ func apply_quality(gq: Node) -> void:
 		_key_light.shadow_enabled = gq.shadow_enabled()
 		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
 		_key_light.directional_shadow_mode = gq.shadow_splits() as DirectionalLight3D.ShadowMode
+
+
+func _apply_view_ranges() -> void:
+	for gi in _range_nodes:
+		if gi == null or not is_instance_valid(gi):
+			continue
+		var base: float = 900.0
+		if gi.has_meta("base_view_range"):
+			base = float(gi.get_meta("base_view_range"))
+		gi.visibility_range_end = base * _view_mul
+
+
+func _track_range(gi: GeometryInstance3D, base_end: float) -> void:
+	gi.set_meta("base_view_range", base_end)
+	gi.visibility_range_end = base_end * _view_mul
+	_range_nodes.append(gi)
 
 
 func _gq() -> Node:
@@ -157,6 +198,7 @@ func _setup_sky_environment() -> void:
 	if enable_ssao:
 		env.ssao_radius = 1.0
 		env.ssao_intensity = 1.2
+	env.volumetric_fog_enabled = false
 	_world_env.environment = env
 	add_child(_world_env)
 
@@ -164,7 +206,6 @@ func _setup_sky_environment() -> void:
 func _setup_lights() -> void:
 	_key_light = DirectionalLight3D.new()
 	_key_light.name = "StarKeyLight"
-	# Keep the star source inside the forward hemisphere of the initial chase camera.
 	_key_light.rotation_degrees = Vector3(-12, 140, 0)
 	_key_light.light_color = Color(1.0, 0.96, 0.88)
 	_key_light.light_energy = 1.55
@@ -188,14 +229,11 @@ func _setup_lights() -> void:
 
 
 func _setup_sun_disc() -> void:
-	# The disc is a world-space object aligned with the source direction of the
-	# directional key light. Its angular diameter is deliberately restrained.
 	var source_direction := _key_light.global_transform.basis.z.normalized()
 	_sun_disc_root = Node3D.new()
 	_sun_disc_root.name = "SunDiscRoot"
 	_sun_disc_root.position = source_direction * 1400.0
 	add_child(_sun_disc_root)
-
 	var flare_mesh := QuadMesh.new()
 	flare_mesh.size = Vector2(112.0, 112.0)
 	_sun_flare = MeshInstance3D.new()
@@ -211,7 +249,6 @@ func _setup_sun_disc() -> void:
 	_sun_flare.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_sun_flare.visibility_range_end = 5000.0
 	_sun_disc_root.add_child(_sun_flare)
-
 	var disc_mesh := QuadMesh.new()
 	disc_mesh.size = Vector2(18.0, 18.0)
 	_sun_disc = MeshInstance3D.new()
@@ -266,6 +303,32 @@ func _setup_planets() -> void:
 	)
 
 
+## Local gas medium near giant — SC "fly into the cloud" at small scale (FogVolume).
+func _setup_gas_cloud() -> void:
+	_gas_volume = FogVolume.new()
+	_gas_volume.name = "GasGiantCloud"
+	_gas_volume.position = Vector3(-90, 40, -260)
+	_gas_volume.size = Vector3(90, 50, 90)
+	var mat := FogMaterial.new()
+	mat.density = 0.012
+	mat.albedo = Color(0.25, 0.35, 0.55)
+	mat.emission = Color(0.08, 0.12, 0.22)
+	mat.emission_energy = 0.4
+	mat.height_falloff = 0.35
+	mat.edge_fade = 0.45
+	_gas_volume.material = mat
+	var gq := _gq()
+	if gq:
+		_gas_volume.visible = gq.gas_cloud_enabled()
+		mat.density = gq.gas_cloud_density()
+		var s := gq.gas_cloud_size()
+		if s > 0.0:
+			_gas_volume.size = Vector3(s, s * 0.55, s)
+	else:
+		_gas_volume.visible = true
+	add_child(_gas_volume)
+
+
 func _add_gas_giant(planet_name: String, pos: Vector3, radius: float, segments: int) -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = planet_name
@@ -292,7 +355,7 @@ func _add_gas_giant(planet_name: String, pos: Vector3, radius: float, segments: 
 		fallback.albedo_color = Color(0.15, 0.28, 0.42)
 		mat = fallback
 	mi.set_surface_override_material(0, mat)
-	mi.visibility_range_end = 2500.0
+	_track_range(mi, 2500.0)
 	add_child(mi)
 	_add_atmosphere(planet_name + "Atmo", pos, radius * 1.045, Color(0.35, 0.55, 1.0), 1.2, segments)
 
@@ -325,7 +388,7 @@ func _add_rocky_planet(
 		fallback.albedo_color = mid_c
 		mat = fallback
 	mi.set_surface_override_material(0, mat)
-	mi.visibility_range_end = 2500.0
+	_track_range(mi, 2500.0)
 	add_child(mi)
 	_add_atmosphere(planet_name + "Atmo", pos, radius * 1.06, atmo_color, 0.9, segments)
 
@@ -353,7 +416,7 @@ func _add_atmosphere(
 	mat.set_shader_parameter("falloff", 3.6)
 	mat.set_shader_parameter("density", 0.9)
 	mi.set_surface_override_material(0, mat)
-	mi.visibility_range_end = 2500.0
+	_track_range(mi, 2500.0)
 	add_child(mi)
 
 
@@ -392,7 +455,7 @@ func _add_ice_ring(ring_name: String, center: Vector3, inner_r: float, outer_r: 
 	mat.emission = Color(color.r, color.g, color.b) * 0.35
 	mat.emission_energy_multiplier = 0.25
 	mi.set_surface_override_material(0, mat)
-	mi.visibility_range_end = 2200.0
+	_track_range(mi, 2200.0)
 	add_child(mi)
 
 
@@ -448,7 +511,7 @@ func _spawn_rock_field(
 		)).scaled(Vector3(s, s * _rng.randf_range(0.55, 1.25), s * _rng.randf_range(0.7, 1.15)))
 		mm.set_instance_transform(i, Transform3D(basis, pos))
 	multi.multimesh = mm
-	multi.visibility_range_end = vis_end
+	_track_range(multi, vis_end)
 	add_child(multi)
 
 
