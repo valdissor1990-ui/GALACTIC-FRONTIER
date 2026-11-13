@@ -8,9 +8,9 @@ const SHIPS: Array[Dictionary] = [
 	{"path": "res://assets/models/ships/enemy_fighter.glb", "name": "RAIDER INTERCEPTOR", "role": "LIGHT ATTACK", "scale": 0.38, "position": Vector3(-4.0, 0.0, 0.0)},
 	{"path": "res://assets/models/ships/heavy_fighter.glb", "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY ASSAULT", "scale": 0.34, "position": Vector3(4.0, 0.0, 0.0)},
 	{"path": "res://assets/models/ships/bomber.glb", "name": "BASTION BOMBER", "role": "TORPEDO / STRIKE", "scale": 0.32, "position": Vector3(12.0, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.27, "position": Vector3(-8.0, 0.0, 9.0)},
-	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.19, "position": Vector3(0.0, 0.0, 9.0)},
-	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.14, "position": Vector3(8.0, 0.0, 9.0)}
+	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.34, "position": Vector3(-8.0, 0.0, 7.0)},
+	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.25, "position": Vector3(0.0, 0.0, 7.0)},
+	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.19, "position": Vector3(8.0, 0.0, 7.0)}
 ]
 
 
