@@ -325,7 +325,7 @@ func _load_system_theme() -> void:
 func _build_world_environment() -> void:
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_COLOR
+	environment.background_mode = Environment.BG_SKY
 	environment.background_color = Color(0.002, 0.004, 0.012)
 	var sky := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
