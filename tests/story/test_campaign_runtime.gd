@@ -15,6 +15,7 @@ func _run() -> void:
 	manager.persistence_enabled = false
 	root.add_child(manager)
 	_test_start_and_validate_objectives(manager)
+	_test_generic_talk_advances_one_story_beat()
 	_test_gameplay_event_routing()
 	_test_optional_objective(manager)
 	_test_choice_gate_and_campaign_chain(manager)
@@ -31,6 +32,31 @@ func _assert_true(condition: bool, message: String) -> void:
 	else:
 		_failed += 1
 		push_error("  FAIL  " + message)
+
+
+func _test_generic_talk_advances_one_story_beat() -> void:
+	print("\n[generic talk advances one beat]")
+	var manager := CampaignManager.new()
+	manager.persistence_enabled = false
+	root.add_child(manager)
+	manager.story_state.complete_mission("m01")
+	manager.story_state.complete_mission("m02")
+	_assert_true(manager.start_mission("m03").get("ok", false), "M03 starts for talk routing")
+	var first := manager.report_gameplay_event("talk")
+	_assert_true(first.get("matched_objectives", []).size() == 1, "one talk event matches only one objective")
+	var objectives := manager.get_objectives()
+	var quinn_done := false
+	var nyra_done := false
+	for item in objectives:
+		if str(item.get("id", "")) == "talk_quinn_tag":
+			quinn_done = bool(item.get("completed", false))
+		if str(item.get("id", "")) == "talk_nyra":
+			nyra_done = bool(item.get("completed", false))
+	_assert_true(quinn_done and not nyra_done, "first talk does not skip the next NPC conversation")
+	var second := manager.report_gameplay_event("talk")
+	_assert_true(second.get("matched_objectives", []).has("talk_nyra"), "second talk advances the second NPC conversation")
+	root.remove_child(manager)
+	manager.free()
 
 
 func _test_start_and_validate_objectives(manager: CampaignManager) -> void:
