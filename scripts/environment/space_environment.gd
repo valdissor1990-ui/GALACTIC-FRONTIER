@@ -15,6 +15,7 @@ var _companion_planet: MeshInstance3D
 var _companion_rings: MeshInstance3D
 var _companion_moon: MeshInstance3D
 var _cosmic_dust: MultiMeshInstance3D
+var _distant_galaxy: MeshInstance3D
 
 
 func _ready() -> void:
@@ -23,6 +24,7 @@ func _ready() -> void:
 	_build_world_environment()
 	_build_starfield()
 	_build_nebulae()
+	_build_distant_galaxy()
 	_build_planet()
 	_build_companion_worlds()
 	_build_asteroid_field()
@@ -47,6 +49,8 @@ func _process(delta: float) -> void:
 	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
 	if secondary_nebula != null:
 		secondary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	if is_instance_valid(_distant_galaxy):
+		_distant_galaxy.global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
 
 	# Aurelia is a distant sky landmark, not a nearby world object. Keep its
 	# visual shell camera-relative; its physical collision proxy remains fixed
@@ -260,6 +264,41 @@ void fragment() {
 	cloud.rotation_degrees = Vector3(8.0, 0.0, -4.0)
 	add_child(cloud)
 
+
+func _build_distant_galaxy() -> void:
+	# A procedural spiral galaxy adds a recognisable deep-space landmark behind the local nebula layers.
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform vec4 galaxy_tint : source_color = vec4(0.46, 0.58, 1.0, 0.52);
+void fragment() {
+	vec2 p = (UV - vec2(0.5)) * vec2(2.0, 1.35);
+	float radius = length(p);
+	float angle = atan(p.y, p.x);
+	float spiral = sin(angle * 3.0 + radius * 25.0 + sin(angle * 2.0) * 1.2);
+	float arms = exp(-abs(spiral) * 3.4) * exp(-radius * 2.8);
+	float core = exp(-radius * 13.0) * 1.25;
+	float dust_lane = smoothstep(0.08, 0.42, abs(spiral + 0.18)) * arms;
+	float grain = sin(UV.x * 391.0 + sin(UV.y * 277.0) * 4.0) * sin(UV.y * 317.0) * 0.06;
+	float edge = 1.0 - smoothstep(0.42, 0.98, radius);
+	float intensity = max(0.0, arms * 0.68 + core - dust_lane * 0.22 + grain) * edge;
+	ALBEDO = galaxy_tint.rgb;
+	EMISSION = galaxy_tint.rgb * (0.25 + intensity * 2.1);
+	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.42);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	var tint: Color = _theme.get("star", Color(0.72, 0.84, 1.0))
+	material.set_shader_parameter("galaxy_tint", Color(tint.r, tint.g, tint.b, 0.62))
+	var quad := QuadMesh.new()
+	quad.size = Vector2(260.0, 168.0)
+	quad.material = material
+	_distant_galaxy = MeshInstance3D.new()
+	_distant_galaxy.name = "DistantSpiralGalaxy"
+	_distant_galaxy.mesh = quad
+	add_child(_distant_galaxy)
 
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
