@@ -21,6 +21,7 @@ func _run() -> void:
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
 	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
+	_check(asteroid_field != null and asteroid_field.custom_aabb.size.z >= 36000.0, "asteroid MultiMesh bounds cover the full 33 km route for correct frustum culling")
 	if asteroid_field != null:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
