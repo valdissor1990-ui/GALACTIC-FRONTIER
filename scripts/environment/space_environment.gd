@@ -718,13 +718,26 @@ func _build_planet() -> void:
 	atmosphere_mesh.height = 2.0
 	atmosphere_mesh.radial_segments = 96
 	atmosphere_mesh.rings = 48
-	var atmosphere_material := StandardMaterial3D.new()
-	atmosphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	atmosphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	atmosphere_material.albedo_color = _theme.get("atmosphere", Color(0.12, 0.42, 0.95, 0.12))
-	atmosphere_material.emission_enabled = true
-	atmosphere_material.emission = Color(0.025, 0.12, 0.42)
-	atmosphere_material.emission_energy_multiplier = 0.35
+	var atmosphere_shader := Shader.new()
+	atmosphere_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+uniform vec4 atmosphere_tint : source_color = vec4(0.12, 0.42, 0.95, 0.16);
+uniform float rim_power : hint_range(1.0, 8.0) = 3.2;
+void fragment() {
+	float facing = clamp(abs(dot(normalize(NORMAL), normalize(VIEW))), 0.0, 1.0);
+	float limb = pow(1.0 - facing, rim_power);
+	float inner_haze = pow(1.0 - facing, 1.25) * 0.22;
+	float horizon_band = smoothstep(0.18, 0.92, limb) * (1.0 - smoothstep(0.82, 1.0, limb));
+	vec3 scatter = atmosphere_tint.rgb * (0.32 + limb * 1.45 + horizon_band * 0.55);
+	ALBEDO = scatter;
+	EMISSION = scatter * (0.12 + limb * 0.30);
+	ALPHA = clamp((limb * 0.34 + inner_haze) * atmosphere_tint.a * 3.0, 0.0, 0.42);
+}
+"""
+	var atmosphere_material := ShaderMaterial.new()
+	atmosphere_material.shader = atmosphere_shader
+	atmosphere_material.set_shader_parameter("atmosphere_tint", _theme.get("atmosphere", Color(0.12, 0.42, 0.95, 0.16)))
 	atmosphere_mesh.material = atmosphere_material
 	atmosphere.mesh = atmosphere_mesh
 	_planet_atmosphere = atmosphere
@@ -767,16 +780,21 @@ float fbm(vec2 p) {
 	return value;
 }
 void fragment() {
-	vec2 p = UV * vec2(12.0, 6.0);
-	p.x += TIME * 0.006;
+	vec2 drift = vec2(TIME * 0.006, TIME * -0.0017);
+	float warp = fbm(UV * vec2(3.0, 2.0) + drift + vec2(8.2, 2.4));
+	vec2 p = UV * vec2(12.0, 6.0) + drift;
+	p += vec2(warp - 0.5, 0.5 - warp) * 1.8;
 	float broad = fbm(p);
 	float detail = fbm(p * 2.1 + vec2(4.2, 8.7));
-	float clouds = broad * 0.72 + detail * 0.28;
+	float micro = fbm(p * 4.3 + vec2(1.7, 6.1));
+	float clouds = broad * 0.58 + detail * 0.30 + micro * 0.12;
 	float coverage = smoothstep(cloud_coverage, cloud_coverage + 0.19, clouds);
-	float wisps = smoothstep(0.68, 0.86, detail) * 0.16;
-	float density = clamp(coverage * 0.82 + wisps, 0.0, 0.72);
-	ALBEDO = cloud_tint.rgb;
-	EMISSION = cloud_tint.rgb * 0.08;
+	float wisps = smoothstep(0.68, 0.86, detail) * 0.13;
+	float shadow_lanes = smoothstep(0.50, 0.72, broad) * 0.22;
+	float density = clamp(coverage * 0.78 + wisps - shadow_lanes, 0.0, 0.72);
+	vec3 cloud_color = cloud_tint.rgb * (0.78 + detail * 0.28);
+	ALBEDO = cloud_color;
+	EMISSION = cloud_color * 0.055;
 	ALPHA = density * cloud_tint.a;
 }
 """
