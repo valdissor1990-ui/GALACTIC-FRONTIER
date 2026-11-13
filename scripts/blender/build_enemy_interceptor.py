@@ -47,6 +47,16 @@ def beam(name,a,b,r,m,r2=None):
     o=bpy.context.object;o.name=name;o.rotation_mode="QUATERNION";o.rotation_quaternion=d.to_track_quat("Z","Y")
     return finish(o,m,.018)
 
+
+def add_detail_uv(mesh, scale=4.0):
+    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            vertex = mesh.vertices[vertex_index]
+            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+
 def loft(name,sections,m,sides=16,x_offset=0.0):
     verts=[];faces=[]
     for y,w,h,z in sections:
@@ -56,7 +66,7 @@ def loft(name,sections,m,sides=16,x_offset=0.0):
         for i in range(sides):
             a=j*sides+i;b=j*sides+(i+1)%sides;c=(j+1)*sides+(i+1)%sides;d=(j+1)*sides+i;faces.append((a,b,c,d))
     faces.extend([tuple(range(sides-1,-1,-1)),tuple((len(sections)-1)*sides+i for i in range(sides))])
-    me=bpy.data.meshes.new(name);me.from_pydata(verts,[],faces);me.materials.append(m);me.update()
+    me=bpy.data.meshes.new(name);me.from_pydata(verts,[],faces);add_detail_uv(me);me.materials.append(m);me.update()
     o=bpy.data.objects.new(name,me);bpy.context.collection.objects.link(o)
     for p in me.polygons:p.use_smooth=True
     be=o.modifiers.new("Fuselage edge radii","BEVEL");be.width=.035;be.segments=2
@@ -67,7 +77,7 @@ def wing(name,outline,z0,z1,m):
     n=len(outline);v=[(x,y,z0) for x,y in outline]+[(x,y,z1) for x,y in outline]
     f=[tuple(range(n-1,-1,-1)),tuple(range(n,2*n))]
     for i in range(n):j=(i+1)%n;f.append((i,j,j+n,i+n))
-    me=bpy.data.meshes.new(name);me.from_pydata(v,[],f);me.materials.append(m);me.update()
+    me=bpy.data.meshes.new(name);me.from_pydata(v,[],f);add_detail_uv(me);me.materials.append(m);me.update()
     o=bpy.data.objects.new(name,me);bpy.context.collection.objects.link(o)
     b=o.modifiers.new("Aerospace edge bevel","BEVEL");b.width=.10;b.segments=3
     o.modifiers.new("Weighted normals","WEIGHTED_NORMAL")
