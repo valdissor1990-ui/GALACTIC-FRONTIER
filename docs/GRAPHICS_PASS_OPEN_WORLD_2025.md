@@ -1,36 +1,18 @@
-# Graphics Pass — Open World 2020–2025 baseline
+# Graphics pass — Grok open-world prototype (historical source)
 
-**Branch:** `grok/graphics-open-world-2025`  
-**Author:** Grok  
-**Status:** Slice 3 — combat feedback shaders
+This document records the original Grok branch work from grok/graphics-open-world-2025. The old OpenSpaceBackdrop/test_flight prototype is not the active production environment.
 
-## Shaders
+## What was retained
 
-| Shader | Role |
-|--------|------|
-| `space_starfield_sky.gdshader` | Stars, nebula, dust band |
-| `hull_fresnel.gdshader` | Panels, rim, **hit_flash**, heat |
-| `engine_plume.gdshader` | Additive thruster glow |
-| `relay_pulse.gdshader` | Silent Relay ring |
+- Original SVG visual targets for player interceptor, enemy strike craft and deep-space environment.
+- Quality presets, FSR scaling, HDR/tonemapping controls, dynamic resolution and cinematic post-processing.
+- HitFlashFx and engine VFX concepts, selectively reused where they fit the production scenes.
+- Gravitational lens shader and source marker, integrated into the current SpaceEnvironment with corrected CanvasLayer ordering and an idle-pass optimization.
 
-## Slice 3
-- `hit_flash` + `heat` uniforms on hull shader
-- `scripts/vfx/hit_flash_fx.gd` listens to Damageable
-- Enemy fighter uses red hull shader + HitFlashFx
-- Starfield: brighter giants + dust plane
+## What was superseded
 
-## How hit flash works
-1. Damageable emits hull/shield/destroyed
-2. HitFlashFx raises `hit_flash` on duplicated ShaderMaterials under Visual
-3. Value decays in `_process`
+The production Full HD branch uses SpaceEnvironment, detailed GLB hero ships, NASA/Kenney environment assets and a more complete planetary/asteroid field. The old OpenSpaceBackdrop scene is retained only on its source branch; it is not duplicated into the active production scene.
 
-Does not change combat numbers — visual only.
+## Validation
 
-## Preview
-`scenes/flight/test_flight.tscn` — shoot enemy, watch orange flash.  
-Runtime **NOT RUN** here.
-
-## Next
-- Player HitFlashFx wiring in scene (params ready on shader)
-- Explosion one-shot on destroyed
-- GLB ship materials
+Godot CI validates imports, automated tests and Windows export. Visual inspection, combat feel and target-GPU profiling remain separate manual acceptance checks.
