@@ -672,6 +672,117 @@ def add_integrated_surface_detail(root, materials):
 
 
 
+
+def add_cockpit_and_engine_detail(root, materials):
+    """Build visible cockpit internals and functional-looking engine hardware."""
+    armor = materials["armor"]
+    dark = materials["dark"]
+    accent = materials["accent"]
+    glow = materials["glow"]
+    white = materials["white"]
+
+    # Ejection seat: cushion, reclined back, headrest and exposed side rails.
+    cube("Cockpit seat cushion", (0.0, -2.38, 0.365),
+         (0.43, 0.56, 0.13), dark, 0.055)
+    cube("Cockpit seat back", (0.0, -2.08, 0.635),
+         (0.45, 0.18, 0.56), dark, 0.065,
+         (math.radians(11.0), 0.0, 0.0))
+    cube("Cockpit seat headrest", (0.0, -1.94, 0.945),
+         (0.29, 0.16, 0.18), armor, 0.055)
+    for side in (-1, 1):
+        cylinder_between("Cockpit seat rail %s" % side,
+                         (side * 0.27, -2.48, 0.34),
+                         (side * 0.27, -1.98, 0.76),
+                         0.035, armor, radius_end=0.025)
+        cube("Cockpit shoulder harness %s" % side,
+             (side * 0.12, -2.15, 0.70),
+             (0.045, 0.11, 0.39), accent, 0.018,
+             (math.radians(-9.0), 0.0, side * math.radians(17.0)))
+        cube("Cockpit side console %s" % side,
+             (side * 0.43, -2.48, 0.465),
+             (0.13, 0.78, 0.12), armor, 0.035)
+        cube("Cockpit throttle housing %s" % side,
+             (side * 0.39, -2.72, 0.56),
+             (0.10, 0.20, 0.12), dark, 0.025)
+        cylinder_between("Cockpit throttle grip %s" % side,
+                         (side * 0.39, -2.72, 0.60),
+                         (side * 0.39, -2.72, 0.77),
+                         0.025, white, radius_end=0.018)
+
+    # Forward instrument coaming and three separate emissive instrument panels.
+    cube("Cockpit instrument coaming", (0.0, -3.43, 0.425),
+         (0.92, 0.34, 0.16), dark, 0.055,
+         (math.radians(-7.0), 0.0, 0.0))
+    for index, x in enumerate((-0.27, 0.0, 0.27)):
+        material = glow if index == 1 else accent
+        cube("Cockpit instrument bezel %s" % index,
+             (x, -3.43, 0.515), (0.235, 0.19, 0.035),
+             armor, 0.022, (math.radians(-7.0), 0.0, 0.0))
+        cube("Cockpit instrument display %s" % index,
+             (x, -3.43, 0.538), (0.195, 0.15, 0.014),
+             material, 0.012, (math.radians(-7.0), 0.0, 0.0))
+    cube("Cockpit central control pedestal", (0.0, -2.88, 0.435),
+         (0.30, 0.42, 0.15), dark, 0.045)
+    cylinder_between("Cockpit flight stick stem",
+                     (0.17, -2.90, 0.49), (0.17, -2.90, 0.72),
+                     0.025, armor, radius_end=0.018)
+    uv_sphere("Cockpit flight stick grip",
+              (0.17, -2.90, 0.735), (0.055, 0.075, 0.045), accent)
+    for side in (-1, 1):
+        cube("Cockpit rudder pedal %s" % side,
+             (side * 0.16, -3.10, 0.205),
+             (0.12, 0.22, 0.055), dark, 0.022,
+             (math.radians(-10.0), 0.0, side * math.radians(8.0)))
+    # Canopy cross-brace and latch details remain inside the existing silhouette.
+    cube("Cockpit canopy inner cross brace", (0.0, -1.88, 1.035),
+         (0.78, 0.075, 0.045), armor, 0.018)
+    for side in (-1, 1):
+        uv_sphere("Cockpit canopy latch lamp %s" % side,
+                  (side * 0.42, -1.74, 0.91),
+                  (0.035, 0.045, 0.035), glow)
+
+    # Engine intakes, service covers, nozzle gimbals and actuator hardware.
+    for side in (-1, 1):
+        x = side * 0.92
+        cube("Engine intake armored lip %s" % side,
+             (x, 2.94, -0.02), (0.62, 0.13, 0.60), armor, 0.085)
+        cube("Engine intake recessed aperture %s" % side,
+             (x, 2.855, -0.02), (0.40, 0.035, 0.39), dark, 0.055)
+        cube("Engine dorsal service hatch %s" % side,
+             (x, 4.55, 0.405), (0.48, 0.92, 0.055), armor, 0.045)
+        for index in range(4):
+            cube("Engine side cooling slot %s %s" % (side, index),
+                 (side * 1.315, 4.05 + index * 0.22, 0.02),
+                 (0.025, 0.13, 0.26), dark, 0.012)
+        # Four hydraulic actuators articulate the nozzle assembly.
+        for index, (dx, dz) in enumerate(((-0.22, -0.22), (-0.22, 0.22),
+                                          (0.22, -0.22), (0.22, 0.22))):
+            cylinder_between("Engine gimbal actuator %s %s" % (side, index),
+                             (x + dx, 5.82, -0.02 + dz),
+                             (x + dx * 1.20, 6.42, -0.02 + dz * 1.20),
+                             0.032, armor, radius_end=0.022)
+            uv_sphere("Engine gimbal pivot %s %s" % (side, index),
+                      (x + dx * 1.20, 6.42, -0.02 + dz * 1.20),
+                      (0.055, 0.055, 0.055), dark)
+        # Small fasteners and segmented thermal petals around the exhaust lip.
+        for index in range(8):
+            angle = math.tau * index / 8.0
+            px = x + math.sin(angle) * 0.335
+            pz = -0.02 + math.cos(angle) * 0.335
+            uv_sphere("Engine nozzle retaining bolt %s %s" % (side, index),
+                      (px, 6.43, pz), (0.035, 0.045, 0.035), white)
+            cube("Engine nozzle thermal petal %s %s" % (side, index),
+                 (x + math.sin(angle) * 0.285, 6.30,
+                  -0.02 + math.cos(angle) * 0.285),
+                 (0.085, 0.20, 0.035), dark, 0.014,
+                 (0.0, angle, 0.0))
+
+    # Attach every new component to the original gameplay root.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
+
 def add_hero_identification(root, materials):
     """Add restrained, production-style markings and identification hardware."""
     white = materials["white"]
@@ -873,6 +984,7 @@ def main():
 
     root = create_ship(materials)
     add_integrated_surface_detail(root, materials)
+    add_cockpit_and_engine_detail(root, materials)
     add_hero_identification(root, materials)
     consolidate_static_meshes(root)
     setup_scene(materials, out_dir)
