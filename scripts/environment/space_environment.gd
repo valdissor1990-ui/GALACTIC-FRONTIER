@@ -4,6 +4,7 @@ extends Node3D
 
 @export_range(300, 4000, 100) var star_count: int = 3800
 @export_range(40, 220, 10) var asteroid_count: int = 160
+@export var showcase_mode: bool = false
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
@@ -47,6 +48,9 @@ func _process(delta: float) -> void:
 		return
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
+		return
+	if showcase_mode:
+		_update_showcase_landmarks()
 		return
 
 	# Keep the distant sky landmarks around the active ship. The mission spans
@@ -107,6 +111,54 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_derelict_root):
 		var derelict_transform := camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
 		_derelict_root.global_transform = derelict_transform
+
+
+func _update_showcase_landmarks() -> void:
+	# Fixed world-space placement is used only by the screenshot showcase.
+	# Normal gameplay remains camera-relative so the long mission route keeps
+	# its sky landmarks in view without adding world-scale streaming complexity.
+	if is_instance_valid(_starfield):
+		_starfield.global_position = Vector3.ZERO
+	if is_instance_valid(_star_clusters):
+		_star_clusters.global_position = Vector3.ZERO
+	if is_instance_valid(_stellar_primary):
+		_stellar_primary.global_transform = Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
+	if is_instance_valid(_stellar_corona):
+		_stellar_corona.global_transform = Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
+	if is_instance_valid(_stellar_key_light):
+		var incoming_light := Vector3(620.0, -285.0, 3200.0).normalized()
+		_stellar_key_light.global_basis = Basis.looking_at(incoming_light, Vector3.UP)
+	var primary_nebula := get_node_or_null("PrimaryNebula") as Node3D
+	if primary_nebula != null:
+		primary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
+	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
+	if secondary_nebula != null:
+		secondary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	var tertiary_nebula := get_node_or_null("TertiaryNebula") as Node3D
+	if tertiary_nebula != null:
+		tertiary_nebula.global_transform = Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-265.0, -112.0, -760.0))
+	var far_nebula := get_node_or_null("FarNebula") as Node3D
+	if far_nebula != null:
+		far_nebula.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(285.0, 185.0, -1120.0))
+	if is_instance_valid(_distant_galaxy):
+		_distant_galaxy.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
+	if is_instance_valid(_planet_visual):
+		_planet_visual.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_planet_atmosphere):
+		_planet_atmosphere.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_planet_clouds):
+		_planet_clouds.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_companion_planet):
+		_companion_planet.global_position = Vector3(430.0, -92.0, -1320.0)
+	if is_instance_valid(_companion_rings):
+		var ring_basis := Basis(Vector3.RIGHT, deg_to_rad(68.0)).scaled(Vector3.ONE * 100.0)
+		_companion_rings.global_transform = Transform3D(ring_basis, Vector3(430.0, -92.0, -1320.0))
+	if is_instance_valid(_companion_moon):
+		_companion_moon.global_position = Vector3(620.0, -12.0, -1430.0)
+	if is_instance_valid(_comet_root):
+		_comet_root.global_transform = Transform3D(Basis(Vector3(0.2, 0.8, 0.1).normalized(), 0.0), Vector3(-520.0, 205.0, -1880.0))
+	if is_instance_valid(_derelict_root):
+		_derelict_root.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
 
 
 
