@@ -10,6 +10,9 @@ run/main_scene="res://scenes/bootstrap/main.tscn"
 config/features=PackedStringArray("4.7")
 config/description="Original single-player space action RPG prototype."
 
+[autoload]
+GraphicsQuality="*res://scripts/graphics/graphics_quality.gd"
+
 [display]
 window/size/viewport_width=1920
 window/size/viewport_height=1080
@@ -90,7 +93,6 @@ sensitivity_up={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"physical_keycode":93)]
 }
-
 fire_primary={
 "deadzone": 0.2,
 "events": [Object(InputEventMouseButton,"button_index":1)]
@@ -103,7 +105,10 @@ target_clear={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"physical_keycode":89)]
 }
-
+cycle_graphics_quality={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":4194345)]
+}
 
 [physics]
 3d/default_gravity=0.0
@@ -114,3 +119,5 @@ renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="mobile"
 environment/defaults/default_clear_color=Color(0.008, 0.014, 0.035, 1)
 textures/default_filters/use_nearest_mipmap_filter=false
+scaling_3d/mode=1
+scaling_3d/scale=0.77
