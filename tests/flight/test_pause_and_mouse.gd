@@ -58,6 +58,13 @@ func _assert_approx(actual: float, expected: float, message: String) -> void:
 	_assert_true(absf(actual - expected) <= EPSILON, "%s (got %s, expected %s)" % [message, actual, expected])
 
 
+func _assert_mouse_mode(expected: Input.MouseMode, message: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		print("  SKIP  %s (headless display server cannot validate OS cursor capture)" % message)
+		return
+	_assert_true(Input.mouse_mode == expected, message)
+
+
 func _make_ship() -> ShipController:
 	var ship := CharacterBody3D.new()
 	ship.set_script(load("res://scripts/flight/ship_controller.gd"))
@@ -184,7 +191,7 @@ func _test_focus_in_captures_mouse_when_not_paused() -> void:
 	paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	ship._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "focus in captures mouse when not paused")
+	_assert_mouse_mode(Input.MOUSE_MODE_CAPTURED, "focus in captures mouse when not paused")
 	ship.queue_free()
 
 
@@ -220,7 +227,7 @@ func _test_hud_toggle_pause_cycle() -> void:
 	hud._toggle_pause()
 	_assert_true(not paused, "pause disabled")
 	_assert_true(not pause_panel.visible, "PausePanel hidden after resume")
-	_assert_true(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "mouse captured after resume")
+	_assert_mouse_mode(Input.MOUSE_MODE_CAPTURED, "mouse captured after resume")
 
 	hud.queue_free()
 	ship.queue_free()
