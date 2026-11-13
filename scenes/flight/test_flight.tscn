@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://scripts/vfx/gravitational_lens_fx.gd" id="17"]
 [ext_resource type="Script" path="res://scripts/environment/sector_detail_streamer.gd" id="18"]
 [ext_resource type="Script" path="res://scripts/vfx/local_space_dust.gd" id="19"]
+[ext_resource type="Script" path="res://scripts/vfx/muzzle_flash_fx.gd" id="20"]
 
 [sub_resource type="ShaderMaterial" id="Material_hull"]
 render_priority = 0
@@ -199,9 +200,14 @@ script = ExtResource("7")
 script = ExtResource("6")
 projectile_scene = ExtResource("5")
 muzzle_path = NodePath("Muzzle")
+muzzle_flash_path = NodePath("MuzzleFlashFx")
 
 [node name="Muzzle" type="Marker3D" parent="PlayerShip/WeaponSystem"]
 position = Vector3(0, 0, -2.8)
+
+[node name="MuzzleFlashFx" type="Node3D" parent="PlayerShip/WeaponSystem"]
+position = Vector3(0, 0, -2.8)
+script = ExtResource("20")
 
 [node name="ScreenPostFx" type="CanvasLayer" parent="."]
 script = ExtResource("16")
