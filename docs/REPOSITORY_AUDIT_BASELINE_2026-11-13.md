@@ -303,3 +303,22 @@ Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43480389
 - M01 story hook в demo director: PARTIAL.
 - M02–M05 gameplay wiring and set-pieces: NOT VERIFIED / PARTIAL.
 - MissionDirector decomposition into MissionDefinition + MissionRunner: NOT STARTED.
+
+
+## 14. Новые PR и текущий пакет работ
+
+- PR #92 — repository-wide master prompt + audit baseline. Документация, stacked на PR #90.
+- PR #93 — исправление UV projection и проверка degenerate/non-finite UV faces. Stacked на #91.
+- PR #94 — внутренняя геометрия Player Fighter: seat/harness/controls/displays, intake и engine gimbal. Stacked на #93.
+- PR #95 — исправление embedded PBR texture export во всех трёх Blender generators; также branch-scoped ship-art concurrency. Stacked на #94.
+- PR #96 — улучшение cockpit first-person sightline, dashboard, controls, canopy frame и camera FOV. Stacked на #90.
+
+### Последние известные CI состояния (обновлять по run status)
+
+- PR #90 current head 7283c575a1430f95930eaf398f3953f979b3a1b2: Godot CI runs 43481701149 и 43481687398 SUCCESS; visual capture run 43481700905 IN PROGRESS.
+- PR #95 branch: run 43480758348 IN PROGRESS, event SHA 412c43ccaee36113e612181deac71087e75a4eeb. В нём Player Fighter и Raider Interceptor уже сгенерированы успешно; пять остальных кораблей генерируются. Важно: этот run был запущен до последних обновлений helper в остальных генераторах и не подтверждает окончательный branch HEAD 1745da8.
+- PR #96: визуальный capture запускается на branch chatgpt/cockpit-view-quality-pass; прежние дублирующие runs были отменены из-за одновременных push/PR triggers. Push trigger для head branch удалён, чтобы PR synchronize запускал один актуальный capture.
+- PR #91: последний полный texture-validation run 43474224259 FAILED — 0 embedded images в каждом GLB. Исправление проверяется в PR #95; до PASS всех семи GLB и Godot import не принимать.
+- PR #93/#94 не считать принятыми отдельно от полного downstream pipeline PR #95.
+
+Ни один из этих PR не слит в main.
