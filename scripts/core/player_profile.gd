@@ -30,6 +30,60 @@ const MODULE_CATALOG := {
 		"stats": {"max_speed_multiplier": 1.08, "acceleration_multiplier": 1.12}
 	}
 }
+
+const SYSTEM_CATALOG := {
+	"aurelia": {
+		"name": "Aurelia Reach",
+		"description": "Temperate frontier system with blue nebulae and a dense relay network.",
+		"environment": "temperate",
+		"asteroid_density": 120
+	},
+	"vesper": {
+		"name": "Vesper Belt",
+		"description": "Amber dust clouds, iron-rich debris and unstable salvage corridors.",
+		"environment": "amber",
+		"asteroid_density": 190
+	},
+	"kestrel": {
+		"name": "Kestrel Expanse",
+		"description": "Cold outer system with pale gas clouds and sparse, fast-moving debris.",
+		"environment": "ice",
+		"asteroid_density": 80
+	}
+}
+const CONTRACT_CATALOG := {
+	"silent_relay": {
+		"name": "The Silent Relay",
+		"system_id": "aurelia",
+		"description": "Restore the relay, recover its data core and clear the hostile response.",
+		"difficulty": "STANDARD",
+		"reward": 5000,
+		"waves_per_encounter": 3,
+		"enemy_health_multiplier": 1.0,
+		"unlock_after": ""
+	},
+	"vesper_salvage": {
+		"name": "Vesper Salvage",
+		"system_id": "vesper",
+		"description": "Secure a damaged survey relay and recover its black-box data from the belt.",
+		"difficulty": "VETERAN",
+		"reward": 6500,
+		"waves_per_encounter": 4,
+		"enemy_health_multiplier": 1.10,
+		"unlock_after": "silent_relay"
+	},
+	"kestrel_patrol": {
+		"name": "Kestrel Patrol",
+		"system_id": "kestrel",
+		"description": "Patrol the cold frontier, intercept raiders and secure the long-range telemetry core.",
+		"difficulty": "ELITE",
+		"reward": 8000,
+		"waves_per_encounter": 5,
+		"enemy_health_multiplier": 1.25,
+		"unlock_after": "vesper_salvage"
+	}
+}
+
 const FLYABLE_SHIPS := {
 	"player_fighter": {
 		"path": "res://assets/models/ships/player_fighter.glb",
@@ -66,6 +120,7 @@ var credits: int = STARTING_CREDITS
 var unlocked_ship_ids: Array[String] = ["player_fighter"]
 var completed_mission_ids: Array[String] = []
 var installed_modules: Dictionary = {}
+var active_contract_id: String = "silent_relay"
 
 
 func _ready() -> void:
@@ -125,6 +180,8 @@ func _load_profile() -> void:
 
 	var saved_id := str(payload.get("selected_ship_id", "player_fighter"))
 	selected_ship_id = saved_id if unlocked_ship_ids.has(saved_id) else "player_fighter"
+	var saved_contract_id := str(payload.get("active_contract_id", "silent_relay"))
+	active_contract_id = saved_contract_id if is_contract_unlocked(saved_contract_id) else "silent_relay"
 
 
 func select_ship(ship_id: String) -> bool:
@@ -214,6 +271,70 @@ func is_module_slot_available(ship_id: String, module_id: String) -> bool:
 	return true
 
 
+
+func get_contract_catalog() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for contract_id in CONTRACT_CATALOG.keys():
+		var entry: Dictionary = CONTRACT_CATALOG[contract_id].duplicate(true)
+		entry["id"] = str(contract_id)
+		entry["unlocked"] = is_contract_unlocked(str(contract_id))
+		entry["completed"] = completed_mission_ids.has(str(contract_id))
+		entry["active"] = active_contract_id == str(contract_id)
+		var system_id := str(entry.get("system_id", "aurelia"))
+		entry["system_name"] = str(SYSTEM_CATALOG.get(system_id, {}).get("name", system_id))
+		result.append(entry)
+	return result
+
+
+func get_system_catalog() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for system_id in SYSTEM_CATALOG.keys():
+		var entry: Dictionary = SYSTEM_CATALOG[system_id].duplicate(true)
+		entry["id"] = str(system_id)
+		result.append(entry)
+	return result
+
+
+func get_contract(contract_id: String) -> Dictionary:
+	if not CONTRACT_CATALOG.has(contract_id):
+		return {}
+	var result: Dictionary = CONTRACT_CATALOG[contract_id].duplicate(true)
+	result["id"] = contract_id
+	return result
+
+
+func get_active_contract() -> Dictionary:
+	return get_contract(active_contract_id)
+
+
+func get_active_system() -> Dictionary:
+	var contract := get_active_contract()
+	var system_id := str(contract.get("system_id", "aurelia"))
+	if not SYSTEM_CATALOG.has(system_id):
+		return SYSTEM_CATALOG["aurelia"].duplicate(true)
+	var result: Dictionary = SYSTEM_CATALOG[system_id].duplicate(true)
+	result["id"] = system_id
+	return result
+
+
+func is_contract_unlocked(contract_id: String) -> bool:
+	if not CONTRACT_CATALOG.has(contract_id):
+		return false
+	var required_contract := str(CONTRACT_CATALOG[contract_id].get("unlock_after", ""))
+	return required_contract.is_empty() or completed_mission_ids.has(required_contract)
+
+
+func accept_contract(contract_id: String) -> bool:
+	if not is_contract_unlocked(contract_id):
+		return false
+	var previous := active_contract_id
+	active_contract_id = contract_id
+	if not _save_profile():
+		active_contract_id = previous
+		return false
+	return true
+
+
 func complete_mission(mission_id: String, reward_credits: int) -> int:
 	if mission_id.is_empty() or completed_mission_ids.has(mission_id):
 		return 0
@@ -291,7 +412,8 @@ func _save_profile() -> bool:
 		"credits": credits,
 		"unlocked_ship_ids": unlocked_ship_ids,
 		"completed_mission_ids": completed_mission_ids,
-		"installed_modules": installed_modules
+		"installed_modules": installed_modules,
+		"active_contract_id": active_contract_id
 	})
 	if not result.get("ok", false):
 		push_error("Pilot profile save failed: " + str(result.get("error", "unknown")))
