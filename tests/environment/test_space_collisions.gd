@@ -45,6 +45,8 @@ func _run() -> void:
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
+	var cloud_layer := environment.get_node_or_null("AureliaCloudLayer") as MeshInstance3D
+	_check(cloud_layer != null and cloud_layer.mesh.material is ShaderMaterial, "the nearby planet has a separate procedural cloud shell")
 	var star_clusters := environment.get_node_or_null("ChromaticStarClusters") as MultiMeshInstance3D
 	_check(star_clusters != null and star_clusters.multimesh.instance_count == 552 and star_clusters.multimesh.use_custom_data, "six chromatic star clusters use one custom-data MultiMesh")
 	_check(environment.has_node("PrimaryNebula") and environment.has_node("SecondaryNebula") and environment.has_node("TertiaryNebula") and environment.has_node("FarNebula"), "four nebula layers are generated at different depths")
@@ -64,6 +66,8 @@ func _run() -> void:
 	environment.call("_process", 0.0)
 	var tracked_clusters := environment.get_node("ChromaticStarClusters") as MultiMeshInstance3D
 	_check(tracked_clusters.global_position.distance_to(sky_camera.global_position) < 0.01, "chromatic star clusters remain camera-relative during long flights")
+	var tracked_clouds := environment.get_node("AureliaCloudLayer") as MeshInstance3D
+	_check(tracked_clouds.global_position.distance_to(sky_camera.global_position + sky_camera.global_basis * Vector3(-160.0, 26.0, -285.0)) < 1.0, "planet cloud shell tracks the planet during long flights")
 	var giant := environment.get_node("NacreonGasGiant") as MeshInstance3D
 	var expected_giant_position := sky_camera.global_position + sky_camera.global_basis * Vector3(430.0, -92.0, -1320.0)
 	_check(giant.global_position.distance_to(expected_giant_position) < 1.0, "gas giant remains visible as the player travels")
