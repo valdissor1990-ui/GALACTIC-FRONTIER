@@ -289,33 +289,6 @@ func glow_strength() -> float:
 	return 1.05
 
 
-func apply_glow_levels(env: Environment) -> void:
-	if env == null:
-		return
-	match current:
-		Preset.LOW:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.7
-			env.glow_levels[3] = 0.9
-			env.glow_levels[4] = 0.35
-			env.glow_levels[5] = 0.0
-			env.glow_levels[6] = 0.0
-		Preset.MEDIUM:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.6
-			env.glow_levels[3] = 1.0
-			env.glow_levels[4] = 0.7
-			env.glow_levels[5] = 0.35
-			env.glow_levels[6] = 0.0
-		Preset.HIGH:
-			env.glow_levels[1] = 0.0
-			env.glow_levels[2] = 0.6
-			env.glow_levels[3] = 1.0
-			env.glow_levels[4] = 0.7
-			env.glow_levels[5] = 0.35
-			env.glow_levels[6] = 0.15
-
-
 # --- Other ------------------------------------------------------------------
 
 func shadow_enabled() -> bool:
@@ -537,7 +510,6 @@ func _apply_environment(env: Environment) -> void:
 		env.adjustment_contrast = adjustment_contrast()
 		env.adjustment_saturation = adjustment_saturation()
 	apply_tonemap_extras(env)
-	apply_glow_levels(env)
 
 
 func _save() -> void:
