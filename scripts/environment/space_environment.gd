@@ -881,6 +881,10 @@ void fragment() {
 					-13500.0 + _rng.randf_range(-100.0, 100.0)
 				)
 		var size := _rng.randf_range(0.8, 3.8)
+		if index >= asteroid_count:
+			# Larger relay-sector boulders create a readable close-range field
+			# while remaining outside the marked flight corridor.
+			size = _rng.randf_range(8.0, 22.0)
 		var rotation := Vector3(
 			_rng.randf_range(0.0, TAU),
 			_rng.randf_range(0.0, TAU),
