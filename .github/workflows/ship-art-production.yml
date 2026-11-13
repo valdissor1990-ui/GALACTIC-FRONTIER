@@ -9,6 +9,7 @@ on:
       - chatgpt/player-fighter-hero-detail
       - chatgpt/ship-uv-quality-fix
       - chatgpt/player-fighter-cockpit-geometry
+      - chatgpt/ship-glb-texture-export-fix
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
