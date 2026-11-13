@@ -22,6 +22,7 @@ on:
       - chatgpt/audit-fixes-pr24
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
+      - chatgpt/campaign-story-integration
     paths:
       - "scenes/**"
       - "scripts/**"
@@ -54,8 +55,9 @@ jobs:
       - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb python3-pil
+          sudo apt-get install --yes xvfb python3-pil libvulkan1 mesa-vulkan-drivers vulkan-tools
           godot --version
+          xvfb-run -a vulkaninfo --summary
 
       - name: Verify all seven original ship GLBs are present
         run: |
@@ -73,7 +75,7 @@ jobs:
           mkdir -p build/screenshots
           xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
@@ -92,6 +94,11 @@ jobs:
               cat build/gameplay-showcase.log
               exit 1
             fi
+            if ! grep -Eq "Vulkan [0-9]" build/gameplay-showcase.log || ! grep -q "Forward+" build/gameplay-showcase.log; then
+              echo "Visual QA did not use the required Forward+ Vulkan renderer."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
             test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
@@ -103,7 +110,7 @@ jobs:
           set -euo pipefail
           xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
@@ -116,6 +123,11 @@ jobs:
             test -d "$app_data"
             cp "$app_data/fleet-hangar.png" build/screenshots/ 2>/dev/null || true
             if [ "$ready" -ne 1 ]; then
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            if ! grep -Eq "Vulkan [0-9]" build/fleet-hangar.log || ! grep -q "Forward+" build/fleet-hangar.log; then
+              echo "Hangar capture did not use the required Forward+ Vulkan renderer."
               cat build/fleet-hangar.log
               exit 1
             fi

@@ -84,6 +84,16 @@ const CONTRACT_CATALOG := {
 	}
 }
 
+const STORY_FLAG_KEYS := [
+	"campaign_started", "m01_done", "vesper_access", "m02_done", "m03_done",
+	"shared_helix", "shared_union", "kept_private", "kestrel_access",
+	"m04_done", "m05_done", "relay_contact_1", "act1_complete",
+	"act2_complete", "act3_complete", "act4_complete", "dock_lien_status",
+	"rheya_hired", "fisk_rivalry_stage_1", "fisk_rivalry_stage_2",
+	"fisk_rivalry_stage_3", "act4_path_helix", "act4_path_union",
+	"act4_path_seal", "act4_path_custody", "act4_path_break"
+]
+
 const FLYABLE_SHIPS := {
 	"player_fighter": {
 		"path": "res://assets/models/ships/player_fighter.glb",
@@ -121,6 +131,7 @@ var unlocked_ship_ids: Array[String] = ["player_fighter"]
 var completed_mission_ids: Array[String] = []
 var installed_modules: Dictionary = {}
 var active_contract_id: String = "silent_relay"
+var story_flags: Dictionary = _default_story_flags()
 
 
 func _ready() -> void:
@@ -178,10 +189,41 @@ func _load_profile() -> void:
 			if not mission_id.is_empty() and not completed_mission_ids.has(mission_id):
 				completed_mission_ids.append(mission_id)
 
+	story_flags = _default_story_flags()
+	var saved_story_flags: Variant = payload.get("story_flags", {})
+	if saved_story_flags is Dictionary:
+		for flag_id in STORY_FLAG_KEYS:
+			if saved_story_flags.has(flag_id):
+				story_flags[flag_id] = bool(saved_story_flags[flag_id])
+
 	var saved_id := str(payload.get("selected_ship_id", "player_fighter"))
 	selected_ship_id = saved_id if unlocked_ship_ids.has(saved_id) else "player_fighter"
 	var saved_contract_id := str(payload.get("active_contract_id", "silent_relay"))
 	active_contract_id = saved_contract_id if is_contract_unlocked(saved_contract_id) else "silent_relay"
+
+
+func _default_story_flags() -> Dictionary:
+	var flags: Dictionary = {}
+	for flag_id in STORY_FLAG_KEYS:
+		flags[flag_id] = false
+	return flags
+
+
+func has_story_flag(flag_id: String) -> bool:
+	return bool(story_flags.get(flag_id, false))
+
+
+func set_story_flag(flag_id: String, enabled: bool) -> bool:
+	if not STORY_FLAG_KEYS.has(flag_id):
+		return false
+	var previous := bool(story_flags.get(flag_id, false))
+	if previous == enabled:
+		return true
+	story_flags[flag_id] = enabled
+	if not _save_profile():
+		story_flags[flag_id] = previous
+		return false
+	return true
 
 
 func select_ship(ship_id: String) -> bool:
@@ -408,13 +450,14 @@ func _save_profile() -> bool:
 	if save_manager == null:
 		return false
 	var result: Dictionary = save_manager.call("save_slot", PROFILE_SLOT, {
-		"profile_version": 3,
+		"profile_version": 4,
 		"selected_ship_id": selected_ship_id,
 		"credits": credits,
 		"unlocked_ship_ids": unlocked_ship_ids,
 		"completed_mission_ids": completed_mission_ids,
 		"installed_modules": installed_modules,
-		"active_contract_id": active_contract_id
+		"active_contract_id": active_contract_id,
+		"story_flags": story_flags
 	})
 	if not result.get("ok", false):
 		push_error("Pilot profile save failed: " + str(result.get("error", "unknown")))
