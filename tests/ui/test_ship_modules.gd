@@ -68,7 +68,7 @@ func _run() -> void:
 	await process_frame
 
 	if _failures.is_empty():
-		print("SHIP_MODULES_TEST_PASS assertions=13")
+		print("SHIP_MODULES_TEST_PASS assertions=15")
 		quit(0)
 	else:
 		for failure in _failures:
