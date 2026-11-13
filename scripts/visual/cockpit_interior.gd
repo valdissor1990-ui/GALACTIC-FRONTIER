@@ -65,11 +65,14 @@ func _build_dashboard() -> void:
 
 
 func _build_canopy_frame() -> void:
+	# The forward camera sits just ahead of the instrument fascia. Keep the canopy
+	# structure farther forward so its side rails frame the view instead of
+	# intersecting the camera or disappearing behind it.
 	for side in [-1.0, 1.0]:
-		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -1.88), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
-		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.12), Vector3(0.09, 0.12, 2.85), _panel, Vector3(0.0, 0.0, side * 4.0))
-		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.79, -1.12), Vector3(0.07, 0.07, 1.7), _panel, Vector3(-8.0, side * 12.0, 0.0))
-	_box("Canopy cross member", Vector3(0.0, 0.83, -1.72), Vector3(1.55, 0.08, 0.08), _armor)
+		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -2.62), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
+		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.55), Vector3(0.09, 0.12, 4.15), _panel, Vector3(0.0, 0.0, side * 4.0))
+		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.70, -2.28), Vector3(0.07, 0.07, 0.78), _panel, Vector3(-8.0, side * 12.0, 0.0))
+	_box("Canopy cross member", Vector3(0.0, 0.62, -2.55), Vector3(1.55, 0.08, 0.08), _armor)
 	_box("Rear canopy arch", Vector3(0.0, 0.46, 0.42), Vector3(1.72, 0.12, 0.10), _panel)
 
 
