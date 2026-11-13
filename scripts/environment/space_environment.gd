@@ -1059,8 +1059,10 @@ void fragment() {
 	add_child(moon)
 
 func _create_planet_texture() -> Texture2D:
-	const WIDTH := 1024
-	const HEIGHT := 512
+	# The interactive showcase uses a half-resolution preview to keep CI
+	# software rendering responsive. Actual gameplay retains the 1024x512 map.
+	var width := 512 if showcase_mode else 1024
+	var height := 256 if showcase_mode else 512
 	var noise := FastNoiseLite.new()
 	noise.seed = 19073
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
@@ -1101,29 +1103,29 @@ func _create_planet_texture() -> Texture2D:
 		noise.fractal_octaves = graphics_quality.procedural_noise_octaves()
 		noise.fractal_lacunarity = graphics_quality.procedural_noise_lacunarity()
 		noise.fractal_gain = graphics_quality.procedural_noise_gain()
-	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	# Precompute spherical coordinates once; avoid trigonometric calls and Vector3
 	# allocations for every texel. Fine surface noise is reserved for land and shelf water.
 	var sin_latitudes := PackedFloat32Array()
 	var cos_latitudes := PackedFloat32Array()
 	var sin_longitudes := PackedFloat32Array()
 	var cos_longitudes := PackedFloat32Array()
-	sin_latitudes.resize(HEIGHT)
-	cos_latitudes.resize(HEIGHT)
-	sin_longitudes.resize(WIDTH)
-	cos_longitudes.resize(WIDTH)
-	for y in range(HEIGHT):
-		var latitude := (float(y) / float(HEIGHT - 1) - 0.5) * PI
+	sin_latitudes.resize(height)
+	cos_latitudes.resize(height)
+	sin_longitudes.resize(width)
+	cos_longitudes.resize(width)
+	for y in range(height):
+		var latitude := (float(y) / float(height - 1) - 0.5) * PI
 		sin_latitudes[y] = sin(latitude)
 		cos_latitudes[y] = cos(latitude)
-	for x in range(WIDTH):
-		var longitude := (float(x) / float(WIDTH - 1) - 0.5) * TAU
+	for x in range(width):
+		var longitude := (float(x) / float(width - 1) - 0.5) * TAU
 		sin_longitudes[x] = sin(longitude)
 		cos_longitudes[x] = cos(longitude)
-	for y in range(HEIGHT):
+	for y in range(height):
 		var latitude_sin := sin_latitudes[y]
 		var latitude_cos := cos_latitudes[y]
-		for x in range(WIDTH):
+		for x in range(width):
 			var direction_x := latitude_cos * cos_longitudes[x]
 			var direction_y := latitude_sin
 			var direction_z := latitude_cos * sin_longitudes[x]
