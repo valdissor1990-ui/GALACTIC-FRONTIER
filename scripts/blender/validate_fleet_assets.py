@@ -10,6 +10,7 @@ import json
 import math
 import os
 import sys
+import struct
 import traceback
 
 import bpy
@@ -26,6 +27,8 @@ SHIPS = (
 )
 MIN_POLYGONS = 250
 MIN_MATERIALS = 2
+MIN_GLB_IMAGE_TEXTURES = 3
+MAX_GLB_MESH_OBJECTS = 120
 MIN_PREVIEW_WIDTH = 1200
 MIN_PREVIEW_HEIGHT = 800
 
@@ -36,6 +39,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="build/fleet")
     parser.add_argument("--report", default="build/fleet/validation.json")
+    parser.add_argument("--ships", nargs="+", choices=SHIPS, default=list(SHIPS),
+                        help="Ship slugs to validate; defaults to the complete fleet.")
     return parser.parse_args(argv)
 
 
@@ -64,11 +69,26 @@ def mesh_metrics():
     materials = set()
     bad_vertices = []
     uv_meshes = 0
+    uv_degenerate_faces = 0
+    uv_non_finite_values = 0
     points = []
     for obj in meshes:
         obj.data.calc_loop_triangles()
         if len(obj.data.uv_layers) > 0:
             uv_meshes += 1
+            uv_layer = obj.data.uv_layers.active
+            for polygon in obj.data.polygons:
+                coords = [uv_layer.data[index].uv for index in polygon.loop_indices]
+                if any(not finite(component) for uv in coords for component in uv):
+                    uv_non_finite_values += 1
+                    continue
+                if len(coords) >= 3:
+                    twice_area = 0.0
+                    for index, uv in enumerate(coords):
+                        nxt = coords[(index + 1) % len(coords)]
+                        twice_area += uv.x * nxt.y - nxt.x * uv.y
+                    if abs(twice_area) < 2.0e-10:
+                        uv_degenerate_faces += 1
         polygons += len(obj.data.polygons)
         triangles += len(obj.data.loop_triangles)
         for slot in obj.material_slots:
@@ -93,9 +113,13 @@ def mesh_metrics():
         maximum = Vector(tuple(max(p[i] for p in points) for i in range(3)))
         dimensions = [maximum[i] - minimum[i] for i in range(3)]
     root_names = [obj.name for obj in roots]
+    image_textures = sum(1 for image in bpy.data.images if image.has_data and image.size[0] > 0 and image.size[1] > 0)
     return {
         "mesh_objects": len(meshes),
+        "image_textures": image_textures,
         "uv_mesh_objects": uv_meshes,
+        "uv_degenerate_faces": uv_degenerate_faces,
+        "uv_non_finite_values": uv_non_finite_values,
         "polygons": polygons,
         "triangles": triangles,
         "materials": sorted(materials),
@@ -112,6 +136,58 @@ def inspect_blend(path):
     return mesh_metrics()
 
 
+def count_embedded_glb_images(path):
+    """Count real image payloads embedded in the GLB binary container.
+
+    Blender's importer can register packed GLB images without exposing pixel
+    buffers through bpy.data.images.has_data. Inspect the glTF JSON and binary
+    bufferViews directly so validation measures the delivered file, not an
+    importer-side image cache.
+    """
+    with open(path, "rb") as handle:
+        data = handle.read()
+    if len(data) < 20:
+        raise ValueError("GLB is too small to contain a JSON and BIN chunk")
+    magic, version, total_length = struct.unpack_from("<4sII", data, 0)
+    if magic != b"glTF" or version != 2 or total_length != len(data):
+        raise ValueError("Invalid GLB header or declared length")
+
+    offset = 12
+    document = None
+    binary_length = 0
+    while offset + 8 <= len(data):
+        chunk_length, chunk_type = struct.unpack_from("<II", data, offset)
+        chunk_start = offset + 8
+        chunk_end = chunk_start + chunk_length
+        if chunk_end > len(data):
+            raise ValueError("GLB chunk extends beyond file boundary")
+        chunk = data[chunk_start:chunk_end]
+        if chunk_type == 0x4E4F534A:
+            document = json.loads(chunk.decode("utf-8").rstrip(" \t\r\n\0"))
+        elif chunk_type == 0x004E4942:
+            binary_length = chunk_length
+        offset = chunk_end
+
+    if document is None:
+        raise ValueError("GLB JSON chunk is missing")
+    views = document.get("bufferViews", [])
+    valid_names = []
+    for image in document.get("images", []):
+        view_index = image.get("bufferView")
+        if view_index is None or not isinstance(view_index, int) or view_index >= len(views):
+            continue
+        view = views[view_index]
+        buffer_index = int(view.get("buffer", 0))
+        byte_offset = int(view.get("byteOffset", 0))
+        byte_length = int(view.get("byteLength", 0))
+        mime_type = str(image.get("mimeType", ""))
+        if (buffer_index == 0 and byte_length > 0
+                and byte_offset >= 0 and byte_offset + byte_length <= binary_length
+                and mime_type in ("image/png", "image/jpeg")):
+            valid_names.append(str(image.get("name", "embedded-image")))
+    return len(valid_names), valid_names
+
+
 def inspect_glb(path):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     importer = getattr(bpy.ops.import_scene, "gltf", None)
@@ -121,7 +197,11 @@ def inspect_glb(path):
     if "FINISHED" not in result:
         raise RuntimeError("glTF importer did not finish: " + repr(result))
     bpy.context.view_layer.update()
-    return mesh_metrics()
+    metrics = mesh_metrics()
+    image_count, image_names = count_embedded_glb_images(path)
+    metrics["image_textures"] = image_count
+    metrics["embedded_image_names"] = image_names
+    return metrics
 
 
 def inspect_preview(path):
@@ -182,10 +262,17 @@ def validate_one(slug, output_dir):
             record["errors"].append("blend: no mesh objects")
         if blend["uv_mesh_objects"] < blend["mesh_objects"]:
             record["errors"].append(f"blend: UV mapping missing on {blend['mesh_objects'] - blend['uv_mesh_objects']} mesh objects")
+        uv_face_limit = max(3, int(blend["polygons"] * 0.01))
+        if blend["uv_degenerate_faces"] > uv_face_limit:
+            record["errors"].append(f"blend: {blend['uv_degenerate_faces']} degenerate UV faces exceed limit {uv_face_limit}")
+        if blend["uv_non_finite_values"] > 0:
+            record["errors"].append(f"blend: {blend['uv_non_finite_values']} faces contain non-finite UV values")
         if blend["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"blend: polygon count {blend['polygons']} < {MIN_POLYGONS}")
         if blend["material_count"] < MIN_MATERIALS:
             record["errors"].append(f"blend: material count {blend['material_count']} < {MIN_MATERIALS}")
+        if blend["mesh_objects"] > MAX_GLB_MESH_OBJECTS:
+            record["errors"].append(f"blend: static mesh object count {blend['mesh_objects']} > {MAX_GLB_MESH_OBJECTS}")
         if not blend["dimensions"] or not all(finite(v) and v >= 0.05 for v in blend["dimensions"]):
             record["errors"].append(f"blend: invalid world bounds {blend['dimensions']}")
         if blend["bad_geometry_objects"]:
@@ -199,10 +286,19 @@ def validate_one(slug, output_dir):
             record["errors"].append("glb: no mesh objects after import")
         if glb["uv_mesh_objects"] < glb["mesh_objects"]:
             record["errors"].append(f"glb: UV mapping missing on {glb['mesh_objects'] - glb['uv_mesh_objects']} mesh objects")
+        uv_face_limit = max(3, int(glb["polygons"] * 0.01))
+        if glb["uv_degenerate_faces"] > uv_face_limit:
+            record["errors"].append(f"glb: {glb['uv_degenerate_faces']} degenerate UV faces exceed limit {uv_face_limit}")
+        if glb["uv_non_finite_values"] > 0:
+            record["errors"].append(f"glb: {glb['uv_non_finite_values']} faces contain non-finite UV values")
         if glb["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"glb: polygon count {glb['polygons']} < {MIN_POLYGONS}")
         if glb["material_count"] < MIN_MATERIALS:
             record["errors"].append(f"glb: material count {glb['material_count']} < {MIN_MATERIALS}")
+        if glb["mesh_objects"] > MAX_GLB_MESH_OBJECTS:
+            record["errors"].append(f"glb: mesh object count {glb['mesh_objects']} > {MAX_GLB_MESH_OBJECTS}; static meshes must be consolidated")
+        if glb["image_textures"] < MIN_GLB_IMAGE_TEXTURES:
+            record["errors"].append(f"glb: only {glb['image_textures']} embedded image textures; expected at least {MIN_GLB_IMAGE_TEXTURES} (albedo, roughness, normal)")
         if not glb["dimensions"] or not all(finite(v) and v >= 0.05 for v in glb["dimensions"]):
             record["errors"].append(f"glb: invalid world bounds {glb['dimensions']}")
         if glb["bad_geometry_objects"]:
@@ -232,10 +328,12 @@ def validate_one(slug, output_dir):
 def main():
     args = parse_args()
     output_dir = os.path.abspath(args.output_dir)
-    results = [validate_one(ship, output_dir) for ship in SHIPS]
+    selected_ships = tuple(args.ships)
+    results = [validate_one(ship, output_dir) for ship in selected_ships]
     failed = [item["name"] for item in results if item["status"] != "ok"]
     report = {
         "schema": "galactic-frontier.asset-validation/v1",
+        "scope": list(selected_ships),
         "blender_version": bpy.app.version_string,
         "output_dir": output_dir,
         "ships_total": len(results),

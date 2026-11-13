@@ -1,11 +1,16 @@
 # This workflow is also present on the PR base branch so GitHub can run it for stacked draft PRs.
-name: Ship art production — seven-class fleet
+name: Player Fighter Mk.I — focused art production
 
 on:
   push:
     branches:
       - chatgpt/ship-art-production
       - chatgpt/fullhd-visual-polish
+      - chatgpt/player-fighter-hero-detail
+      - chatgpt/ship-uv-quality-fix
+      - chatgpt/player-fighter-cockpit-geometry
+      - chatgpt/ship-glb-texture-export-fix
+      - chatgpt/integration-staging-2026-11
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
@@ -16,12 +21,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: ship-art-production-global
+  # Isolate independent PR branches. A single global group lets newer queued
+  # branches cancel older pending fleet builds before they can validate.
+  group: ship-art-production-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build-validate-import:
-    name: Build, validate and import seven original ships
+    name: Build, validate and import Player Fighter Mk.I
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -34,7 +41,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes xz-utils file libegl1 libgl1 libxkbcommon0 libxrender1 libxi6 libxfixes3 libx11-6 libxxf86vm1
-          curl -fL "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+          curl -fL --retry 3 --retry-all-errors "https://mirror.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz || curl -fL --retry 3 --retry-all-errors "https://download.blender.org/release/Blender4.5/blender-4.5.16-linux-x64.tar.xz" -o /tmp/blender.tar.xz
           sudo mkdir -p /opt/blender
           sudo tar -xJf /tmp/blender.tar.xz --strip-components=1 -C /opt/blender
           sudo ln -sf /opt/blender/blender /usr/local/bin/blender
@@ -45,33 +52,25 @@ jobs:
           mkdir -p build/fleet
           PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_player_fighter.py -- --output-dir build/fleet
 
-      - name: Generate Raider Interceptor Mk.I
+      - name: Validate Player Fighter Mk.I Blender file, GLB and studio render
         run: |
-          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_enemy_interceptor.py -- --output-dir build/fleet
-
-      - name: Generate Aegis, Bastion, Mule, Vanguard and Leviathan
-        run: |
-          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/build_fleet_expansion.py -- --output-dir build/fleet
-
-      - name: Validate all Blender files, GLBs and studio renders
-        run: |
-          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/validate_fleet_assets.py -- --output-dir build/fleet --report build/fleet/validation.json
+          PYTHONPATH=/usr/lib/python3/dist-packages blender --background --python scripts/blender/validate_fleet_assets.py -- --ships player_fighter --output-dir build/fleet --report build/fleet/validation.json
           cat build/fleet/validation.json
 
-      - name: Upload generated fleet for visual review
+      - name: Upload Player Fighter for visual review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gf-seven-ship-fleet-review-${{ github.run_number }}
+          name: gf-player-fighter-review-${{ github.run_number }}
           path: |
-            build/fleet/*.blend
-            build/fleet/*.glb
-            build/fleet/*_preview.png
+            build/fleet/player_fighter.blend
+            build/fleet/player_fighter.glb
+            build/fleet/player_fighter_preview.png
             build/fleet/validation.json
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Install Godot 4.7.2 and import the seven GLBs
+      - name: Install Godot 4.7.2 and import Player Fighter Mk.I
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
@@ -81,12 +80,11 @@ jobs:
       - name: Stage generated assets for Godot import
         run: |
           mkdir -p art_source/ships assets/models/ships assets/previews
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
-            rm -f "assets/models/ships/${ship}.blend"
-            cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
-            cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
-          done
+          ship=player_fighter
+          cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
+          rm -f "assets/models/ships/${ship}.blend"
+          cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
+          cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
 
       - name: Godot asset import and parser validation
         run: |
@@ -98,10 +96,8 @@ jobs:
         run: |
           test -f art_source/.gdignore
           test -s art_source/README.md
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            test -s "art_source/ships/${ship}.blend"
-            test ! -e "assets/models/ships/${ship}.blend"
-          done
+          test -s art_source/ships/player_fighter.blend
+          test ! -e assets/models/ships/player_fighter.blend
 
       - name: Publish validated GLBs and previews to the production branch
         if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'github-actions[bot]' }}
@@ -113,43 +109,40 @@ jobs:
           git fetch origin "$BRANCH"
           git checkout -B fleet-publish "origin/$BRANCH"
           mkdir -p art_source/ships assets/models/ships assets/previews
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            test -s "build/fleet/${ship}.blend"
-            test -s "build/fleet/${ship}.glb"
-            test -s "build/fleet/${ship}_preview.png"
-            cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
-            rm -f "assets/models/ships/${ship}.blend"
-            cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
-            cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
-          done
+          ship=player_fighter
+          test -s "build/fleet/${ship}.blend"
+          test -s "build/fleet/${ship}.glb"
+          test -s "build/fleet/${ship}_preview.png"
+          cp "build/fleet/${ship}.blend" "art_source/ships/${ship}.blend"
+          rm -f "assets/models/ships/${ship}.blend"
+          cp "build/fleet/${ship}.glb" "assets/models/ships/${ship}.glb"
+          cp "build/fleet/${ship}_preview.png" "assets/previews/${ship}_preview.png"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A art_source/ships assets/models/ships assets/previews
           if git diff --cached --quiet; then
             echo "Generated fleet assets are already current."
           else
-            git commit -m "Publish validated seven-class fleet assets"
+            git commit -m "Publish validated Player Fighter Mk.I asset"
             git push origin "HEAD:$BRANCH"
           fi
           git fetch origin "$BRANCH"
-          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
-            git cat-file -e "origin/$BRANCH:art_source/ships/${ship}.blend"
-            if git cat-file -e "origin/$BRANCH:assets/models/ships/${ship}.blend" 2>/dev/null; then
-              echo "Blender source was incorrectly left inside Godot resources: ${ship}.blend"
-              exit 1
-            fi
-          done
+          git cat-file -e "origin/$BRANCH:art_source/ships/player_fighter.blend"
+          if git cat-file -e "origin/$BRANCH:assets/models/ships/player_fighter.blend" 2>/dev/null; then
+            echo "Blender source was incorrectly left inside Godot resources: player_fighter.blend"
+            exit 1
+          fi
 
       - name: Upload complete fleet build and validation report
         uses: actions/upload-artifact@v4
         with:
-          name: GALACTIC-FRONTIER-seven-ship-fleet
+          name: GALACTIC-FRONTIER-player-fighter
           path: |
-            build/fleet/*.blend
-            build/fleet/*.glb
-            build/fleet/*_preview.png
+            build/fleet/player_fighter.blend
+            build/fleet/player_fighter.glb
+            build/fleet/player_fighter_preview.png
             build/fleet/validation.json
           if-no-files-found: error
           retention-days: 30
 
-# CI bootstrap: workflow entry point enabled from main; branch push intentionally runs fleet, Godot and visual QA.
+# Focused production gate for the existing Player Fighter Mk.I; other ship classes stay untouched.
