@@ -646,7 +646,7 @@ def main():
         base=os.path.join(dest,slug)
         bpy.ops.wm.save_as_mainfile(filepath=base+".blend")
         bpy.ops.export_scene.gltf(filepath=base+".glb",export_format="GLB",use_selection=True,
-            export_apply=True,export_materials="EXPORT",export_image_format="PNG",export_image_quality=100,export_cameras=False,export_lights=False)
+            export_apply=True,export_materials="EXPORT",export_image_format="AUTO",export_image_quality=100,export_cameras=False,export_lights=False)
         cam=render_setup(center,extent)
         bpy.context.scene.camera=cam
         bpy.context.scene.render.filepath=base+"_preview.png"
