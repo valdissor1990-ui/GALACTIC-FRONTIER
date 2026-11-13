@@ -17,6 +17,7 @@ var _rect: ColorRect
 var _mat: ShaderMaterial
 var _camera: Camera3D
 var _masses: Array[Node3D] = []
+var _quality_enabled: bool = true
 
 
 func _ready() -> void:
@@ -35,6 +36,7 @@ func apply_quality(gq: Node) -> void:
 	var enabled: bool = true
 	if gq.has_method("lens_enabled"):
 		enabled = gq.lens_enabled()
+	_quality_enabled = enabled
 	if _layer:
 		_layer.visible = enabled
 	if not enabled:
@@ -65,7 +67,7 @@ func _gq() -> Node:
 func _build_overlay() -> void:
 	_layer = CanvasLayer.new()
 	_layer.name = "GravitationalLensLayer"
-	_layer.layer = 80
+	_layer.layer = 2
 	add_child(_layer)
 
 	# Ensure we sample the 3D buffer behind this canvas item
@@ -116,7 +118,9 @@ func _walk_masses(node: Node) -> void:
 func _process(_delta: float) -> void:
 	if _mat == null:
 		return
-	if _layer and not _layer.visible:
+	if not _quality_enabled:
+		if _layer:
+			_layer.visible = false
 		return
 	if _camera == null or not is_instance_valid(_camera):
 		_resolve_camera()
@@ -157,6 +161,12 @@ func _process(_delta: float) -> void:
 		scored.append({"uv": uv, "strength": strength, "radius": rad})
 
 	scored.sort_custom(func(a, b): return a["strength"] > b["strength"])
+	if _layer:
+		_layer.visible = not scored.is_empty()
+	if scored.is_empty():
+		for i in 2:
+			_mat.set_shader_parameter("mass%d_strength" % i, 0.0)
+		return
 
 	for i in 2:
 		var prefix := "mass%d_" % i
