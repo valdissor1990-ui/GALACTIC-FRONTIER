@@ -157,6 +157,7 @@ for z in (.25,.55,1.45):
 
 # Scene organization and asset metadata.
 root=bpy.data.collections.new("GF-01 PLAYER INTERCEPTOR | production asset")
+bpy.context.scene.collection.children.link(root)
 for obj in list(bpy.context.scene.objects):
     for c in list(obj.users_collection): c.objects.unlink(obj)
     root.objects.link(obj)
