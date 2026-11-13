@@ -275,3 +275,12 @@ https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43478273435
 Run: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43480389576
 
 Визуальная приёмка текущего игрового процесса: FAIL. Не заменять этот вывод зелёным Godot CI.
+
+
+### Дополнительный статический риск в Starfield MultiMesh
+
+В `scripts/environment/space_environment.gd`:
+- AsteroidField и InterplanetaryDust явно получают `custom_aabb`, потому что их экземпляры размещены на больших расстояниях и стандартные bounds могут отсекать весь MultiMesh.
+- Starfield и ChromaticStarClusters создаются через `_make_multimesh()`, получают instance transforms на расстоянии 520–1040 units, но в текущем коде не получают явный `custom_aabb`.
+- Это вероятный источник frustum-culling звёздного поля. Требуется проверить после нового Forward+ capture и при подтверждении добавить bounds примерно ±1100 для starfield и ±1300 для clusters.
+- Не считать это доказанной первопричиной пустого синего кадра: в capture c4ce910 также были проблемы с активным viewport environment и visibility/cull mask, которые уже получили отдельные исправления в b3b74.
