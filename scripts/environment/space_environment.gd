@@ -247,7 +247,7 @@ void fragment() {
 
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
-	planet.name = "Planet_%s" % _system_id
+	planet.name = "Aurelia" if _system_id == "aurelia" else "Planet_%s" % _system_id
 	planet.position = Vector3(-160.0, 26.0, -285.0)
 	planet.scale = Vector3.ONE * 42.0
 
@@ -269,7 +269,7 @@ func _build_planet() -> void:
 	_build_planet_collision(planet.position)
 
 	var atmosphere := MeshInstance3D.new()
-	atmosphere.name = "PlanetAtmosphere_%s" % _system_id
+	atmosphere.name = "AureliaAtmosphere" if _system_id == "aurelia" else "PlanetAtmosphere_%s" % _system_id
 	atmosphere.position = planet.position
 	atmosphere.scale = Vector3.ONE * 43.2
 	var atmosphere_mesh := SphereMesh.new()
