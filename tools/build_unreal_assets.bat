@@ -66,7 +66,7 @@ echo [3/5] Building Heavy Fighter, Bomber, Cargo Hauler, Frigate and Cruiser in 
 if errorlevel 1 goto :build_failed
 
 echo [4/5] Validating all seven ship builds before replacing source assets...
-"%BLENDER_EXE%" --background --python "%ROOT%\scripts\blender\validate_fleet_assets.py" -- --output-dir "%BUILD_DIR%" --report "%VALIDATION_REPORT%"
+"%BLENDER_EXE%" --background --python "%ROOT%\scripts\blender\validate_generated_fleet.py" -- --output-dir "%BUILD_DIR%" --report "%VALIDATION_REPORT%"
 if errorlevel 1 (
   echo ERROR: Fleet validation failed. Existing source assets were not replaced.
   echo Review: %VALIDATION_REPORT%
