@@ -18,6 +18,22 @@ func _run() -> void:
 	await physics_frame
 	var obstacles := get_nodes_in_group("space_obstacles")
 	_check(obstacles.size() >= 100, "planet and asteroid collision proxies must be registered")
+	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
+	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
+	if asteroid_field != null:
+		var relay_sector_count := 0
+		var outer_sector_count := 0
+		for index in range(asteroid_field.multimesh.instance_count):
+			var asteroid_position := asteroid_field.multimesh.get_instance_transform(index).origin
+			if asteroid_position.z < -5000.0 and asteroid_position.z > -20000.0:
+				relay_sector_count += 1
+			elif asteroid_position.z <= -20000.0:
+				outer_sector_count += 1
+		_check(relay_sector_count > 0, "asteroids populate the long outbound relay sector")
+		_check(outer_sector_count > 0, "asteroids populate the distant wreck and return sectors")
+	_check(environment.has_node("NacreonGasGiant"), "a ringed gas giant landmark is generated")
+	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
+	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	var route_hit := _ray(ROUTE_START, ROUTE_END)
 	_check(route_hit.is_empty(), "the relay approach corridor must remain clear of solid obstacles")
 	var planet := environment.get_node_or_null("AureliaCollision") as StaticBody3D
