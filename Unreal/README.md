@@ -28,14 +28,15 @@ See **`docs/NIAGARA_VFX.md`**. Setup script creates `/Game/GF/VFX/NS_*` placehol
 
 The repository now contains a sequential production/import pipeline:
 
-1. `scripts/blender/build_space_environment.py` generates a deep-space starfield/nebula backdrop and four original textured planets (ocean, desert, ice and ringed gas giant).
-2. `tools/build_unreal_assets.bat` runs that Blender generator, then launches Unreal Editor with the import script.
-3. Unreal imports one GLB at a time in this fixed order: **ships → environment props → space backdrop → planets**. The next model starts only after the previous import task has returned and its result has been recorded.
-4. Each model is logged. The report is written to `Unreal/Saved/GFAssetManifests/asset_pipeline_report.json`.
+1. Blender rebuilds the complete seven-ship fleet in sequence using the existing original builders: Player Fighter, Raider Interceptor, Heavy Fighter, Bomber, Cargo Hauler, Frigate and Cruiser. The generated files are validated before they replace the tracked source/export files.
+2. `scripts/blender/build_space_environment.py` generates a deep-space starfield/nebula backdrop and four original textured planets (ocean, desert, ice and ringed gas giant).
+3. `tools/build_unreal_assets.bat` runs the ship builders, fleet validation, space/planet generator, then launches Unreal Editor with the import script.
+4. Unreal imports one GLB at a time in this fixed order: **ships → environment props → space backdrop → planets**. The next model starts only after the previous import task has returned and its result has been recorded.
+5. Each model is logged. The report is written to `Unreal/Saved/GFAssetManifests/asset_pipeline_report.json`.
 
 Before first use, compile the C++ project once in UE 5.8.4. Install Blender 4.5 and Unreal Engine 5.8. If either executable is installed in a non-standard folder, set `BLENDER_EXE` and/or `UE_EDITOR_EXE` to its full path before launching the batch file. The project enables Unreal's PythonScriptPlugin and EditorScriptingUtilities for this workflow.
 
-Run `tools/build_unreal_assets.bat` from Windows. Follow the `[GF Setup] PIPELINE` messages in Unreal's Output Log. This automates generation and sequential import; it does **not** yet prove visual acceptance or automatically assemble every multi-part ship into its final actor. GLB-to-StaticMesh node mapping, transform conversion and Editor visual validation remain separate acceptance gates.
+Run `tools/build_unreal_assets.bat` from Windows. Follow the `[GF Setup] PIPELINE` messages in Unreal's Output Log. This automates rebuilding and sequential import; it does **not** yet prove visual acceptance or automatically assemble every multi-part ship into its final actor. GLB-to-StaticMesh node mapping, transform conversion and Editor visual validation remain separate acceptance gates.
 
 ## Setup
 
