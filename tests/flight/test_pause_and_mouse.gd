@@ -64,6 +64,10 @@ func _make_ship() -> ShipController:
 	var config := ShipFlightConfig.new()
 	ship.flight_config = config
 
+	var visual := Node3D.new()
+	visual.name = "Visual"
+	ship.add_child(visual)
+
 	var rig := Node3D.new()
 	rig.name = "CameraRig"
 	rig.set_script(load("res://scripts/flight/camera_rig.gd"))
