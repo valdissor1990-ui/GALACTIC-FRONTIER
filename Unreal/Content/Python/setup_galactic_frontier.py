@@ -3,9 +3,9 @@
 Run in Unreal Editor: Tools -> Execute Python Script.
 Compile the C++ project once before running this script.
 
-Imports the existing GLB fleet, creates the first test level and configures
-PlayerStart + The Silent Relay mission director. The GameMode spawns the
-player pawn; its C++ startup applies the selected ship from the catalog.
+Imports the existing GLB fleet and creates a flight-test level. Import results
+are inventoried per source file; multi-mesh GLBs are deliberately flagged
+rather than silently treated as complete single-mesh ships.
 """
 from pathlib import Path
 import unreal
@@ -23,6 +23,7 @@ def import_glb(source_path: Path, destination_path: str):
     if not source_path.exists():
         unreal.log_warning("[GF Setup] Missing source: " + str(source_path))
         return []
+
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", str(source_path))
     task.set_editor_property("destination_path", destination_path)
@@ -31,7 +32,21 @@ def import_glb(source_path: Path, destination_path: str):
     task.set_editor_property("save", True)
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
     imported = list(task.get_editor_property("imported_object_paths"))
-    log("Imported " + source_path.name + ": " + str(imported))
+
+    mesh_assets = []
+    for object_path in imported:
+        asset = unreal.EditorAssetLibrary.load_asset(object_path)
+        if isinstance(asset, unreal.StaticMesh):
+            mesh_assets.append(asset)
+
+    log("GLB " + source_path.name + ": imported_objects=" + str(len(imported)) +
+        ", static_meshes=" + str([mesh.get_path_name() for mesh in mesh_assets]))
+    if len(mesh_assets) > 1:
+        unreal.log_warning(
+            "[GF Setup] " + source_path.name + " produced multiple StaticMesh assets. "
+            "Do not use a single mesh as the complete ship; preserve and assemble every node.")
+    elif len(mesh_assets) == 0:
+        unreal.log_warning("[GF Setup] " + source_path.name + " produced no StaticMesh asset.")
     return imported
 
 
@@ -40,6 +55,7 @@ def import_existing_fleet():
     for category in ("ships", "environment"):
         folder = ASSET_ROOT / category
         if not folder.exists():
+            unreal.log_warning("[GF Setup] Missing source folder: " + str(folder))
             continue
         target = CONTENT_ROOT + "/" + category.title()
         for glb in sorted(folder.glob("*.glb")):
@@ -51,10 +67,13 @@ def find_static_mesh(imported_paths, token):
     candidates = []
     for object_path in imported_paths:
         asset = unreal.EditorAssetLibrary.load_asset(object_path)
-        if isinstance(asset, unreal.StaticMesh):
-            candidates.append((object_path.lower(), asset))
-    preferred = [item for item in candidates if token in item[0]]
-    return preferred[0][1] if preferred else None
+        if isinstance(asset, unreal.StaticMesh) and token in object_path.lower():
+            candidates.append(asset)
+    if len(candidates) > 1:
+        unreal.log_warning("[GF Setup] Ambiguous mesh token '" + token +
+                           "': " + str([asset.get_path_name() for asset in candidates]))
+        return None
+    return candidates[0] if candidates else None
 
 
 def spawn_lighting():
@@ -85,8 +104,6 @@ def create_flight_test_level(imported):
         return False
 
     spawn_lighting()
-
-    # GameMode creates the pawn; PlayerStart prevents a duplicate placed pawn.
     player_start = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.PlayerStart, unreal.Vector(0, 0, 0), unreal.Rotator(-90, 0, 0))
     if player_start:
@@ -95,7 +112,7 @@ def create_flight_test_level(imported):
     enemy_mesh = find_static_mesh(imported, "enemy_fighter")
     mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
     if not mission_class:
-        unreal.log_error("[GF Setup] C++ class GFMissionDirector not found. Compile the project and rerun.")
+        unreal.log_error("[GF Setup] GFMissionDirector class not found. Compile C++ and rerun.")
         return False
 
     mission = unreal.EditorLevelLibrary.spawn_actor_from_class(
@@ -105,7 +122,7 @@ def create_flight_test_level(imported):
         if enemy_mesh:
             mission.set_editor_property("enemy_ship_mesh", enemy_mesh)
         else:
-            unreal.log_warning("[GF Setup] Enemy Fighter static mesh not found among imported assets.")
+            unreal.log_warning("[GF Setup] Enemy Fighter mesh is missing or ambiguous.")
 
     unreal.EditorLevelLibrary.save_current_level()
     unreal.EditorAssetLibrary.save_directory("/Game/GF", only_if_is_dirty=False, recursive=True)
@@ -118,25 +135,17 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
     imported = import_existing_fleet()
+
     player_mesh = find_static_mesh(imported, "player_fighter")
     if player_mesh:
-        # Keep a visible fallback on the native pawn class. BeginPlay will replace
-        # it with the catalog-selected mesh when that soft reference resolves.
-        pawn_class = unreal.load_class(None, "/Script/GalacticFrontier.GFPlayerShipPawn")
-        if pawn_class:
-            pawn_default = pawn_class.get_default_object()
-            pawn_mesh = pawn_default.get_editor_property("ship_mesh")
-            if pawn_mesh:
-                pawn_mesh.set_static_mesh(player_mesh)
-                log("Assigned Player Fighter fallback mesh to GFPlayerShipPawn: " + player_mesh.get_path_name())
-            else:
-                unreal.log_warning("[GF Setup] GFPlayerShipPawn CDO has no ShipMesh component.")
-        else:
-            unreal.log_warning("[GF Setup] GFPlayerShipPawn class not found; compile C++ before setup.")
+        log("Player Fighter candidate: " + player_mesh.get_path_name() +
+            ". Catalog soft reference still needs Editor verification.")
     else:
-        unreal.log_warning("[GF Setup] Player Fighter asset was not found by the importer; inspect imported GLB objects.")
+        unreal.log_warning("[GF Setup] Player Fighter mesh is missing or ambiguous.")
+
     create_flight_test_level(imported)
-    log("Setup finished. Inspect GLB hierarchy/materials, then verify scale, orientation, pivots and collision before acceptance.")
+    log("Import inventory complete. Inspect every ship's complete node hierarchy, materials, "
+        "scale, orientation, pivots and collision before acceptance.")
 
 
 if __name__ == "__main__":
