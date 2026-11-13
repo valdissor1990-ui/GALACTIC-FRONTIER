@@ -15,6 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ASSET_ROOT = PROJECT_ROOT / "assets" / "models"
 CONTENT_ROOT = "/Game/GF"
 VFX_ROOT = CONTENT_ROOT + "/VFX"
+PIPELINE_REPORT = []
 
 # Soft paths expected by UGFShipVfxComponent defaults
 VFX_SYSTEMS = [
@@ -251,6 +252,13 @@ def import_glb(source_path: Path, destination_path: str):
     log("GLB " + source_path.name + ": source_mesh_instances=" + str(len(source_nodes)) +
         ", imported_objects=" + str(len(imported)) +
         ", static_meshes=" + str([mesh.get_path_name() for mesh in mesh_assets]))
+    PIPELINE_REPORT.append({
+        "source": str(source_path.relative_to(PROJECT_ROOT)),
+        "destination": destination_path,
+        "imported_objects": imported,
+        "static_meshes": [mesh.get_path_name() for mesh in mesh_assets],
+        "status": "imported" if imported else "failed",
+    })
     if len(mesh_assets) > 1:
         unreal.log_warning(
             "[GF Setup] " + source_path.name + " produced multiple StaticMesh assets. "
@@ -261,16 +269,60 @@ def import_glb(source_path: Path, destination_path: str):
 
 
 def import_existing_fleet():
+    """Run a deterministic, strictly sequential ship -> environment -> planet queue.
+
+    AssetImportTask is synchronous in this Editor Python workflow. The next
+    source is not submitted until the previous task has returned and its result
+    has been inventoried. One bad asset is recorded but does not skip later work.
+    """
     imported = []
-    for category in ("ships", "environment"):
+    stages = ("ships", "environment", "planets")
+    for stage_index, category in enumerate(stages):
         folder = ASSET_ROOT / category
+        log("PIPELINE STAGE START " + str(stage_index + 1) + "/" +
+            str(len(stages)) + ": " + category.upper())
         if not folder.exists():
             unreal.log_warning("[GF Setup] Missing source folder: " + str(folder))
+            PIPELINE_REPORT.append({
+                "stage": category, "status": "missing_folder",
+                "source_count": 0,
+            })
             continue
+
         target = CONTENT_ROOT + "/" + category.title()
-        for glb in sorted(folder.glob("*.glb")):
+        unreal.EditorAssetLibrary.make_directory(target)
+        sources = sorted(folder.glob("*.glb"))
+        log("PIPELINE QUEUE " + category + ": " + str(len(sources)) + " models")
+        for model_index, glb in enumerate(sources):
+            log("PIPELINE MODEL START " + category + " " +
+                str(model_index + 1) + "/" + str(len(sources)) + ": " + glb.name)
+            model_result_start = len(PIPELINE_REPORT)
             imported.extend(import_glb(glb, target))
+            model_result = PIPELINE_REPORT[model_result_start] if len(PIPELINE_REPORT) > model_result_start else {}
+            log("PIPELINE MODEL COMPLETE " + glb.name + ": " +
+                str(model_result.get("status", "unknown")))
+
+        stage_results = [item for item in PIPELINE_REPORT
+                         if item.get("source", "").startswith("assets/models/" + category + "/")]
+        failed = sum(1 for item in stage_results if item.get("status") != "imported")
+        log("PIPELINE STAGE COMPLETE " + category.upper() + ": " +
+            str(len(stage_results) - failed) + "/" + str(len(sources)) + " imported")
     return imported
+
+
+def save_pipeline_report():
+    report_dir = PROJECT_ROOT / "Saved" / "GFAssetManifests"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "asset_pipeline_report.json"
+    report_path.write_text(json.dumps({
+        "pipeline": ["ships", "environment", "planets"],
+        "execution": "sequential",
+        "models": PIPELINE_REPORT,
+        "total_models": sum(1 for item in PIPELINE_REPORT if "source" in item),
+        "failed_models": [item["source"] for item in PIPELINE_REPORT
+                          if item.get("status") != "imported" and "source" in item],
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    log("PIPELINE REPORT: " + str(report_path))
 
 
 def find_static_mesh(imported_paths, token):
@@ -346,6 +398,7 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
     imported = import_existing_fleet()
+    save_pipeline_report()
 
     player_mesh = find_static_mesh(imported, "player_fighter")
     if player_mesh:
@@ -355,8 +408,10 @@ def main():
         unreal.log_warning("[GF Setup] Player Fighter mesh is missing or ambiguous.")
 
     create_flight_test_level(imported)
-    log("Import inventory complete. Inspect every ship's complete node hierarchy, materials, "
-        "scale, orientation, pivots and collision before acceptance.")
+    log("SHIP -> ENVIRONMENT -> PLANETS import queue finished. Inspect every ship's "
+        "complete node hierarchy, materials, scale, orientation, pivots and collision. "
+        "Planet GLBs are generated by scripts/blender/build_space_environment.py before "
+        "this Editor script is run.")
 
 
 if __name__ == "__main__":
