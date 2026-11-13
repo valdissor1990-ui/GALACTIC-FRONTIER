@@ -1,32 +1,60 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space visual stack: sky, lights, planets, MultiMesh belt, Relay.
-## Environment post tuned for Forward+ desktop space scenes.
+## Open-space visual stack. Respects GraphicsQuality presets when available.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
 @export var belt_width: float = 55.0
 @export var belt_height: float = 18.0
 @export var spawn_relay_beacon: bool = true
-## Open space has little contact AO; keep mild or off for GPU budget.
 @export var enable_ssao: bool = false
 
 var _rng := RandomNumberGenerator.new()
+var _world_env: WorldEnvironment
+var _key_light: DirectionalLight3D
+var _asteroid_mmi: MultiMeshInstance3D
 
 
 func _ready() -> void:
 	_rng.randomize()
+	var gq := _graphics_quality()
+	if gq:
+		asteroid_count = gq.asteroid_count()
+		enable_ssao = gq.ssao_enabled()
 	_setup_sky_environment()
 	_setup_lights()
 	_setup_planets()
 	_setup_asteroid_belt()
 	if spawn_relay_beacon:
 		_setup_relay_beacon()
+	if gq:
+		apply_quality(gq)
+
+
+func apply_quality(gq: Node) -> void:
+	## Called from GraphicsQuality autoload (duck-typed to avoid hard parse order issues).
+	if gq == null:
+		return
+	enable_ssao = gq.ssao_enabled()
+	if _world_env and _world_env.environment:
+		var env := _world_env.environment
+		env.ssao_enabled = enable_ssao
+		env.glow_intensity = gq.glow_intensity()
+		env.glow_enabled = true
+	if _key_light:
+		_key_light.shadow_enabled = gq.shadow_enabled()
+		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
+		_key_light.directional_shadow_mode = gq.shadow_splits() as DirectionalLight3D.ShadowMode
+	# Asteroid count only applied at build time; runtime resize is optional later
+
+
+func _graphics_quality() -> Node:
+	return get_node_or_null("/root/GraphicsQuality")
 
 
 func _setup_sky_environment() -> void:
-	var world := WorldEnvironment.new()
-	world.name = "WorldEnvironment"
+	_world_env = WorldEnvironment.new()
+	_world_env.name = "WorldEnvironment"
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
@@ -51,52 +79,49 @@ func _setup_sky_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.26
-
-	# Tonemap — ACES holds engine bloom without crushing stars
 	env.tonemap_mode = Environment.TONE_MAP_MODE_ACES
 	env.tonemap_exposure = 0.95
 	env.tonemap_white = 6.5
-
-	# Glow — critical for plumes / relay / projectiles (cheap relative to look)
 	env.glow_enabled = true
 	env.glow_levels[1] = 0.0
 	env.glow_levels[2] = 0.55
 	env.glow_levels[3] = 0.9
 	env.glow_levels[4] = 0.55
 	env.glow_levels[5] = 0.25
-	env.glow_intensity = 0.5
+	var gq := _graphics_quality()
+	env.glow_intensity = gq.glow_intensity() if gq else 0.5
 	env.glow_strength = 0.95
 	env.glow_bloom = 0.15
 	env.glow_hdr_threshold = 0.85
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.05
 	env.adjustment_saturation = 1.06
-
-	# SSR almost useless on open void — leave off (saves GPU)
 	env.ssr_enabled = false
-	# SSAO optional: useful near stations, weak in pure space
 	env.ssao_enabled = enable_ssao
 	if enable_ssao:
 		env.ssao_radius = 1.0
 		env.ssao_intensity = 1.2
-
-	world.environment = env
-	add_child(world)
+	_world_env.environment = env
+	add_child(_world_env)
 
 
 func _setup_lights() -> void:
-	var key := DirectionalLight3D.new()
-	key.name = "StarKeyLight"
-	key.rotation_degrees = Vector3(-24, 40, 0)
-	key.light_color = Color(1.0, 0.96, 0.88)
-	key.light_energy = 1.55
-	key.shadow_enabled = true
-	key.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	# Space scale: do not push shadow distance to thousands
-	key.directional_shadow_max_distance = 280.0
-	add_child(key)
+	_key_light = DirectionalLight3D.new()
+	_key_light.name = "StarKeyLight"
+	_key_light.rotation_degrees = Vector3(-24, 40, 0)
+	_key_light.light_color = Color(1.0, 0.96, 0.88)
+	_key_light.light_energy = 1.55
+	var gq := _graphics_quality()
+	if gq:
+		_key_light.shadow_enabled = gq.shadow_enabled()
+		_key_light.directional_shadow_max_distance = gq.shadow_max_distance()
+		_key_light.directional_shadow_mode = gq.shadow_splits() as DirectionalLight3D.ShadowMode
+	else:
+		_key_light.shadow_enabled = true
+		_key_light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		_key_light.directional_shadow_max_distance = 280.0
+	add_child(_key_light)
 
 	var fill := DirectionalLight3D.new()
 	fill.name = "FillLight"
@@ -108,24 +133,12 @@ func _setup_lights() -> void:
 
 
 func _setup_planets() -> void:
-	_add_planet(
-		"GasGiant",
-		Vector3(-90, 40, -260),
-		48.0,
-		Color(0.15, 0.28, 0.42),
-		Color(0.05, 0.12, 0.2),
-		0.15,
-		0.85
-	)
-	_add_planet(
-		"RockyWorld",
-		Vector3(120, -30, -200),
-		18.0,
-		Color(0.35, 0.22, 0.16),
-		Color(0.08, 0.05, 0.04),
-		0.05,
-		0.92
-	)
+	var segs := 40
+	var gq := _graphics_quality()
+	if gq:
+		segs = gq.planet_segments()
+	_add_planet("GasGiant", Vector3(-90, 40, -260), 48.0, Color(0.15, 0.28, 0.42), Color(0.05, 0.12, 0.2), 0.15, 0.85, segs)
+	_add_planet("RockyWorld", Vector3(120, -30, -200), 18.0, Color(0.35, 0.22, 0.16), Color(0.08, 0.05, 0.04), 0.05, 0.92, segs)
 
 
 func _add_planet(
@@ -135,7 +148,8 @@ func _add_planet(
 	albedo: Color,
 	emission: Color,
 	metallic: float,
-	roughness: float
+	roughness: float,
+	segments: int = 40
 ) -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = planet_name
@@ -143,8 +157,8 @@ func _add_planet(
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	mesh.radial_segments = 48
-	mesh.rings = 24
+	mesh.radial_segments = segments
+	mesh.rings = maxi(segments / 2, 8)
 	mi.mesh = mesh
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = albedo
@@ -159,8 +173,8 @@ func _add_planet(
 
 
 func _setup_asteroid_belt() -> void:
-	var multi := MultiMeshInstance3D.new()
-	multi.name = "AsteroidBelt"
+	_asteroid_mmi = MultiMeshInstance3D.new()
+	_asteroid_mmi.name = "AsteroidBelt"
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.instance_count = asteroid_count
@@ -187,9 +201,9 @@ func _setup_asteroid_belt() -> void:
 			_rng.randf() * TAU
 		)).scaled(Vector3(s, s * _rng.randf_range(0.6, 1.2), s))
 		mm.set_instance_transform(i, Transform3D(basis, pos))
-	multi.multimesh = mm
-	multi.visibility_range_end = 900.0
-	add_child(multi)
+	_asteroid_mmi.multimesh = mm
+	_asteroid_mmi.visibility_range_end = 900.0
+	add_child(_asteroid_mmi)
 
 
 func _setup_relay_beacon() -> void:
