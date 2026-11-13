@@ -1,4 +1,6 @@
 extends Node3D
+
+const JUPITER_SURFACE_TEXTURE: Texture2D = preload("res://assets/textures/space/jupiter_2k.jpg")
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses deterministic procedural layers plus curated NASA and CC0 environment assets.
 
@@ -811,10 +813,7 @@ void fragment() {
 	fallback_giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
 	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
 	# banding and storm detail; keep the procedural shader as an offline fallback.
-	var gas_giant_texture: Texture2D
-	var gas_giant_image := Image.load_from_file("res://assets/textures/space/jupiter_2k.jpg")
-	if gas_giant_image != null and not gas_giant_image.is_empty():
-		gas_giant_texture = ImageTexture.create_from_image(gas_giant_image)
+	var gas_giant_texture: Texture2D = JUPITER_SURFACE_TEXTURE
 	if gas_giant_texture != null:
 		var textured_giant := StandardMaterial3D.new()
 		textured_giant.albedo_texture = gas_giant_texture
