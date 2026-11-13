@@ -8,8 +8,20 @@ extends Node3D
 
 
 func _ready() -> void:
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	if quality != null:
+		particle_count = maxi(roundi(100.0 * float(quality.particle_amount_scale())), 20)
 	_create_engine_plume(-engine_spacing)
 	_create_engine_plume(engine_spacing)
+
+
+func apply_quality(quality: Node) -> void:
+	if quality == null:
+		return
+	particle_count = maxi(roundi(100.0 * float(quality.particle_amount_scale())), 20)
+	for child in get_children():
+		if child is GPUParticles3D:
+			(child as GPUParticles3D).amount = particle_count
 
 
 func _create_engine_plume(x_offset: float) -> void:
