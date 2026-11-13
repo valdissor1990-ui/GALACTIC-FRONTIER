@@ -64,11 +64,18 @@ def mesh_metrics():
     materials = set()
     bad_vertices = []
     uv_meshes = 0
+    detail_uv_meshes = 0
+    bad_uv_meshes = []
     points = []
     for obj in meshes:
         obj.data.calc_loop_triangles()
         if len(obj.data.uv_layers) > 0:
             uv_meshes += 1
+        if any(layer.name == "GF_DetailUV" for layer in obj.data.uv_layers):
+            detail_uv_meshes += 1
+        for layer in obj.data.uv_layers:
+            if any(not all(finite(component) for component in item.uv) for item in layer.data):
+                bad_uv_meshes.append(obj.name + ":" + layer.name)
         polygons += len(obj.data.polygons)
         triangles += len(obj.data.loop_triangles)
         for slot in obj.material_slots:
@@ -96,6 +103,8 @@ def mesh_metrics():
     return {
         "mesh_objects": len(meshes),
         "uv_mesh_objects": uv_meshes,
+        "detail_uv_mesh_objects": detail_uv_meshes,
+        "bad_uv_meshes": sorted(set(bad_uv_meshes)),
         "polygons": polygons,
         "triangles": triangles,
         "materials": sorted(materials),
@@ -182,6 +191,10 @@ def validate_one(slug, output_dir):
             record["errors"].append("blend: no mesh objects")
         if blend["uv_mesh_objects"] < blend["mesh_objects"]:
             record["errors"].append(f"blend: UV mapping missing on {blend['mesh_objects'] - blend['uv_mesh_objects']} mesh objects")
+        if blend["detail_uv_mesh_objects"] < blend["mesh_objects"]:
+            record["errors"].append(f"blend: GF_DetailUV missing on {blend['mesh_objects'] - blend['detail_uv_mesh_objects']} mesh objects")
+        if blend["bad_uv_meshes"]:
+            record["errors"].append("blend: non-finite UV coordinates: " + repr(blend["bad_uv_meshes"]))
         if blend["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"blend: polygon count {blend['polygons']} < {MIN_POLYGONS}")
         if blend["material_count"] < MIN_MATERIALS:
@@ -199,6 +212,8 @@ def validate_one(slug, output_dir):
             record["errors"].append("glb: no mesh objects after import")
         if glb["uv_mesh_objects"] < glb["mesh_objects"]:
             record["errors"].append(f"glb: UV mapping missing on {glb['mesh_objects'] - glb['uv_mesh_objects']} mesh objects")
+        if glb["bad_uv_meshes"]:
+            record["errors"].append("glb: non-finite UV coordinates: " + repr(glb["bad_uv_meshes"]))
         if glb["polygons"] < MIN_POLYGONS:
             record["errors"].append(f"glb: polygon count {glb['polygons']} < {MIN_POLYGONS}")
         if glb["material_count"] < MIN_MATERIALS:
