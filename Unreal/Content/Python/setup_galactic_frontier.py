@@ -99,6 +99,7 @@ def create_flight_test_level(player_mesh, imported):
     mesh_component = pawn.get_component_by_class(unreal.StaticMeshComponent)
     if mesh_component and player_mesh:
         mesh_component.set_static_mesh(player_mesh)
+        mesh_component.set_relative_scale3d(unreal.Vector(0.30, 0.30, 0.30))
         mesh_component.set_collision_profile_name("BlockAll")
     elif not player_mesh:
         unreal.log_warning("[GF Setup] Player Fighter mesh was not found; pawn will be a placeholder.")
@@ -113,6 +114,7 @@ def create_flight_test_level(player_mesh, imported):
             enemy_component = enemy.get_component_by_class(unreal.StaticMeshComponent)
             if enemy_component and enemy_mesh:
                 enemy_component.set_static_mesh(enemy_mesh)
+                enemy_component.set_relative_scale3d(unreal.Vector(0.30, 0.30, 0.30))
                 enemy_component.set_collision_profile_name("BlockAll")
             if hasattr(enemy, "set_combat_target"):
                 enemy.set_combat_target(pawn)
