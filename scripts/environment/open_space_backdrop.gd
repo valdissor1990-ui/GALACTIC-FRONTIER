@@ -1,12 +1,13 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Dense open-space backdrop: layered sky, dual belts, ice ring, debris field.
+## Dense open-space backdrop: sky, belts, ring, debris, gravity lens mass.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
 @export var belt_width: float = 55.0
 @export var belt_height: float = 18.0
 @export var spawn_relay_beacon: bool = true
+@export var spawn_lens_mass: bool = true
 @export var enable_ssao: bool = false
 
 var _rng := RandomNumberGenerator.new()
@@ -28,6 +29,8 @@ func _ready() -> void:
 	_setup_outer_debris()
 	if spawn_relay_beacon:
 		_setup_relay_beacon()
+	if spawn_lens_mass:
+		_setup_lens_mass()
 	if gq:
 		apply_quality(gq)
 
@@ -180,13 +183,27 @@ func _setup_planets() -> void:
 	var gq := _gq()
 	if gq:
 		segs = gq.planet_segments()
-	# Gas giant + thin ice ring
 	var giant_pos := Vector3(-90, 40, -260)
 	_add_planet("GasGiant", giant_pos, 48.0, Color(0.15, 0.28, 0.42), Color(0.05, 0.12, 0.2), 0.15, 0.85, segs)
 	_add_ice_ring("GasGiantRing", giant_pos, 58.0, 78.0, Color(0.55, 0.6, 0.72, 0.35))
 	_add_planet("RockyWorld", Vector3(120, -30, -200), 18.0, Color(0.35, 0.22, 0.16), Color(0.08, 0.05, 0.04), 0.05, 0.92, segs)
-	# Distant ice world for parallax depth
 	_add_planet("IceWorld", Vector3(-40, -55, -380), 12.0, Color(0.55, 0.62, 0.7), Color(0.12, 0.16, 0.22), 0.05, 0.55, maxi(segs - 8, 16))
+
+
+func _setup_lens_mass() -> void:
+	# Compact anomaly off the gas-giant limb — fly toward (-55, 25, -200) to see lensing
+	var script := load("res://scripts/environment/gravity_lens_mass.gd") as Script
+	if script == null:
+		return
+	var mass := Node3D.new()
+	mass.set_script(script)
+	mass.name = "GravityAnomaly"
+	mass.position = Vector3(-55, 25, -200)
+	if "lens_strength" in mass:
+		mass.set("lens_strength", 1.15)
+	if "lens_radius" in mass:
+		mass.set("lens_radius", 0.24)
+	add_child(mass)
 
 
 func _add_planet(
@@ -240,57 +257,19 @@ func _add_ice_ring(ring_name: String, center: Vector3, inner_r: float, outer_r: 
 
 
 func _setup_asteroid_belt() -> void:
-	_spawn_rock_field(
-		"AsteroidBelt",
-		asteroid_count,
-		belt_radius,
-		belt_width,
-		belt_height,
-		Color(0.22, 0.2, 0.18),
-		0.6,
-		3.4,
-		900.0
-	)
-	# Inner denser cluster near player start
+	_spawn_rock_field("AsteroidBelt", asteroid_count, belt_radius, belt_width, belt_height, Color(0.22, 0.2, 0.18), 0.6, 3.4, 900.0)
 	var inner_n := maxi(asteroid_count / 4, 20)
-	_spawn_rock_field(
-		"InnerCluster",
-		inner_n,
-		55.0,
-		22.0,
-		10.0,
-		Color(0.28, 0.24, 0.2),
-		0.4,
-		2.0,
-		400.0
-	)
+	_spawn_rock_field("InnerCluster", inner_n, 55.0, 22.0, 10.0, Color(0.28, 0.24, 0.2), 0.4, 2.0, 400.0)
 
 
 func _setup_outer_debris() -> void:
 	var n := maxi(asteroid_count / 3, 24)
-	_spawn_rock_field(
-		"OuterDebris",
-		n,
-		280.0,
-		90.0,
-		40.0,
-		Color(0.16, 0.17, 0.2),
-		0.8,
-		4.5,
-		1400.0
-	)
+	_spawn_rock_field("OuterDebris", n, 280.0, 90.0, 40.0, Color(0.16, 0.17, 0.2), 0.8, 4.5, 1400.0)
 
 
 func _spawn_rock_field(
-	field_name: String,
-	count: int,
-	radius: float,
-	width: float,
-	height: float,
-	albedo: Color,
-	scale_min: float,
-	scale_max: float,
-	vis_end: float
+	field_name: String, count: int, radius: float, width: float, height: float,
+	albedo: Color, scale_min: float, scale_max: float, vis_end: float
 ) -> void:
 	var multi := MultiMeshInstance3D.new()
 	multi.name = field_name
@@ -315,9 +294,7 @@ func _spawn_rock_field(
 		var pos := Vector3(cos(angle) * r, y, sin(angle) * r)
 		var s := _rng.randf_range(scale_min, scale_max)
 		var basis := Basis.from_euler(Vector3(
-			_rng.randf() * TAU,
-			_rng.randf() * TAU,
-			_rng.randf() * TAU
+			_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU
 		)).scaled(Vector3(s, s * _rng.randf_range(0.55, 1.25), s * _rng.randf_range(0.7, 1.15)))
 		mm.set_instance_transform(i, Transform3D(basis, pos))
 	multi.multimesh = mm
