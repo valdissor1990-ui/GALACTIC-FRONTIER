@@ -974,6 +974,38 @@ void fragment() {
 		field.multimesh.set_instance_custom_data(index, Color(_rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf()))
 		_add_asteroid_collision(index, position, size)
 	add_child(field)
+	_build_asteroid_variants()
+
+
+func _build_asteroid_variants() -> void:
+	# A second silhouette from the CC0 Kenney kit breaks up repetition in the
+	# NASA asteroid field without adding hundreds of draw calls.
+	var packed_scene := load("res://assets/models/environment/kenney_meteor_detailed.glb") as PackedScene
+	if packed_scene == null:
+		push_warning("Optional Kenney meteor variant unavailable")
+		return
+	var instance := packed_scene.instantiate()
+	var meteor_mesh := _find_first_mesh(instance)
+	instance.free()
+	if meteor_mesh == null:
+		push_warning("Kenney meteor model contains no MeshInstance3D")
+		return
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = meteor_mesh
+	multi.instance_count = 18
+	var field := MultiMeshInstance3D.new()
+	field.name = "KenneyMeteorVariants"
+	field.multimesh = multi
+	field.custom_aabb = AABB(Vector3(-1500.0, -1500.0, -35000.0), Vector3(3000.0, 3000.0, 36000.0))
+	for index in range(multi.instance_count):
+		var position := _random_asteroid_position()
+		var size := _rng.randf_range(3.0, 9.0)
+		var rotation := Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))
+		var basis := Basis.from_euler(rotation).scaled(Vector3(size * 0.9, size * 0.72, size * 1.12))
+		multi.set_instance_transform(index, Transform3D(basis, position))
+		_add_asteroid_collision(asteroid_count + 100 + index, position, size)
+	add_child(field)
 
 
 func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: float, outer_radius: float, alpha: float) -> void:
@@ -1316,6 +1348,14 @@ func _build_derelict_landmark() -> void:
 	_add_wreck_box("WreckStarboardWing", Vector3(19.0, -1.0, 7.0), Vector3(23.0, 1.5, 7.0), exposed_material)
 	_add_wreck_box("WreckBrokenPanel", Vector3(-31.0, 1.0, 9.0), Vector3(10.0, 1.0, 13.0), exposed_material)
 	_add_wreck_box("WreckBridgeGlass", Vector3(0.0, 3.0, -8.0), Vector3(6.0, 1.2, 8.0), window_material)
+	var turret_scene := load("res://assets/models/environment/kenney_turret_double.glb") as PackedScene
+	if turret_scene != null:
+		var turret := turret_scene.instantiate()
+		turret.name = "KenneyDerelictTurret"
+		turret.position = Vector3(0.0, 5.0, -18.0)
+		turret.rotation_degrees = Vector3(0.0, 180.0, 0.0)
+		turret.scale = Vector3.ONE * 2.2
+		_derelict_root.add_child(turret)
 
 	var antenna := MeshInstance3D.new()
 	antenna.name = "WreckAntenna"

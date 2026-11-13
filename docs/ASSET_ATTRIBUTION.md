@@ -68,4 +68,4 @@ Prefer CC0/public-domain sources for assets intended for direct integration. For
 - Intended use: three low-poly civilian traffic silhouettes, kept distant from the camera; not used to replace player/enemy hero ships.
 - Import: original GLB files, imported by Godot 4.7.2 glTF importer without conversion.
 
-The staged cargo-B, meteor and turret assets are included for future environment dressing but are not instantiated in the current scene.
+The cargo-B model is staged for future traffic variation. The detailed meteor is instanced as a second asteroid silhouette, and the double turret is mounted on the derelict wreck.
