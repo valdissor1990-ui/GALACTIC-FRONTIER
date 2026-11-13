@@ -54,8 +54,9 @@ jobs:
       - name: Install virtual display and screenshot tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes xvfb python3-pil
+          sudo apt-get install --yes xvfb python3-pil libvulkan1 mesa-vulkan-drivers vulkan-tools
           godot --version
+          xvfb-run -a vulkaninfo --summary
 
       - name: Verify all seven original ship GLBs are present
         run: |
@@ -92,6 +93,11 @@ jobs:
               cat build/gameplay-showcase.log
               exit 1
             fi
+            if ! grep -q "Vulkan API" build/gameplay-showcase.log || ! grep -q "Forward+" build/gameplay-showcase.log; then
+              echo "Visual QA did not use the required Forward+ Vulkan renderer."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
             test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
@@ -116,6 +122,11 @@ jobs:
             test -d "$app_data"
             cp "$app_data/fleet-hangar.png" build/screenshots/ 2>/dev/null || true
             if [ "$ready" -ne 1 ]; then
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            if ! grep -q "Vulkan API" build/fleet-hangar.log || ! grep -q "Forward+" build/fleet-hangar.log; then
+              echo "Hangar capture did not use the required Forward+ Vulkan renderer."
               cat build/fleet-hangar.log
               exit 1
             fi
