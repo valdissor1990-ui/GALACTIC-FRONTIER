@@ -105,6 +105,43 @@ func _run_showcase() -> void:
 	camera_rig.chase_camera.rotation_degrees = original_chase_rotation
 	await get_tree().create_timer(0.25).timeout
 	await _capture_screenshot("gameplay-08.png")
+
+	# Capture the actual carrier maintenance UI as a separate visual QA frame.
+	# This is a presentation-only snapshot; pilot credits are restored immediately.
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile != null:
+		var original_credits := int(profile.call("get_credits"))
+		profile.set("credits", maxi(original_credits, 10000))
+		var damageable := player.get_node_or_null("Damageable") as Damageable
+		if damageable != null:
+			damageable.current_hull = damageable.max_hull * 0.62
+			damageable.current_shield = damageable.max_shield * 0.35
+		player.boost_amount = player.flight_config.boost_capacity * 0.2
+		mission._build_docking_services()
+		await get_tree().create_timer(0.25).timeout
+		await _capture_screenshot("carrier-services.png")
+		if is_instance_valid(mission._service_layer):
+			mission._service_layer.queue_free()
+		profile.set("credits", original_credits)
+		var original_completed: Array[String] = profile.completed_mission_ids.duplicate()
+		var original_active_contract: String = profile.active_contract_id
+		profile.completed_mission_ids.clear()
+		profile.completed_mission_ids.append("silent_relay")
+		profile.completed_mission_ids.append("vesper_salvage")
+		profile.active_contract_id = "kestrel_patrol"
+		profile.call("_save_profile")
+		var contract_board: Control = load("res://scenes/ui/contract_board.tscn").instantiate() as Control
+		get_tree().root.add_child(contract_board)
+		await get_tree().process_frame
+		await get_tree().create_timer(0.25).timeout
+		await _capture_screenshot("contract-board.png")
+		contract_board.queue_free()
+		await get_tree().process_frame
+		profile.completed_mission_ids.clear()
+		for mission_id in original_completed:
+			profile.completed_mission_ids.append(str(mission_id))
+		profile.active_contract_id = original_active_contract
+		profile.call("_save_profile")
 	print("SHOWCASE_SEQUENCE_COMPLETE stage=", mission.stage)
 
 

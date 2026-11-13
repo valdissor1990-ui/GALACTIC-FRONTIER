@@ -33,9 +33,9 @@ func _build_menu() -> void:
 	var layout := VBoxContainer.new()
 	layout.name = "MainMenuLayout"
 	layout.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	layout.position = Vector2(90, -210)
+	layout.position = Vector2(90, -350)
 	layout.custom_minimum_size = Vector2(520, 450)
-	layout.add_theme_constant_override("separation", 14)
+	layout.add_theme_constant_override("separation", 10)
 	add_child(layout)
 	var eyebrow := Label.new()
 	eyebrow.text = "FRONTIER COMMAND  /  SINGLE-PILOT ACCESS"
@@ -47,7 +47,7 @@ func _build_menu() -> void:
 	title.add_theme_color_override("font_color", Color("#e8f4fb"))
 	layout.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "THE SILENT RELAY"
+	subtitle.text = "FRONTIER CONTRACT NETWORK"
 	subtitle.add_theme_font_size_override("font_size", 18)
 	subtitle.add_theme_color_override("font_color", Color("#43c2e1"))
 	layout.add_child(subtitle)
@@ -70,6 +70,12 @@ func _build_menu() -> void:
 	start.custom_minimum_size = Vector2(390, 54)
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
+	var contracts := Button.new()
+	contracts.name = "ContractBoardButton"
+	contracts.text = "  STAR MAP  /  CONTRACT BOARD"
+	contracts.custom_minimum_size = Vector2(390, 48)
+	contracts.pressed.connect(_open_contract_board)
+	layout.add_child(contracts)
 	var hangar := Button.new()
 	hangar.name = "FleetHangarButton"
 	hangar.text = "  FLEET HANGAR"
@@ -193,6 +199,12 @@ func _is_valid_checkpoint(saved: Dictionary) -> bool:
 		return false
 	var stage := int(payload.get("stage", -1))
 	return stage >= 0 and stage <= 6
+
+
+func _open_contract_board() -> void:
+	var error := get_tree().change_scene_to_file("res://scenes/ui/contract_board.tscn")
+	if error != OK:
+		push_error("Could not open the star map and contract board: %s" % error)
 
 
 func _open_hangar() -> void:

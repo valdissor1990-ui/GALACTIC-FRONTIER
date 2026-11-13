@@ -2,6 +2,7 @@ extends SceneTree
 
 const DEMO_SCENE: PackedScene = preload("res://scenes/demo/ten_minute_demo.tscn")
 var _finished := false
+var _profile_backup: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -24,8 +25,19 @@ func _run_test() -> void:
 	await process_frame
 	var director: Node = demo.get_node("DemoMissionDirector")
 	var player: Node3D = demo.get_node("PlayerShip")
+	var profile := root.get_node("GameProfile") as PlayerProfile
+	_profile_backup = {
+		"credits": profile.credits,
+		"selected_ship_id": profile.selected_ship_id,
+		"unlocked_ship_ids": profile.unlocked_ship_ids.duplicate(),
+		"completed_mission_ids": profile.completed_mission_ids.duplicate()
+	}
 	var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
 	var cockpit: Node3D = player.get_node("CockpitInterior") as Node3D
+	# Keep the first-person composition stable across future model/cockpit edits.
+	var cockpit_camera := camera_rig.get_node("CockpitCamera") as Camera3D
+	_check(is_equal_approx(cockpit_camera.fov, 76.0), "Cockpit camera must retain the polished 76-degree field of view")
+	_check(cockpit_camera.position.is_equal_approx(Vector3(0.0, 0.24, -1.72)), "Cockpit camera must retain the forward-biased framing")
 	_check(cockpit != null and not cockpit.visible, "Cockpit interior must start hidden in chase-camera mode")
 	camera_rig.toggle_camera()
 	_check(cockpit.visible and not player.get_node("Visual").visible, "Cockpit mode must show the cockpit and hide the exterior ship")
@@ -51,12 +63,51 @@ func _run_test() -> void:
 	await _clear_three_waves(director)
 
 	_check(director.stage == 6, "Six waves must unlock return to carrier")
+	var damageable := player.get_node("Damageable") as Damageable
+	damageable.current_hull = damageable.max_hull * 0.5
+	damageable.current_shield = damageable.max_shield * 0.25
+	player.boost_amount = 0.0
+	profile.credits = 10000
+	profile.call("_save_profile")
+	demo.remove_from_group("qa_demo_driver")
 	player.global_position = director._objective_position
 	await process_frame
-	_check(director.stage == 7, "Returning to carrier must complete the mission")
+	_check(director.stage == 9, "Returning to carrier must enter the docking approach, not auto-complete")
+	player.global_position = director._dock_position
+	player.global_rotation = Vector3(0.0, PI, 0.0)
+	player.velocity = Vector3.ZERO
+	_check(director._attempt_docking(), "Aligned, stationary craft inside the port must dock")
+	_check(director.stage == 10, "Successful docking must open carrier maintenance")
+	_check(not demo.get_node("HUD").visible, "Flight telemetry HUD must be hidden behind carrier maintenance")
+	_check(not demo.get_node("CombatHUD").visible, "Combat HUD must be hidden behind carrier maintenance")
+	_check(director._service_layer.visible, "Carrier maintenance overlay must remain visible above the flight scene")
+	var credits_before := profile.get_credits()
+	director._service_hull()
+	_check(is_equal_approx(damageable.current_hull, damageable.max_hull), "Carrier hull repair must restore full hull")
+	director._service_shields()
+	_check(is_equal_approx(damageable.current_shield, damageable.max_shield), "Carrier shield recharge must restore full shields")
+	director._service_boost()
+	_check(is_equal_approx(player.boost_amount, player.flight_config.boost_capacity), "Carrier boost refill must restore full boost")
+	director._service_weapons()
+	_check(profile.get_credits() < credits_before, "Maintenance services must deduct persistent pilot credits")
+	_check(director._service_layer != null and is_instance_valid(director._service_layer), "Docking must present the carrier maintenance panel")
+	_restore_profile(profile)
 	_finished = true
-	print("DEMO_MISSION_TEST_PASS")
+	print("DEMO_DOCKING_SERVICE_TEST_PASS")
 	quit(0)
+
+
+
+func _restore_profile(profile: PlayerProfile) -> void:
+	profile.credits = int(_profile_backup.get("credits", PlayerProfile.STARTING_CREDITS))
+	profile.selected_ship_id = str(_profile_backup.get("selected_ship_id", "player_fighter"))
+	profile.unlocked_ship_ids.clear()
+	for ship_id in _profile_backup.get("unlocked_ship_ids", ["player_fighter"]):
+		profile.unlocked_ship_ids.append(str(ship_id))
+	profile.completed_mission_ids.clear()
+	for mission_id in _profile_backup.get("completed_mission_ids", []):
+		profile.completed_mission_ids.append(str(mission_id))
+	profile.call("_save_profile")
 
 
 func _clear_three_waves(director: Node) -> void:

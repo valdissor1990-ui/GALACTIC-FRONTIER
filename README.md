@@ -1,5 +1,11 @@
 # GALACTIC FRONTIER
 
+## Канон кампании
+
+Порядок графических и технических работ зафиксирован в [Full HD 2026 implementation roadmap](docs/FULLHD_2026_IMPLEMENTATION_ROADMAP.md).
+
+Единый источник истины по сюжету и именам мира — [CANON_STORY_UNIFIED.md](docs/CANON_STORY_UNIFIED.md). Программистские листы миссий M01–M05 находятся в [CAMPAIGN_STORY.md](docs/CAMPAIGN_STORY.md). Старые черновики сюжета использовать только как справочный материал; при конфликте имён и непрерывности приоритет у объединённого канона.
+
 Оригинальная одиночная космическая action-RPG для Windows PC. Движок — Godot 4.7.2-stable, основной язык — GDScript.
 
 ## Текущий статус — 0.1.0

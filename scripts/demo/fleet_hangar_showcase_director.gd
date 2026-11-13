@@ -1,14 +1,16 @@
 extends Node3D
 ## Full HD in-engine lineup for visual QA of all seven original ship classes.
 
+const RUNTIME_GLTF_SCRIPT: Script = preload("res://scripts/visual/runtime_gltf_model.gd")
+
 const SHIPS: Array[Dictionary] = [
 	{"path": "res://assets/models/ships/player_fighter.glb", "name": "PLAYER FIGHTER", "role": "MULTIROLE / RECON", "scale": 0.40, "position": Vector3(-12.0, 0.0, 0.0)},
 	{"path": "res://assets/models/ships/enemy_fighter.glb", "name": "RAIDER INTERCEPTOR", "role": "LIGHT ATTACK", "scale": 0.38, "position": Vector3(-4.0, 0.0, 0.0)},
 	{"path": "res://assets/models/ships/heavy_fighter.glb", "name": "AEGIS HEAVY FIGHTER", "role": "HEAVY ASSAULT", "scale": 0.34, "position": Vector3(4.0, 0.0, 0.0)},
 	{"path": "res://assets/models/ships/bomber.glb", "name": "BASTION BOMBER", "role": "TORPEDO / STRIKE", "scale": 0.32, "position": Vector3(12.0, 0.0, 0.0)},
-	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.27, "position": Vector3(-8.0, 0.0, 9.0)},
-	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.19, "position": Vector3(0.0, 0.0, 9.0)},
-	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.14, "position": Vector3(8.0, 0.0, 9.0)}
+	{"path": "res://assets/models/ships/cargo_hauler.glb", "name": "MULE HAULER", "role": "LOGISTICS", "scale": 0.34, "position": Vector3(-8.0, 0.0, 7.0)},
+	{"path": "res://assets/models/ships/frigate.glb", "name": "VANGUARD FRIGATE", "role": "ESCORT / PATROL", "scale": 0.25, "position": Vector3(0.0, 0.0, 7.0)},
+	{"path": "res://assets/models/ships/cruiser.glb", "name": "LEVIATHAN CRUISER", "role": "CAPITAL SHIP", "scale": 0.19, "position": Vector3(8.0, 0.0, 7.0)}
 ]
 
 
@@ -49,8 +51,16 @@ func _build_environment() -> void:
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-18.0, 148.0, 0.0)
 	fill.light_color = Color(0.20, 0.46, 0.82)
-	fill.light_energy = 0.72
+	fill.light_energy = 0.58
 	add_child(fill)
+
+	var rim := DirectionalLight3D.new()
+	rim.name = "HangarWarmRim"
+	rim.rotation_degrees = Vector3(-8.0, 72.0, 0.0)
+	rim.light_color = Color(1.0, 0.48, 0.22)
+	rim.light_energy = 0.42
+	rim.shadow_enabled = false
+	add_child(rim)
 
 
 func _build_stage() -> void:
@@ -89,6 +99,11 @@ func _spawn_ship(data: Dictionary) -> bool:
 		push_error("Fleet hangar generated a null scene for %s" % path)
 		return false
 
+	var detailed_surfaces: int = int(RUNTIME_GLTF_SCRIPT.apply_surface_finish(ship))
+	if detailed_surfaces <= 0:
+		push_error("Fleet hangar surface finish did not find PBR materials in %s" % path)
+		ship.free()
+		return false
 	var position: Vector3 = data["position"]
 	var pedestal := MeshInstance3D.new()
 	var pedestal_mesh := CylinderMesh.new()
@@ -139,9 +154,16 @@ func _spawn_ship(data: Dictionary) -> bool:
 	var light := OmniLight3D.new()
 	light.position = position + Vector3(0.0, 5.0, 0.0)
 	light.light_color = Color(0.28, 0.55, 0.92)
-	light.light_energy = 1.35
-	light.omni_range = 13.0
+	light.light_energy = 1.10
+	light.omni_range = 15.0
 	add_child(light)
+
+	var warm_fill := OmniLight3D.new()
+	warm_fill.position = position + Vector3(4.0, 1.8, 1.5)
+	warm_fill.light_color = Color(1.0, 0.42, 0.20)
+	warm_fill.light_energy = 0.48
+	warm_fill.omni_range = 10.0
+	add_child(warm_fill)
 	return true
 
 

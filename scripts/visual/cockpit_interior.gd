@@ -6,6 +6,7 @@ var _panel: StandardMaterial3D
 var _screen: StandardMaterial3D
 var _amber: StandardMaterial3D
 var _white: StandardMaterial3D
+var _canopy_frame: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -45,6 +46,13 @@ func _create_materials() -> void:
 	_white.emission_enabled = true
 	_white.emission = Color(0.16, 0.48, 0.72)
 	_white.emission_energy_multiplier = 0.75
+	_canopy_frame = StandardMaterial3D.new()
+	_canopy_frame.albedo_color = Color(0.075, 0.12, 0.18)
+	_canopy_frame.metallic = 0.58
+	_canopy_frame.roughness = 0.36
+	_canopy_frame.emission_enabled = true
+	_canopy_frame.emission = Color(0.018, 0.045, 0.075)
+	_canopy_frame.emission_energy_multiplier = 0.55
 
 
 func _build_dashboard() -> void:
@@ -65,11 +73,14 @@ func _build_dashboard() -> void:
 
 
 func _build_canopy_frame() -> void:
+	# The forward camera sits just ahead of the instrument fascia. Keep the canopy
+	# structure farther forward so its side rails frame the view instead of
+	# intersecting the camera or disappearing behind it.
 	for side in [-1.0, 1.0]:
-		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -1.88), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
-		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.12), Vector3(0.09, 0.12, 2.85), _panel, Vector3(0.0, 0.0, side * 4.0))
-		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.79, -1.12), Vector3(0.07, 0.07, 1.7), _panel, Vector3(-8.0, side * 12.0, 0.0))
-	_box("Canopy cross member", Vector3(0.0, 0.83, -1.72), Vector3(1.55, 0.08, 0.08), _armor)
+		_box("Forward canopy pillar %s" % side, Vector3(side * 0.77, 0.28, -2.62), Vector3(0.075, 1.05, 0.09), _armor, Vector3(-13.0, side * -7.0, 0.0))
+		_box("Side canopy rail %s" % side, Vector3(side * 0.91, 0.36, -0.55), Vector3(0.09, 0.12, 4.15), _canopy_frame, Vector3(0.0, 0.0, side * 4.0))
+		_box("Upper canopy brace %s" % side, Vector3(side * 0.46, 0.82, -2.28), Vector3(0.055, 0.055, 0.78), _canopy_frame, Vector3(-8.0, side * 12.0, 0.0))
+	_box("Canopy cross member", Vector3(0.0, 0.88, -2.55), Vector3(1.55, 0.05, 0.07), _canopy_frame)
 	_box("Rear canopy arch", Vector3(0.0, 0.46, 0.42), Vector3(1.72, 0.12, 0.10), _panel)
 
 

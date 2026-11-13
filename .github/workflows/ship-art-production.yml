@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - chatgpt/ship-art-production
+      - chatgpt/fullhd-visual-polish
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
@@ -103,7 +104,7 @@ jobs:
           done
 
       - name: Publish validated GLBs and previews to the production branch
-        if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
+        if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'github-actions[bot]' }}
         run: |
           BRANCH="${{ github.ref_name }}"
           # Restore the tracked source tree after the temporary GLB import.

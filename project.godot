@@ -12,14 +12,15 @@ config/description="Original single-player space action RPG prototype."
 config/version="0.1.0"
 
 [display]
-window/size/viewport_width=1600
-window/size/viewport_height=900
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 
 [autoload]
 GameSave="*res://scripts/save/save_manager.gd"
+Campaign="*res://scripts/story/campaign_manager.gd"
 GameProfile="*res://scripts/core/player_profile.gd"
 AudioManager="*res://scripts/audio/audio_manager.gd"
 UpdateManager="*res://scripts/update/update_manager.gd"

@@ -77,16 +77,24 @@ func _build_showroom() -> void:
 	var fill_light := OmniLight3D.new()
 	fill_light.position = Vector3(6.0, 3.0, 7.0)
 	fill_light.light_color = Color(0.12, 0.55, 1.0)
-	fill_light.light_energy = 3.2
+	fill_light.light_energy = 2.4
 	fill_light.omni_range = 28.0
 	world.add_child(fill_light)
 
 	var rim_light := OmniLight3D.new()
 	rim_light.position = Vector3(-7.0, 2.0, -5.0)
 	rim_light.light_color = Color(0.48, 0.24, 1.0)
-	rim_light.light_energy = 2.6
+	rim_light.light_energy = 1.9
 	rim_light.omni_range = 24.0
 	world.add_child(rim_light)
+
+	var warm_key := OmniLight3D.new()
+	warm_key.name = "HangarWarmEdge"
+	warm_key.position = Vector3(8.0, 1.5, -7.0)
+	warm_key.light_color = Color(1.0, 0.48, 0.24)
+	warm_key.light_energy = 1.25
+	warm_key.omni_range = 19.0
+	world.add_child(warm_key)
 
 	var platform := MeshInstance3D.new()
 	platform.name = "DisplayPlinth"
@@ -148,7 +156,7 @@ func _build_showroom() -> void:
 
 	var panel := PanelContainer.new()
 	panel.position = Vector2(38, 78)
-	panel.custom_minimum_size = Vector2(430, 260)
+	panel.custom_minimum_size = Vector2(430, 310)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.008, 0.020, 0.042, 0.88)
 	panel_style.border_color = Color(0.08, 0.48, 0.72, 0.82)
@@ -186,6 +194,7 @@ func _build_showroom() -> void:
 	column.add_child(_description_label)
 
 	_specs_label = Label.new()
+	_specs_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_specs_label.add_theme_font_size_override("font_size", 12)
 	_specs_label.add_theme_color_override("font_color", Color(0.35, 0.65, 0.82))
 	column.add_child(_specs_label)
@@ -277,9 +286,29 @@ func _show_ship(index: int) -> void:
 	_name_label.text = SHIPS[_ship_index].name
 	_role_label.text = SHIPS[_ship_index].role
 	_description_label.text = SHIPS[_ship_index].description
-	_specs_label.text = SHIPS[_ship_index].specs
+	_specs_label.text = _get_ship_specs_with_modules(SHIPS[_ship_index])
 	_counter_label.text = "HULL REGISTRY  /  %02d OF %02d" % [_ship_index + 1, SHIPS.size()]
 	_update_selection_controls()
+
+
+
+func _get_ship_specs_with_modules(ship_data: Dictionary) -> String:
+	var specs := str(ship_data.get("specs", ""))
+	if not bool(ship_data.get("flyable", false)):
+		return specs
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null or not bool(profile.call("is_ship_unlocked", str(ship_data.get("id", "")))):
+		return specs
+	var installed: Array = profile.call("get_installed_modules", str(ship_data.get("id", "")))
+	var catalog: Array = profile.call("get_module_catalog")
+	var names := PackedStringArray()
+	for module_id in installed:
+		for module in catalog:
+			if str(module.get("id", "")) == str(module_id):
+				names.append(str(module.get("name", module_id)))
+				break
+	var installed_text := ", ".join(names) if not names.is_empty() else "NONE"
+	return specs + "\nINSTALLED SYSTEMS  /  " + installed_text
 
 
 func _update_selection_controls() -> void:

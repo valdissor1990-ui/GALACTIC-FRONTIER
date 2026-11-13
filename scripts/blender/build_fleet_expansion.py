@@ -19,6 +19,29 @@ def mat(name, color, metallic=.65, rough=.34, emission=None, strength=0):
     if emission:
         p.inputs["Emission Color"].default_value=(*emission,1)
         p.inputs["Emission Strength"].default_value=strength
+    # Shared aerospace PBR finish: subtle fine grain and restrained roughness
+    # breakup stop large armor plates reading as flat plastic in the showroom.
+    if any(token in name.lower() for token in ("hull", "armor", "graphite", "ceramic", "titanium")):
+        nodes=m.node_tree.nodes; links=m.node_tree.links
+        texcoord=nodes.new("ShaderNodeTexCoord")
+        noise=nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value=46.0
+        noise.inputs["Detail"].default_value=3.6
+        noise.inputs["Roughness"].default_value=0.72
+        noise.inputs["Distortion"].default_value=0.12
+        bump=nodes.new("ShaderNodeBump")
+        bump.inputs["Strength"].default_value=0.11
+        bump.inputs["Distance"].default_value=0.012
+        rough_map=nodes.new("ShaderNodeMapRange")
+        rough_map.inputs["From Min"].default_value=0.0
+        rough_map.inputs["From Max"].default_value=1.0
+        rough_map.inputs["To Min"].default_value=max(0.18,rough-0.07)
+        rough_map.inputs["To Max"].default_value=min(0.78,rough+0.10)
+        links.new(texcoord.outputs["Generated"],noise.inputs["Vector"])
+        links.new(noise.outputs["Fac"],bump.inputs["Height"])
+        links.new(bump.outputs["Normal"],p.inputs["Normal"])
+        links.new(noise.outputs["Fac"],rough_map.inputs["Value"])
+        links.new(rough_map.outputs["Result"],p.inputs["Roughness"])
     return m
 
 def finish(o, material, bevel=.05):
@@ -50,6 +73,16 @@ def beam(name, a, b, radius, material, radius_end=None):
     o.rotation_quaternion=d.to_track_quat("Z","Y")
     return finish(o,material,.018)
 
+
+def add_detail_uv(mesh, scale=4.0):
+    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            vertex = mesh.vertices[vertex_index]
+            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+
 def hull(name, sections, material, sides=16, xoff=0):
     verts=[]; faces=[]
     for y,w,h,z in sections:
@@ -61,7 +94,7 @@ def hull(name, sections, material, sides=16, xoff=0):
             a=r*sides+i; b=r*sides+(i+1)%sides
             faces.append((a,b,b+sides,a+sides))
     faces.extend([tuple(range(sides-1,-1,-1)),tuple((len(sections)-1)*sides+i for i in range(sides))])
-    me=bpy.data.meshes.new(name+" mesh"); me.from_pydata(verts,[],faces); me.materials.append(material); me.update()
+    me=bpy.data.meshes.new(name+" mesh"); me.from_pydata(verts,[],faces); add_detail_uv(me); me.materials.append(material); me.update()
     o=bpy.data.objects.new(name,me); bpy.context.collection.objects.link(o)
     for p in me.polygons: p.use_smooth=True
     be=o.modifiers.new("Hull edge refinement","BEVEL"); be.width=.035; be.segments=2
@@ -73,7 +106,7 @@ def wing(name, outline, z0, z1, material, bevel=.07):
     f=[tuple(range(n-1,-1,-1)),tuple(range(n,2*n))]
     for i in range(n):
         j=(i+1)%n; f.append((i,j,j+n,i+n))
-    me=bpy.data.meshes.new(name); me.from_pydata(v,[],f); me.materials.append(material); me.update()
+    me=bpy.data.meshes.new(name); me.from_pydata(v,[],f); add_detail_uv(me); me.materials.append(material); me.update()
     o=bpy.data.objects.new(name,me); bpy.context.collection.objects.link(o)
     if bevel:
         b=o.modifiers.new("Aerodynamic edge radii","BEVEL"); b.width=bevel; b.segments=3
