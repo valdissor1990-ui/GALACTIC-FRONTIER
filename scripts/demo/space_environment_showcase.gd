@@ -37,6 +37,7 @@ func _capture_sequence() -> void:
 		var target_position: Vector3 = shot["target"]
 		if str(shot["name"]) == "07-asteroid-corridor":
 			var asteroid_field := _environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
+			print("SPACE_SHOWCASE_ASTEROID_FIELD_VALID=", asteroid_field != null)
 			if asteroid_field != null and asteroid_field.multimesh != null and asteroid_field.multimesh.instance_count > 0:
 				var asteroid_positions: Array[Vector3] = []
 				for index in range(asteroid_field.multimesh.instance_count):
@@ -56,8 +57,13 @@ func _capture_sequence() -> void:
 				camera_position = target_position + Vector3(250.0, 180.0, 720.0)
 				print("SPACE_SHOWCASE_ASTEROID_FIELD_COUNT=", asteroid_positions.size())
 				print("SPACE_SHOWCASE_ASTEROID_FOCUS=", target_position)
+			else:
+				target_position = Vector3(-250.0, 220.0, -13500.0)
+				camera_position = target_position + Vector3(250.0, 180.0, 720.0)
+				print("SPACE_SHOWCASE_ASTEROID_FIELD_MISSING_FALLBACK=", target_position)
 		_camera.global_position = camera_position
 		_camera.look_at(target_position, Vector3.UP)
+		print("SPACE_SHOWCASE_CAMERA=", shot["name"], " pos=", camera_position, " target=", target_position)
 		await get_tree().process_frame
 		await get_tree().create_timer(1.15).timeout
 		var screenshot := get_viewport().get_texture().get_image()
