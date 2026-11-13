@@ -47,13 +47,13 @@ public:
     float Acceleration = 2800.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy|AI")
-    float ApproachDistance = 45000.0f;
+    float ApproachDistance = 4500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy|AI")
-    float StrafeDistance = 28000.0f;
+    float StrafeDistance = 2800.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy|AI")
-    float FireRange = 90000.0f;
+    float FireRange = 9000.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy|AI")
     float FireAngleDegrees = 18.0f;
