@@ -52,14 +52,14 @@ func _ready() -> void:
 	_build_orbital_station_landmark()
 	_build_distant_traffic()
 	if quality != null:
-		apply_quality(quality)
+		apply_quality(quality, false)
 
 
-func apply_quality(quality: Node) -> void:
+func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 	if quality == null:
 		return
 	var desired_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
-	if desired_stars != star_count:
+	if rebuild_fields and desired_stars != star_count:
 		star_count = desired_stars
 		if is_instance_valid(_starfield):
 			remove_child(_starfield)
@@ -67,7 +67,7 @@ func apply_quality(quality: Node) -> void:
 		_build_starfield()
 
 	var desired_asteroids: int = quality.asteroid_count()
-	if desired_asteroids != asteroid_count:
+	if rebuild_fields and desired_asteroids != asteroid_count:
 		asteroid_count = desired_asteroids
 		for node_name in ["AsteroidField", "KenneyMeteorVariants"]:
 			var old_field := get_node_or_null(node_name)
@@ -81,7 +81,7 @@ func apply_quality(quality: Node) -> void:
 		_build_asteroid_field()
 
 	var desired_dust := maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
-	if desired_dust != _dust_count:
+	if rebuild_fields and desired_dust != _dust_count:
 		_dust_count = desired_dust
 		if is_instance_valid(_cosmic_dust):
 			remove_child(_cosmic_dust)
@@ -812,8 +812,11 @@ void fragment() {
 	ring.scale = Vector3.ONE * 100.0
 	_companion_rings = ring
 	add_child(ring)
-	# The broad translucent shader carries the ring structure; extra torus outlines
-	# made the planet look like a wireframe icon instead of a natural ring system.
+	# Subtle, translucent sub-bands add scale and particulate variation without
+	# turning the gas giant into a wireframe icon.
+	_add_ring_detail(ring, "NacreonInnerRing", 0.50, 0.57, 0.045)
+	_add_ring_detail(ring, "NacreonOuterRing", 0.83, 0.91, 0.035)
+	_add_ring_detail(ring, "NacreonDustBand", 0.64, 0.79, 0.018)
 
 	var moon := MeshInstance3D.new()
 	moon.name = "NacreonMoon"
@@ -1105,6 +1108,7 @@ func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: f
 	material.emission_energy_multiplier = 0.12
 	mesh.material = material
 	band.mesh = mesh
+	band.rotation_degrees.x = 90.0
 	parent.add_child(band)
 
 
