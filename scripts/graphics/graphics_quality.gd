@@ -1,5 +1,5 @@
 extends Node
-## Global graphics quality + FSR 1.0 scale + HDR glow/tonemap tables.
+## Global graphics quality + FSR 1.0 scale + ACES tonemap / HDR glow tables.
 ## Autoload: GraphicsQuality
 
 enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
@@ -55,36 +55,30 @@ func get_preset_name() -> String:
 
 
 # --- FSR 1.0 / 3D scale -----------------------------------------------------
-# AMD recommended user-facing points (Godot docs):
-#   Ultra Quality 0.77 | Quality 0.67 | Balanced 0.59 | Performance 0.50
-# FSR 1.0 is spatial only (no temporal history). Forward+ only.
-# Best with MSAA or TAA; we keep MSAA off by default for cost.
 
 func base_scale_3d() -> float:
 	match current:
 		Preset.LOW:
-			return 0.59 # Balanced
+			return 0.59
 		Preset.MEDIUM:
-			return 0.77 # Ultra Quality
+			return 0.77
 		Preset.HIGH:
-			return 1.0 # native (FSR idle)
+			return 1.0
 	return 0.77
 
 
 func scaling_3d_mode() -> int:
-	# 0=Bilinear, 1=FSR1, 2=FSR2
 	match current:
 		Preset.LOW:
-			return 0 # bilinear cheaper than FSR on weak GPUs
+			return 0
 		Preset.MEDIUM:
 			return 1
 		Preset.HIGH:
-			return 1 # at scale 1.0 upscale is disabled; mode kept for consistency
+			return 1
 	return 0
 
 
 func fsr_sharpness() -> float:
-	# Viewport.fsr_sharpness: 0 = sharpest, 2 = softest (Godot default ~0.2)
 	match current:
 		Preset.LOW:
 			return 0.35
@@ -110,33 +104,40 @@ func _apply_viewport_scale() -> void:
 		return
 	vp.scaling_3d_scale = effective_scale_3d()
 	vp.scaling_3d_mode = scaling_3d_mode() as Viewport.Scaling3DMode
-	if vp.has_method("set_fsr_sharpness") or "fsr_sharpness" in vp:
+	if "fsr_sharpness" in vp:
 		vp.fsr_sharpness = fsr_sharpness()
 
 
-# --- HDR tonemap ------------------------------------------------------------
+# --- ACES tonemap -------------------------------------------------------------
+# TONE_MAP_MODE_ACES: filmic contrast, desaturates extreme brights.
+# Godot multiplies linear values by ~1.8 before the ACES curve.
+# For open space: slightly lower exposure keeps void dark; higher white
+# preserves cyan engine plumes without early clipping.
+
+func tonemap_mode() -> int:
+	return Environment.TONE_MAP_MODE_ACES
+
 
 func tonemap_exposure() -> float:
 	match current:
 		Preset.LOW:
-			return 0.92
+			return 0.88
 		Preset.MEDIUM:
-			return 0.95
+			return 0.94
 		Preset.HIGH:
 			return 1.0
-	return 0.95
+	return 0.94
 
 
 func tonemap_white() -> float:
-	# Higher white = more headroom before ACES clips bright engines
 	match current:
 		Preset.LOW:
-			return 5.5
+			return 6.0
 		Preset.MEDIUM:
-			return 6.5
+			return 7.5
 		Preset.HIGH:
-			return 8.0
-	return 6.5
+			return 10.0
+	return 7.5
 
 
 # --- HDR glow ---------------------------------------------------------------
@@ -168,7 +169,6 @@ func glow_bloom() -> float:
 
 
 func glow_hdr_threshold() -> float:
-	# Pixels above this (relative to tonemap white) feed HDR glow
 	match current:
 		Preset.LOW:
 			return 1.0
@@ -180,7 +180,6 @@ func glow_hdr_threshold() -> float:
 
 
 func glow_hdr_scale() -> float:
-	# Softens transition around threshold; higher = gentler bleed onset
 	match current:
 		Preset.LOW:
 			return 1.6
@@ -192,7 +191,6 @@ func glow_hdr_scale() -> float:
 
 
 func glow_hdr_luminance_cap() -> float:
-	# Clamp over-bright sources so one bolt does not white-out the frame
 	match current:
 		Preset.LOW:
 			return 8.0
