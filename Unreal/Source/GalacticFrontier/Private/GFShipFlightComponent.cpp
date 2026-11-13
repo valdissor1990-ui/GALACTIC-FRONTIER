@@ -94,8 +94,7 @@ void UGFShipFlightComponent::TickComponent(
     const float EffectiveMaxSpeed = MaxSpeed * (bBoosting ? BoostSpeedMultiplier : 1.0f);
     Velocity = Velocity.GetClampedToMaxSize(EffectiveMaxSpeed);
 
-    // The owning Pawn decides how to apply collision-aware movement. This
-    // component deliberately exposes velocity instead of teleporting the Actor.
+    // Match Godot's rate-based pitch/yaw/roll angular inertia.
     const FVector DesiredAngularVelocity = RotationInput * RotationSpeed;
     AngularVelocity = FMath::VInterpConstantTo(
         AngularVelocity,
@@ -117,11 +116,27 @@ void UGFShipFlightComponent::TickComponent(
             RotationStabilization);
     }
 
+    // Mouse look is immediate and consumed once per tick, independently of
+    // keyboard angular inertia, matching the existing Godot controller.
     if (!PendingMouseDelta.IsNearlyZero())
     {
-        const float MouseYaw = FMath::RadiansToDegrees(-PendingMouseDelta.X * MouseLookRadiansPerPixel);
-        const float MousePitch = FMath::RadiansToDegrees(-PendingMouseDelta.Y * MouseLookRadiansPerPixel);
+        constexpr float MouseRadiansPerPixel = 0.00024f;
+        const float MouseYaw = FMath::RadiansToDegrees(-PendingMouseDelta.X * MouseRadiansPerPixel);
+        const float MousePitch = FMath::RadiansToDegrees(-PendingMouseDelta.Y * MouseRadiansPerPixel);
         Owner->AddActorLocalRotation(FRotator(MousePitch, MouseYaw, 0.0f));
         PendingMouseDelta = FVector2D::ZeroVector;
+    }
+
+    // Collision-aware inertial translation. Slide the remaining velocity
+    // along contact surfaces rather than teleporting through obstacles.
+    const FVector Delta = Velocity * DeltaTime;
+    if (!Delta.IsNearlyZero())
+    {
+        FHitResult Hit;
+        Owner->SetActorLocation(Owner->GetActorLocation() + Delta, true, &Hit);
+        if (Hit.IsValidBlockingHit())
+        {
+            Velocity = FVector::VectorPlaneProject(Velocity, Hit.Normal);
+        }
     }
 }
