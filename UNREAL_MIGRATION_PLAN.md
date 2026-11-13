@@ -97,7 +97,7 @@ Implemented in C++ source (not yet compiled in the Unreal toolchain):
 - Initial The Silent Relay flow: relay interaction, three waves at relay, wreck interaction, three waves at wreck, return-to-carrier completion and 5000-credit reward.
 - Local pilot SaveGame data with schema field, migration hook and backup slot.
 - Native HUD with velocity, hull, shields, boost, target and mission stage.
-- Editor Python setup script imports the existing ship/environment GLBs, creates a flight-test map, assigns the existing Player Fighter Mk.I and sets up an initial hostile and mission director.
+- Editor Python setup script imports existing ship/environment GLBs, inventories every imported StaticMesh path, flags multi-mesh sources, creates a flight-test map and spawns PlayerStart plus a mission director. It may assign a uniquely identified enemy mesh to the director. It does not yet assemble complete multi-node ships, assign the Player Fighter to the pawn, or verify imported asset paths/materials/transforms in the Editor.
 
 Not yet verified:
 - C++ compilation against the installed Unreal Engine 5.8 toolchain.
