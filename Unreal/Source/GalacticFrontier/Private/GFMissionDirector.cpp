@@ -1,6 +1,8 @@
 #include "GFMissionDirector.h"
 
 #include "GFEnemyShip.h"
+#include "GFPlayerShipPawn.h"
+#include "GFDamageableComponent.h"
 #include "GFDamageableComponent.h"
 #include "GFSaveSubsystem.h"
 #include "GFPlayerProfileSave.h"
@@ -25,7 +27,7 @@ AGFMissionDirector::AGFMissionDirector()
 
     WreckMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WreckMarker"));
     WreckMarker->SetupAttachment(RelayMarker);
-    WreckMarker->SetRelativeScale3D(FVector(0.0f));
+    WreckMarker->SetRelativeScale3D(FVector(12.0f));
 }
 
 void AGFMissionDirector::BeginPlay()
@@ -44,6 +46,14 @@ void AGFMissionDirector::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     if (!PlayerPawn.IsValid()) PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+    if (AGFPlayerShipPawn* Player = Cast<AGFPlayerShipPawn>(PlayerPawn.Get()))
+    {
+        if (Player->Damageable && Player->Damageable->IsDestroyed())
+        {
+            Stage = EGFMissionStage::Failed;
+            UE_LOG(LogTemp, Warning, TEXT("GF Mission: player ship destroyed; mission failed."));
+        }
+    }
 
     if (NextWaveDelay >= 0.0f)
     {
@@ -174,5 +184,6 @@ void AGFMissionDirector::UpdateObjectiveMarker(UStaticMeshComponent* Marker, con
 {
     if (!Marker) return;
     Marker->SetWorldLocation(Position);
+    Marker->SetRelativeScale3D(Marker == WreckMarker ? FVector(12.0f) : FVector(18.0f));
     Marker->SetVisibility(true, true);
 }
