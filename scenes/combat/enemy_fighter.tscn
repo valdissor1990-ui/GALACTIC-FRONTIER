@@ -44,15 +44,15 @@ craft_type = "enemy"
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2")
+max_hull = 80.0
+max_shield = 40.0
+shield_regen_per_second = 5.0
+shield_regen_delay = 3.5
 
 [node name="HitFlashFx" type="Node" parent="."]
 script = ExtResource("5")
 damageable_path = NodePath("../Damageable")
 visual_root_path = NodePath("../Visual")
-max_hull = 80.0
-max_shield = 40.0
-shield_regen_per_second = 5.0
-shield_regen_delay = 3.5
 
 [node name="Muzzle" type="Marker3D" parent="."]
 position = Vector3(0, 0, -1.6)
