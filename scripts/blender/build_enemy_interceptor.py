@@ -4,11 +4,185 @@ three recessed ion drives and exposed weapon hardpoints.
 Run: blender --background --python scripts/blender/build_enemy_interceptor.py -- --output-dir build/blender
 """
 import bpy, math, os, sys
+from array import array
+import tempfile
 from mathutils import Vector
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
     return os.path.abspath(args[args.index("--output-dir")+1]) if "--output-dir" in args else os.path.abspath("build/blender")
+
+
+def ensure_glb_file_image(image):
+    """Convert generated maps into packed FILE-backed images for glTF export."""
+    if image is None:
+        return None
+    export_name = image.name + "_GLTF"
+    existing = bpy.data.images.get(export_name)
+    if existing is not None and existing.source == "FILE" and existing.has_data:
+        return existing
+
+    temp_dir = bpy.app.tempdir or tempfile.gettempdir()
+    os.makedirs(temp_dir, exist_ok=True)
+    safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
+    image_path = os.path.join(temp_dir, safe_name + ".png")
+
+    image.update()
+    if not image.has_data:
+        raise RuntimeError("Source PBR image has no pixel data: " + image.name)
+    original_path = image.filepath_raw
+    try:
+        image.filepath_raw = image_path
+        image.file_format = "PNG"
+        image.save()
+    finally:
+        image.filepath_raw = original_path
+    if not os.path.isfile(image_path) or os.path.getsize(image_path) < 128:
+        raise RuntimeError("GLB texture staging failed: " + image_path)
+
+    file_image = bpy.data.images.load(image_path, check_existing=False)
+    if file_image.source != "FILE":
+        raise RuntimeError("GLB texture did not reload as FILE: " + export_name)
+    if not file_image.has_data:
+        file_image.reload()
+    file_image.update()
+    if not file_image.has_data or file_image.size[0] < 1 or file_image.size[1] < 1:
+        raise RuntimeError("GLB texture reload has no pixel data: " + export_name)
+    file_image.name = export_name
+    file_image.colorspace_settings.name = image.colorspace_settings.name
+    file_image.pack()
+    print("GF_GLTF_IMAGE_READY", export_name, file_image.source,
+          tuple(file_image.size), file_image.has_data, os.path.getsize(image_path))
+    return file_image
+
+
+def apply_exportable_surface_maps(material, principled, base_color, base_roughness, label):
+    """Attach packed, UV-based PBR maps that survive Blender -> glTF -> Godot."""
+    size = 512
+    token = "".join(ch if ch.isalnum() else "_" for ch in label)
+    albedo_name = "GF_Surface_%s_Albedo" % token
+    roughness_name = "GF_Surface_%s_Roughness" % token
+    normal_name = "GF_Aerospace_MicroNormal_512"
+
+    def clamp01(value):
+        return max(0.0, min(1.0, value))
+
+    def linear_to_srgb(value):
+        value = clamp01(value)
+        if value <= 0.0031308:
+            return value * 12.92
+        return 1.055 * (value ** (1.0 / 2.4)) - 0.055
+
+    tau = math.tau
+    phase = (sum(ord(ch) for ch in label) % 97) / 97.0
+
+    albedo_image = bpy.data.images.get(albedo_name)
+    if albedo_image is None:
+        albedo_image = bpy.data.images.new(albedo_name, width=size, height=size, alpha=False)
+        albedo_image.colorspace_settings.name = "sRGB"
+        pixels = array("f")
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 17.0 + v * 11.0 + phase)) * math.cos(tau * (v * 19.0 - u * 7.0))
+                fine = math.sin(tau * (u * 83.0 + v * 5.0 + phase * 0.37)) * math.cos(tau * (v * 71.0 - u * 3.0))
+                scratch_wave = math.sin(tau * (u * 127.0 + v * 0.7 + phase))
+                scratch = 0.006 if abs(scratch_wave) > 0.997 else 0.0
+                variation = max(0.90, min(1.08, 1.0 + broad * 0.027 + fine * 0.009 - scratch))
+                for channel in range(3):
+                    pixels.append(linear_to_srgb(base_color[channel] * variation))
+                pixels.append(1.0)
+        albedo_image.pixels.foreach_set(pixels)
+        albedo_image.update()
+
+    roughness_image = bpy.data.images.get(roughness_name)
+    if roughness_image is None:
+        roughness_image = bpy.data.images.new(roughness_name, width=size, height=size, alpha=False)
+        roughness_image.colorspace_settings.name = "Non-Color"
+        pixels = array("f")
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 17.0 + v * 11.0 + phase)) * math.cos(tau * (v * 19.0 - u * 7.0))
+                fine = math.sin(tau * (u * 83.0 + v * 5.0 + phase * 0.37)) * math.cos(tau * (v * 71.0 - u * 3.0))
+                value = max(0.08, min(0.96, base_roughness + broad * 0.055 + fine * 0.022))
+                pixels.extend((value, value, value, 1.0))
+        roughness_image.pixels.foreach_set(pixels)
+        roughness_image.update()
+
+    normal_image = bpy.data.images.get(normal_name)
+    if normal_image is None:
+        normal_image = bpy.data.images.new(normal_name, width=size, height=size, alpha=False)
+        normal_image.colorspace_settings.name = "Non-Color"
+        heights = [0.0] * (size * size)
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 53.0 + v * 17.0)) * math.cos(tau * (v * 47.0 - u * 13.0))
+                fine = math.sin(tau * (u * 137.0 + v * 7.0)) * math.cos(tau * (v * 109.0 - u * 5.0))
+                heights[y * size + x] = broad * 0.0040 + fine * 0.0014
+        pixels = array("f")
+        for y in range(size):
+            ym = ((y - 1) % size) * size
+            yp = ((y + 1) % size) * size
+            row = y * size
+            for x in range(size):
+                xm = (x - 1) % size
+                xp = (x + 1) % size
+                dx = (heights[row + xp] - heights[row + xm]) * size * 0.5
+                dy = (heights[yp + x] - heights[ym + x]) * size * 0.5
+                nx = -dx * 0.18
+                ny = -dy * 0.18
+                nz = 1.0
+                length = math.sqrt(nx * nx + ny * ny + nz * nz)
+                pixels.extend((nx / length * 0.5 + 0.5,
+                               ny / length * 0.5 + 0.5,
+                               nz / length * 0.5 + 0.5, 1.0))
+        normal_image.pixels.foreach_set(pixels)
+        normal_image.update()
+
+    albedo_image = ensure_glb_file_image(albedo_image)
+    roughness_image = ensure_glb_file_image(roughness_image)
+    normal_image = ensure_glb_file_image(normal_image)
+
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    texcoord = nodes.new("ShaderNodeTexCoord")
+    texcoord.label = "Exportable aerospace UVs"
+
+    def image_node(image, label):
+        node = nodes.new("ShaderNodeTexImage")
+        node.image = image
+        node.label = label
+        node.interpolation = "Linear"
+        node.extension = "REPEAT"
+        links.new(texcoord.outputs["UV"], node.inputs["Vector"])
+        return node
+
+    albedo_node = image_node(albedo_image, "Baked aerospace albedo")
+    roughness_node = image_node(roughness_image, "Baked roughness breakup")
+    normal_node = image_node(normal_image, "Baked aerospace micro-normal")
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    normal_map.label = "Tangent-space micro-normal"
+    normal_map.inputs["Strength"].default_value = 1.0
+    links.new(normal_node.outputs["Color"], normal_map.inputs["Color"])
+
+    for socket_name in ("Base Color", "Roughness", "Normal"):
+        socket = principled.inputs[socket_name]
+        for link in list(links):
+            if link.to_socket == socket:
+                links.remove(link)
+
+    principled.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    principled.inputs["Roughness"].default_value = 1.0
+    links.new(albedo_node.outputs["Color"], principled.inputs["Base Color"])
+    links.new(roughness_node.outputs["Color"], principled.inputs["Roughness"])
+    links.new(normal_map.outputs["Normal"], principled.inputs["Normal"])
+    material.diffuse_color = (*base_color, 1.0)
+
 
 def mat(name, color, metal=.65, rough=.32, emission=None, strength=0):
     m=bpy.data.materials.new(name); m.diffuse_color=(*color,1); m.use_nodes=True
@@ -26,6 +200,8 @@ def mat(name, color, metal=.65, rough=.32, emission=None, strength=0):
     l.new(coords.outputs["Generated"],tex.inputs["Vector"])
     l.new(tex.outputs["Fac"],bump.inputs["Height"]); l.new(bump.outputs["Normal"],p.inputs["Normal"])
     l.new(tex.outputs["Fac"],rough_map.inputs["Value"]); l.new(rough_map.outputs["Result"],p.inputs["Roughness"])
+    if any(token in name.lower() for token in ("obsidian", "armor", "graphite", "ceramic", "titanium")):
+        apply_exportable_surface_maps(m, p, color, rough, name)
     return m
 
 def finish(o,m,bevel=.04):
@@ -299,12 +475,70 @@ def add_integrated_raider_detail(root, mats):
             obj.parent=root
 
 
+
+def consolidate_static_meshes(root):
+    """Bake modifiers and merge static parts by material to reduce GLB draw calls.
+
+    Keep independently addressable gameplay/animation parts as separate objects.
+    The single GF root, ship bounds, orientation and local transforms are preserved.
+    """
+    keep_tokens = (
+        "turret", "landing strut", "landing pad", "sliding bay door",
+        "bomb bay door", "elevon", "control surface", "flap", "sensor mast",
+        "antenna", "rotating", "gear", "door"
+    )
+    groups = {}
+    for obj in list(root.children_recursive):
+        if obj.type != "MESH":
+            continue
+        if any(token in obj.name.lower() for token in keep_tokens):
+            continue
+        material_key = tuple(
+            slot.material.name if slot.material else "__no_material__"
+            for slot in obj.material_slots
+        )
+        groups.setdefault(material_key, []).append(obj.name)
+
+    merged_count = 0
+    for material_key, object_names in groups.items():
+        if len(object_names) < 2:
+            continue
+        for object_name in object_names:
+            obj = bpy.data.objects.get(object_name)
+            if obj is None or obj.type != "MESH":
+                continue
+            if obj.modifiers:
+                bpy.ops.object.select_all(action="DESELECT")
+                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.object.convert(target="MESH")
+
+        objects = [bpy.data.objects.get(name) for name in object_names]
+        objects = [obj for obj in objects if obj is not None and obj.type == "MESH"]
+        if len(objects) < 2:
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objects[0]
+        bpy.ops.object.join()
+        merged = bpy.context.object
+        material_label = "_".join(material_key).replace(" ", "_")[:32]
+        merged.name = "GF_Static_%02d_%s" % (merged_count, material_label)
+        merged.parent = root
+        merged_count += 1
+
+    print("GF_MESH_CONSOLIDATION", root.name,
+          "static_groups", merged_count,
+          "remaining_meshes", sum(1 for obj in root.children_recursive if obj.type == "MESH"))
+
 def main():
     dest=outdir();os.makedirs(dest,exist_ok=True)
     bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
     mats=(mat("Raider | obsidian ceramic",(0.065,.09,.13),.82,.26),mat("Raider | titanium armor",(.30,.36,.42),.86,.24),mat("Raider | graphite recess",(.008,.014,.023),.55,.42),mat("Raider | warning vermilion",(.68,.035,.018),.62,.3,(.25,.008,.002),.25),mat("Raider | polarized canopy",(.008,.055,.082),.72,.12,(.01,.10,.16),.22),mat("Raider | plasma core",(.015,.28,.95),.2,.18,(.015,.30,1),4.5))
     root=build(mats)
     add_integrated_raider_detail(root,mats)
+    consolidate_static_meshes(root)
     # Retain the clean silhouette; new details are integrated into the existing wing and hull surfaces.
     scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)

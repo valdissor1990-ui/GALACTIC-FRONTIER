@@ -14,9 +14,11 @@ Coordinate convention in Blender: nose points toward -Y, Z is up.
 The glTF exporter converts the scene to glTF's Y-up convention.
 """
 import bpy
+from array import array
 import math
 import os
 import sys
+import tempfile
 from mathutils import Vector
 
 # Ubuntu's packaged Blender may use the system Python package directory for
@@ -42,6 +44,178 @@ def clear_scene():
         for block in list(datablocks):
             if block.users == 0:
                 datablocks.remove(block)
+
+
+
+def ensure_glb_file_image(image):
+    """Convert generated maps into packed FILE-backed images for glTF export."""
+    if image is None:
+        return None
+    export_name = image.name + "_GLTF"
+    existing = bpy.data.images.get(export_name)
+    if existing is not None and existing.source == "FILE" and existing.has_data:
+        return existing
+
+    temp_dir = bpy.app.tempdir or tempfile.gettempdir()
+    os.makedirs(temp_dir, exist_ok=True)
+    safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
+    image_path = os.path.join(temp_dir, safe_name + ".png")
+
+    image.update()
+    if not image.has_data:
+        raise RuntimeError("Source PBR image has no pixel data: " + image.name)
+    original_path = image.filepath_raw
+    try:
+        image.filepath_raw = image_path
+        image.file_format = "PNG"
+        image.save()
+    finally:
+        image.filepath_raw = original_path
+    if not os.path.isfile(image_path) or os.path.getsize(image_path) < 128:
+        raise RuntimeError("GLB texture staging failed: " + image_path)
+
+    file_image = bpy.data.images.load(image_path, check_existing=False)
+    if file_image.source != "FILE":
+        raise RuntimeError("GLB texture did not reload as FILE: " + export_name)
+    if not file_image.has_data:
+        file_image.reload()
+    file_image.update()
+    if not file_image.has_data or file_image.size[0] < 1 or file_image.size[1] < 1:
+        raise RuntimeError("GLB texture reload has no pixel data: " + export_name)
+    file_image.name = export_name
+    file_image.colorspace_settings.name = image.colorspace_settings.name
+    file_image.pack()
+    print("GF_GLTF_IMAGE_READY", export_name, file_image.source,
+          tuple(file_image.size), file_image.has_data, os.path.getsize(image_path))
+    return file_image
+
+
+def apply_exportable_surface_maps(material, principled, base_color, base_roughness, label):
+    """Attach packed, UV-based PBR maps that survive Blender -> glTF -> Godot."""
+    size = 512
+    token = "".join(ch if ch.isalnum() else "_" for ch in label)
+    albedo_name = "GF_Surface_%s_Albedo" % token
+    roughness_name = "GF_Surface_%s_Roughness" % token
+    normal_name = "GF_Aerospace_MicroNormal_512"
+
+    def clamp01(value):
+        return max(0.0, min(1.0, value))
+
+    def linear_to_srgb(value):
+        value = clamp01(value)
+        if value <= 0.0031308:
+            return value * 12.92
+        return 1.055 * (value ** (1.0 / 2.4)) - 0.055
+
+    tau = math.tau
+    phase = (sum(ord(ch) for ch in label) % 97) / 97.0
+
+    albedo_image = bpy.data.images.get(albedo_name)
+    if albedo_image is None:
+        albedo_image = bpy.data.images.new(albedo_name, width=size, height=size, alpha=False)
+        albedo_image.colorspace_settings.name = "sRGB"
+        pixels = array("f")
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 17.0 + v * 11.0 + phase)) * math.cos(tau * (v * 19.0 - u * 7.0))
+                fine = math.sin(tau * (u * 83.0 + v * 5.0 + phase * 0.37)) * math.cos(tau * (v * 71.0 - u * 3.0))
+                scratch_wave = math.sin(tau * (u * 127.0 + v * 0.7 + phase))
+                scratch = 0.006 if abs(scratch_wave) > 0.997 else 0.0
+                variation = max(0.90, min(1.08, 1.0 + broad * 0.027 + fine * 0.009 - scratch))
+                for channel in range(3):
+                    pixels.append(linear_to_srgb(base_color[channel] * variation))
+                pixels.append(1.0)
+        albedo_image.pixels.foreach_set(pixels)
+        albedo_image.update()
+
+    roughness_image = bpy.data.images.get(roughness_name)
+    if roughness_image is None:
+        roughness_image = bpy.data.images.new(roughness_name, width=size, height=size, alpha=False)
+        roughness_image.colorspace_settings.name = "Non-Color"
+        pixels = array("f")
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 17.0 + v * 11.0 + phase)) * math.cos(tau * (v * 19.0 - u * 7.0))
+                fine = math.sin(tau * (u * 83.0 + v * 5.0 + phase * 0.37)) * math.cos(tau * (v * 71.0 - u * 3.0))
+                value = max(0.08, min(0.96, base_roughness + broad * 0.055 + fine * 0.022))
+                pixels.extend((value, value, value, 1.0))
+        roughness_image.pixels.foreach_set(pixels)
+        roughness_image.update()
+
+    normal_image = bpy.data.images.get(normal_name)
+    if normal_image is None:
+        normal_image = bpy.data.images.new(normal_name, width=size, height=size, alpha=False)
+        normal_image.colorspace_settings.name = "Non-Color"
+        heights = [0.0] * (size * size)
+        for y in range(size):
+            v = y / float(size)
+            for x in range(size):
+                u = x / float(size)
+                broad = math.sin(tau * (u * 53.0 + v * 17.0)) * math.cos(tau * (v * 47.0 - u * 13.0))
+                fine = math.sin(tau * (u * 137.0 + v * 7.0)) * math.cos(tau * (v * 109.0 - u * 5.0))
+                heights[y * size + x] = broad * 0.0040 + fine * 0.0014
+        pixels = array("f")
+        for y in range(size):
+            ym = ((y - 1) % size) * size
+            yp = ((y + 1) % size) * size
+            row = y * size
+            for x in range(size):
+                xm = (x - 1) % size
+                xp = (x + 1) % size
+                dx = (heights[row + xp] - heights[row + xm]) * size * 0.5
+                dy = (heights[yp + x] - heights[ym + x]) * size * 0.5
+                nx = -dx * 0.18
+                ny = -dy * 0.18
+                nz = 1.0
+                length = math.sqrt(nx * nx + ny * ny + nz * nz)
+                pixels.extend((nx / length * 0.5 + 0.5,
+                               ny / length * 0.5 + 0.5,
+                               nz / length * 0.5 + 0.5, 1.0))
+        normal_image.pixels.foreach_set(pixels)
+        normal_image.update()
+
+    albedo_image = ensure_glb_file_image(albedo_image)
+    roughness_image = ensure_glb_file_image(roughness_image)
+    normal_image = ensure_glb_file_image(normal_image)
+
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    texcoord = nodes.new("ShaderNodeTexCoord")
+    texcoord.label = "Exportable aerospace UVs"
+
+    def image_node(image, label):
+        node = nodes.new("ShaderNodeTexImage")
+        node.image = image
+        node.label = label
+        node.interpolation = "Linear"
+        node.extension = "REPEAT"
+        links.new(texcoord.outputs["UV"], node.inputs["Vector"])
+        return node
+
+    albedo_node = image_node(albedo_image, "Baked aerospace albedo")
+    roughness_node = image_node(roughness_image, "Baked roughness breakup")
+    normal_node = image_node(normal_image, "Baked aerospace micro-normal")
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    normal_map.label = "Tangent-space micro-normal"
+    normal_map.inputs["Strength"].default_value = 1.0
+    links.new(normal_node.outputs["Color"], normal_map.inputs["Color"])
+
+    for socket_name in ("Base Color", "Roughness", "Normal"):
+        socket = principled.inputs[socket_name]
+        for link in list(links):
+            if link.to_socket == socket:
+                links.remove(link)
+
+    principled.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    principled.inputs["Roughness"].default_value = 1.0
+    links.new(albedo_node.outputs["Color"], principled.inputs["Base Color"])
+    links.new(roughness_node.outputs["Color"], principled.inputs["Roughness"])
+    links.new(normal_map.outputs["Normal"], principled.inputs["Normal"])
+    material.diffuse_color = (*base_color, 1.0)
 
 
 def make_material(name, color, metallic=0.0, roughness=0.4, emission=None, emission_strength=0.0, alpha=1.0):
@@ -77,6 +251,7 @@ def make_material(name, color, metallic=0.0, roughness=0.4, emission=None, emiss
         links.new(bump.outputs["Normal"], principled.inputs["Normal"])
         links.new(noise.outputs["Fac"], roughness_map.inputs["Value"])
         links.new(roughness_map.outputs["Result"], principled.inputs["Roughness"])
+        apply_exportable_surface_maps(material, principled, color, roughness, name)
     if alpha < 1.0:
         # Blender 4.2+ uses surface_render_method; older releases use blend_method.
         if hasattr(material, "surface_render_method"):
@@ -451,16 +626,10 @@ def add_integrated_surface_detail(root, materials):
             (4.75, 2.28), (3.70, 1.70)
         ]]
         extruded_wing("Wingtip armored cap %s" % side, outer, 0.105, 0.235, dark, 0.035)
-        # Leading-edge reinforcement rails and trailing-edge control surfaces.
-        cylinder_between("Wing leading edge spar %s" % side,
-                         (side*1.05, -2.35, 0.13), (side*5.15, 2.42, 0.13),
-                         0.075, dark, radius_end=0.035)
-        control_outline = [(side*x, y) for x, y in [
-            (2.05, 0.65), (2.55, 0.98), (4.72, 2.00),
-            (4.35, 2.12), (2.45, 1.32)
-        ]]
-        extruded_wing("Articulated trailing control surface %s" % side,
-                      control_outline, -0.005, 0.075, hull, 0.025)
+        # Keep the aerodynamic leading edge clean. The original pass used a
+        # cylindrical spar and a second raised wing slab; both read as loose
+        # rods/overlapping plates in the hero camera. Structural reinforcement
+        # is now represented by the flush armor skin and panel seams below.
         # Recessed-looking maintenance bays with nested lips and fasteners.
         for idx, (x, y) in enumerate(((2.15, -0.15), (3.05, 0.62), (3.88, 1.28))):
             x *= side
@@ -474,14 +643,15 @@ def add_integrated_surface_detail(root, materials):
                 uv_sphere("Wing bay captive bolt %s %s %s" % (side, idx, k),
                           (x + side*(-0.16 + (k%2)*0.32), y - 0.22 + (k//2)*0.44, 0.269),
                           (0.018, 0.018, 0.010), white)
-        # Recessed radiator trenches and repeated heat-exchanger vanes.
-        cube("Wing radiator trench %s" % side,
-             (side*1.78, 1.05, 0.235), (0.28, 1.05, 0.045), dark, 0.045,
+        # A single recessed heat-exchanger insert replaces the dense stack
+        # of raised bars, which visually overwhelmed the wing surface.
+        cube("Wing radiator recess %s" % side,
+             (side*1.78, 1.05, 0.226), (0.24, 0.88, 0.025), dark, 0.035,
              (0, 0, side*-0.10))
-        for k in range(7):
-            cube("Wing radiator vane %s %s" % (side, k),
-                 (side*1.78, 0.62 + k*0.145, 0.264), (0.22, 0.045, 0.025),
-                 white if k in (0,6) else armor, 0.012)
+        for k in range(4):
+            cube("Wing radiator fin %s %s" % (side, k),
+                 (side*1.78, 0.76 + k*0.19, 0.245), (0.16, 0.035, 0.012),
+                 armor, 0.009)
         # Side armor cheek panels make the central fuselage less cylindrical.
         for y in (-3.8, -2.3, -0.7, 1.0, 2.6):
             cube("Fuselage lateral armor cheek %s %.1f" % (side, y),
@@ -525,6 +695,148 @@ def add_integrated_surface_detail(root, materials):
         if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
             obj.parent = root
 
+
+
+def add_hero_identification(root, materials):
+    """Add restrained, production-style markings and identification hardware."""
+    white = materials["white"]
+    dark = materials["dark"]
+    accent = materials["accent"]
+
+    def stencil(name, body, location, size, material, rotation=0.0):
+        bpy.ops.object.text_add(
+            location=location,
+            rotation=(0.0, 0.0, rotation),
+        )
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.body = body
+        obj.data.size = size
+        obj.data.align_x = "CENTER"
+        obj.data.align_y = "CENTER"
+        obj.data.extrude = 0.0008
+        obj.data.bevel_depth = 0.0004
+        obj.data.bevel_resolution = 1
+        bpy.ops.object.convert(target="MESH")
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.materials.append(material)
+        obj.parent = root
+        return obj
+
+    def roundel(name, location, material, radius=0.19):
+        bpy.ops.mesh.primitive_torus_add(
+            major_segments=40,
+            minor_segments=8,
+            location=location,
+            major_radius=radius,
+            minor_radius=0.018,
+        )
+        obj = bpy.context.object
+        obj.name = name
+        obj.data.materials.append(material)
+        obj.parent = root
+        return obj
+
+    for side in (-1, 1):
+        # Squadron roundel and readable craft number on each wing upper surface.
+        roundel("GF squadron roundel %s" % side,
+                (side * 4.18, 1.62, 0.255), accent)
+        cube("GF roundel center bar %s" % side,
+             (side * 4.18, 1.62, 0.274), (0.045, 0.23, 0.018), white, 0.008)
+        stencil("Wing serial stencil %s" % side, "GF / 07",
+                (side * 3.45, 0.55, 0.247), 0.145, white)
+        stencil("Wing service microtext %s" % side, "ACCESS  /  LIFT",
+                (side * 2.55, -0.35, 0.252), 0.062, dark)
+        # Small chevron bars identify lift and service zones without obscuring panels.
+        for index in range(3):
+            cube("Wing lift chevron %s %s" % (side, index),
+                 (side * (2.05 + index * 0.13), -1.10 + index * 0.13, 0.246),
+                 (0.055, 0.30, 0.018), accent, 0.009,
+                 (0.0, 0.0, side * -0.48))
+        # Recessed-looking warning bands around engine service access.
+        for index in range(4):
+            cube("Engine caution hash %s %s" % (side, index),
+                 (side * 1.34, 3.86 + index * 0.12, 0.505),
+                 (0.23, 0.045, 0.014), accent if index % 2 == 0 else white,
+                 0.006, (0.0, 0.0, side * -0.18))
+        stencil("Engine serial stencil %s" % side, "ION-02",
+                (side * 1.02, 4.35, 0.505), 0.105, white)
+
+    # Central maker mark and maintenance labels on the dorsal armor crown.
+    stencil("Dorsal manufacturer stencil", "GALACTIC  /  FRONTIER",
+            (0.0, 0.15, 0.655), 0.105, white)
+    stencil("Dorsal inspection stencil", "MK.I   //   FLIGHT TEST",
+            (0.0, 0.48, 0.655), 0.060, accent)
+    # Nose-side optical warning labels and small status lamps.
+    for side in (-1, 1):
+        cube("Nose optical status lamp %s" % side,
+             (side * 0.27, -5.72, 0.30), (0.09, 0.18, 0.035),
+             accent, 0.018, (0.0, 0.0, side * -0.10))
+        stencil("Nose caution stencil %s" % side, "SENSOR",
+                (side * 0.40, -5.25, 0.285), 0.060, dark)
+
+    # Ensure every generated marking is part of the exported hero hierarchy.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
+
+def consolidate_static_meshes(root):
+    """Bake modifiers and merge static parts by material to reduce GLB draw calls.
+
+    Keep independently addressable gameplay/animation parts as separate objects.
+    The single GF root, ship bounds, orientation and local transforms are preserved.
+    """
+    keep_tokens = (
+        "turret", "landing strut", "landing pad", "sliding bay door",
+        "bomb bay door", "elevon", "control surface", "flap", "sensor mast",
+        "antenna", "rotating", "gear", "door"
+    )
+    groups = {}
+    for obj in list(root.children_recursive):
+        if obj.type != "MESH":
+            continue
+        if any(token in obj.name.lower() for token in keep_tokens):
+            continue
+        material_key = tuple(
+            slot.material.name if slot.material else "__no_material__"
+            for slot in obj.material_slots
+        )
+        groups.setdefault(material_key, []).append(obj.name)
+
+    merged_count = 0
+    for material_key, object_names in groups.items():
+        if len(object_names) < 2:
+            continue
+        for object_name in object_names:
+            obj = bpy.data.objects.get(object_name)
+            if obj is None or obj.type != "MESH":
+                continue
+            if obj.modifiers:
+                bpy.ops.object.select_all(action="DESELECT")
+                obj.select_set(True)
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.object.convert(target="MESH")
+
+        objects = [bpy.data.objects.get(name) for name in object_names]
+        objects = [obj for obj in objects if obj is not None and obj.type == "MESH"]
+        if len(objects) < 2:
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objects:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = objects[0]
+        bpy.ops.object.join()
+        merged = bpy.context.object
+        material_label = "_".join(material_key).replace(" ", "_")[:32]
+        merged.name = "GF_Static_%02d_%s" % (merged_count, material_label)
+        merged.parent = root
+        merged_count += 1
+
+    print("GF_MESH_CONSOLIDATION", root.name,
+          "static_groups", merged_count,
+          "remaining_meshes", sum(1 for obj in root.children_recursive if obj.type == "MESH"))
 
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
@@ -586,6 +898,8 @@ def main():
 
     root = create_ship(materials)
     add_integrated_surface_detail(root, materials)
+    add_hero_identification(root, materials)
+    consolidate_static_meshes(root)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.

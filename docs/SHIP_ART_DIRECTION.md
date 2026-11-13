@@ -48,6 +48,10 @@ The four small fighter-class ships can be selected in the hangar. The other thre
 - The showroom loads each GLB independently and rotates it for inspection.
 - Full HD visual QA captures eight deterministic gameplay states and the seven-ship showroom. The latest visual capture run is linked from the [README](../README.md).
 
+## Player Fighter Mk.I — hero detail pass
+
+The hero ship remains the existing Player Fighter Mk.I mesh and silhouette. The detail pass adds a consistent squadron identity system to the existing hard-surface construction: wing roundels, craft serials, maintenance stencils, engine service IDs, restrained caution hashes and optical status lamps. These are real mesh markings exported with the GLB, not screen-space overlays. The pass must retain the existing root node, orientation, scale and flight-scene attachment.
+
 ## Acceptance gate for final art
 
 1. Inspect front, side, top, rear-three-quarter and close-up views for every ship.

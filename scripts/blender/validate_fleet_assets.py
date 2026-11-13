@@ -26,6 +26,8 @@ SHIPS = (
 )
 MIN_POLYGONS = 250
 MIN_MATERIALS = 2
+MIN_GLB_IMAGE_TEXTURES = 3
+MAX_GLB_MESH_OBJECTS = 120
 MIN_PREVIEW_WIDTH = 1200
 MIN_PREVIEW_HEIGHT = 800
 
@@ -93,8 +95,10 @@ def mesh_metrics():
         maximum = Vector(tuple(max(p[i] for p in points) for i in range(3)))
         dimensions = [maximum[i] - minimum[i] for i in range(3)]
     root_names = [obj.name for obj in roots]
+    image_textures = sum(1 for image in bpy.data.images if image.has_data and image.size[0] > 0 and image.size[1] > 0)
     return {
         "mesh_objects": len(meshes),
+        "image_textures": image_textures,
         "uv_mesh_objects": uv_meshes,
         "polygons": polygons,
         "triangles": triangles,
@@ -186,6 +190,8 @@ def validate_one(slug, output_dir):
             record["errors"].append(f"blend: polygon count {blend['polygons']} < {MIN_POLYGONS}")
         if blend["material_count"] < MIN_MATERIALS:
             record["errors"].append(f"blend: material count {blend['material_count']} < {MIN_MATERIALS}")
+        if blend["mesh_objects"] > MAX_GLB_MESH_OBJECTS:
+            record["errors"].append(f"blend: static mesh object count {blend['mesh_objects']} > {MAX_GLB_MESH_OBJECTS}")
         if not blend["dimensions"] or not all(finite(v) and v >= 0.05 for v in blend["dimensions"]):
             record["errors"].append(f"blend: invalid world bounds {blend['dimensions']}")
         if blend["bad_geometry_objects"]:
@@ -203,6 +209,10 @@ def validate_one(slug, output_dir):
             record["errors"].append(f"glb: polygon count {glb['polygons']} < {MIN_POLYGONS}")
         if glb["material_count"] < MIN_MATERIALS:
             record["errors"].append(f"glb: material count {glb['material_count']} < {MIN_MATERIALS}")
+        if glb["mesh_objects"] > MAX_GLB_MESH_OBJECTS:
+            record["errors"].append(f"glb: mesh object count {glb['mesh_objects']} > {MAX_GLB_MESH_OBJECTS}; static meshes must be consolidated")
+        if glb["image_textures"] < MIN_GLB_IMAGE_TEXTURES:
+            record["errors"].append(f"glb: only {glb['image_textures']} embedded image textures; expected at least {MIN_GLB_IMAGE_TEXTURES} (albedo, roughness, normal)")
         if not glb["dimensions"] or not all(finite(v) and v >= 0.05 for v in glb["dimensions"]):
             record["errors"].append(f"glb: invalid world bounds {glb['dimensions']}")
         if glb["bad_geometry_objects"]:
