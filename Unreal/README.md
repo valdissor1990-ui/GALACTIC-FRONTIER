@@ -29,7 +29,7 @@ The editor script creates the initial test map; it is not a substitute for check
 
 ## Not yet ported
 
-Enemy AI and waves, target lock and scan, complete Silent Relay mission state machine, contract and ship catalogs, hangar/menu/HUD, story dialogue, VFX/audio, graphics settings, and Windows packaging remain migration work.
+The first-pass enemy AI, target lock, native HUD, ship/module/contract catalogs and a playable foundation for The Silent Relay are present, but are not yet runtime-verified or production-complete. Remaining work includes full mission objective/scan interactions, the other two contracts, hangar and main-menu flows, story dialogue/campaign migration, production space environment, VFX/audio, graphics settings, input modernization, and Windows packaging.
 
 Do not remove the Godot source tree until the Unreal vertical slice and full migration pass the acceptance gates in `../UNREAL_MIGRATION_PLAN.md`.
 
