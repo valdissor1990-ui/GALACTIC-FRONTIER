@@ -5,6 +5,7 @@
 #include "GFPlayerShipPawn.generated.h"
 
 class UCameraComponent;
+class UInputComponent;
 class USpringArmComponent;
 class UStaticMeshComponent;
 class UGFShipFlightComponent;
