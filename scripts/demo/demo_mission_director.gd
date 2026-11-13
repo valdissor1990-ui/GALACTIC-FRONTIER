@@ -636,7 +636,19 @@ func _complete_docking(qa_mode: bool = false) -> void:
 	print("DOCKING_COMPLETE reward=", mission_reward_credits)
 
 
+## Suppress flight-only CanvasLayers while the modal carrier service screen is open.
+func _hide_flight_hud_for_overlay() -> void:
+	# Keep the maintenance panel readable: flight telemetry and mission panels
+	# are no longer actionable after the docking sequence has completed.
+	for layer_name in ["HUD", "CombatHUD", "MissionHUD"]:
+		var layer := world.get_node_or_null(layer_name) as CanvasLayer
+		if layer != null:
+			layer.visible = false
+
+
 func _build_docking_services() -> void:
+	# The service modal owns the screen until debrief returns to mission results.
+	_hide_flight_hud_for_overlay()
 	_service_layer = CanvasLayer.new()
 	_service_layer.name = "CarrierServices"
 	_service_layer.layer = 24

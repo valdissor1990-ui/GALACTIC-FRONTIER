@@ -34,6 +34,10 @@ func _run_test() -> void:
 	}
 	var camera_rig: CameraRig = player.get_node("CameraRig") as CameraRig
 	var cockpit: Node3D = player.get_node("CockpitInterior") as Node3D
+	# Keep the first-person composition stable across future model/cockpit edits.
+	var cockpit_camera := camera_rig.get_node("CockpitCamera") as Camera3D
+	_check(is_equal_approx(cockpit_camera.fov, 76.0), "Cockpit camera must retain the polished 76-degree field of view")
+	_check(cockpit_camera.position.is_equal_approx(Vector3(0.0, 0.24, -1.72)), "Cockpit camera must retain the forward-biased framing")
 	_check(cockpit != null and not cockpit.visible, "Cockpit interior must start hidden in chase-camera mode")
 	camera_rig.toggle_camera()
 	_check(cockpit.visible and not player.get_node("Visual").visible, "Cockpit mode must show the cockpit and hide the exterior ship")
@@ -74,6 +78,9 @@ func _run_test() -> void:
 	player.velocity = Vector3.ZERO
 	_check(director._attempt_docking(), "Aligned, stationary craft inside the port must dock")
 	_check(director.stage == 10, "Successful docking must open carrier maintenance")
+	_check(not demo.get_node("HUD").visible, "Flight telemetry HUD must be hidden behind carrier maintenance")
+	_check(not demo.get_node("CombatHUD").visible, "Combat HUD must be hidden behind carrier maintenance")
+	_check(director._service_layer.visible, "Carrier maintenance overlay must remain visible above the flight scene")
 	var credits_before := profile.get_credits()
 	director._service_hull()
 	_check(is_equal_approx(damageable.current_hull, damageable.max_hull), "Carrier hull repair must restore full hull")

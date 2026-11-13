@@ -8,6 +8,7 @@ on:
       - chatgpt/visual-overhaul
       - chatgpt/ten-minute-vertical-slice
       - chatgpt/ship-art-production
+      - chatgpt/cockpit-camera-polish
       - chatgpt/save-system-foundation
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
