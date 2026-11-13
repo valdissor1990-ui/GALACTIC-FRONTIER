@@ -29,10 +29,11 @@ func _run() -> void:
 	_check(str(profile.get_active_contract().get("id", "")) == "kestrel_patrol", "active contract persists as Kestrel Patrol")
 	_check(str(profile.get_active_system().get("id", "")) == "kestrel", "Kestrel contract selects the Kestrel system")
 
-	var board := load("res://scenes/ui/contract_board.tscn").instantiate()
+	var board: Control = load("res://scenes/ui/contract_board.tscn").instantiate() as Control
 	root.add_child(board)
 	await process_frame
-	_check(board.get("_cards").get_child_count() == 3, "contract board renders all three system contracts")
+	var cards := board.get("_cards") as HBoxContainer
+	_check(cards != null and cards.get_child_count() == 3, "contract board renders all three system contracts")
 	board.queue_free()
 	await process_frame
 
