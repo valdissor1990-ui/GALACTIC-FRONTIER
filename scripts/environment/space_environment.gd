@@ -602,19 +602,23 @@ void fragment() {
 	vec2 p = (UV - vec2(0.5)) * vec2(2.0, 1.35);
 	float radius = length(p);
 	float angle = atan(p.y, p.x);
-	float spiral_phase = angle * 2.0 + radius * 13.5;
-	float arm_a = pow(max(cos(spiral_phase), 0.0), 7.0);
-	float arm_b = pow(max(cos(spiral_phase + 3.14159), 0.0), 7.0);
-	float spiral_arms = (arm_a + arm_b) * exp(-radius * 1.55);
+	// Three asymmetric arms, with a dusty inter-arm lane and clustered star-forming knots.
+	float spiral_phase = angle * 3.0 + radius * 12.0;
+	float arm_a = pow(max(cos(spiral_phase), 0.0), 8.0);
+	float arm_b = pow(max(cos(spiral_phase + 2.094395), 0.0), 8.0);
+	float arm_c = pow(max(cos(spiral_phase + 4.188790), 0.0), 8.0);
+	float spiral_arms = (arm_a + arm_b + arm_c) * exp(-radius * 1.48);
 	float disk = exp(-pow(abs(p.y) * 3.8, 1.35)) * exp(-radius * 1.35);
-	float clouds = noise21(UV * vec2(32.0, 18.0)) * 0.52
-		+ noise21(UV * vec2(78.0, 43.0)) * 0.30
-		+ noise21(UV * vec2(154.0, 86.0)) * 0.18;
-	float dust_lane = smoothstep(0.42, 0.72, clouds) * 0.34;
-	float core = exp(-radius * 8.0) * 0.82;
+	float clouds = noise21(UV * vec2(32.0, 18.0)) * 0.48
+		+ noise21(UV * vec2(78.0, 43.0)) * 0.32
+		+ noise21(UV * vec2(154.0, 86.0)) * 0.20;
+	float dust_lane = smoothstep(0.38, 0.68, clouds) * 0.46;
+	float core = exp(-radius * 8.0) * 0.76;
 	float edge = 1.0 - smoothstep(0.62, 1.0, radius);
-	float arm_detail = spiral_arms * (0.34 + clouds * 0.66) * (1.0 - dust_lane * 0.72);
-	float intensity = max(0.0, disk * (0.12 + clouds * 0.30) + arm_detail * 0.88 + core) * edge;
+	float star_knots = smoothstep(0.80, 0.96, noise21(UV * vec2(145.0, 92.0))) * spiral_arms;
+	float arm_detail = spiral_arms * (0.24 + clouds * 0.76) * (1.0 - dust_lane * 0.82);
+	float intensity = max(0.0, disk * (0.10 + clouds * 0.28)
+		+ arm_detail * 0.82 + star_knots * 0.18 + core) * edge;
 	ALBEDO = galaxy_tint.rgb;
 	EMISSION = galaxy_tint.rgb * (0.06 + intensity * 1.15);
 	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.28);
