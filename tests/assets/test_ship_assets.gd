@@ -70,16 +70,26 @@ func _validate_glb(path: String) -> void:
 		scene.free()
 		return
 	var valid_surfaces := 0
+	var uv_surfaces := 0
 	for instance in meshes:
-		if instance.mesh != null and instance.mesh.get_surface_count() > 0:
-			valid_surfaces += instance.mesh.get_surface_count()
+		if instance.mesh == null:
+			continue
+		for surface in range(instance.mesh.get_surface_count()):
+			valid_surfaces += 1
+			var arrays := instance.mesh.surface_get_arrays(surface)
+			if arrays.size() > Mesh.ARRAY_TEX_UV and arrays[Mesh.ARRAY_TEX_UV] is PackedVector2Array and not (arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).is_empty():
+				uv_surfaces += 1
 	if valid_surfaces == 0:
 		_fail(path, "runtime GLB scene contains no renderable mesh surfaces")
 		scene.free()
 		return
+	if uv_surfaces == 0:
+		_fail(path, "runtime GLB has no UV surfaces for PBR micro-detail maps")
+		scene.free()
+		return
 
 	_passed += 1
-	print("  PASS  %s — %d mesh nodes, %d surfaces, %d detailed materials" % [path.get_file(), meshes.size(), valid_surfaces, detailed_surfaces])
+	print("  PASS  %s — %d mesh nodes, %d surfaces, %d UV surfaces, %d detailed materials" % [path.get_file(), meshes.size(), valid_surfaces, uv_surfaces, detailed_surfaces])
 	scene.free()
 
 
