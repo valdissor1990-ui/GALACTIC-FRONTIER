@@ -18,6 +18,7 @@ from array import array
 import math
 import os
 import sys
+import tempfile
 from mathutils import Vector
 
 # Ubuntu's packaged Blender may use the system Python package directory for
@@ -44,6 +45,49 @@ def clear_scene():
             if block.users == 0:
                 datablocks.remove(block)
 
+
+
+def ensure_glb_file_image(image):
+    """Convert generated maps into packed FILE-backed images for glTF export."""
+    if image is None:
+        return None
+    export_name = image.name + "_GLTF"
+    existing = bpy.data.images.get(export_name)
+    if existing is not None and existing.source == "FILE" and existing.has_data:
+        return existing
+
+    temp_dir = bpy.app.tempdir or tempfile.gettempdir()
+    os.makedirs(temp_dir, exist_ok=True)
+    safe_name = "".join(ch if ch.isalnum() else "_" for ch in export_name)
+    image_path = os.path.join(temp_dir, safe_name + ".png")
+
+    image.update()
+    if not image.has_data:
+        raise RuntimeError("Source PBR image has no pixel data: " + image.name)
+    original_path = image.filepath_raw
+    try:
+        image.filepath_raw = image_path
+        image.file_format = "PNG"
+        image.save()
+    finally:
+        image.filepath_raw = original_path
+    if not os.path.isfile(image_path) or os.path.getsize(image_path) < 128:
+        raise RuntimeError("GLB texture staging failed: " + image_path)
+
+    file_image = bpy.data.images.load(image_path, check_existing=False)
+    if file_image.source != "FILE":
+        raise RuntimeError("GLB texture did not reload as FILE: " + export_name)
+    if not file_image.has_data:
+        file_image.reload()
+    file_image.update()
+    if not file_image.has_data or file_image.size[0] < 1 or file_image.size[1] < 1:
+        raise RuntimeError("GLB texture reload has no pixel data: " + export_name)
+    file_image.name = export_name
+    file_image.colorspace_settings.name = image.colorspace_settings.name
+    file_image.pack()
+    print("GF_GLTF_IMAGE_READY", export_name, file_image.source,
+          tuple(file_image.size), file_image.has_data, os.path.getsize(image_path))
+    return file_image
 
 
 def apply_exportable_surface_maps(material, principled, base_color, base_roughness, label):
@@ -84,11 +128,7 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                     pixels.append(linear_to_srgb(base_color[channel] * variation))
                 pixels.append(1.0)
         albedo_image.pixels.foreach_set(pixels)
-        albedo_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), albedo_image.name + ".png")
-        albedo_image.file_format = "PNG"
-        albedo_image.save()
-        albedo_image.pack()
-        print("GF_PBR_IMAGE_PACKED", albedo_image.name, "size=", tuple(albedo_image.size), "has_data=", albedo_image.has_data)
+        albedo_image.update()
 
     roughness_image = bpy.data.images.get(roughness_name)
     if roughness_image is None:
@@ -104,11 +144,7 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                 value = max(0.08, min(0.96, base_roughness + broad * 0.055 + fine * 0.022))
                 pixels.extend((value, value, value, 1.0))
         roughness_image.pixels.foreach_set(pixels)
-        roughness_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), roughness_image.name + ".png")
-        roughness_image.file_format = "PNG"
-        roughness_image.save()
-        roughness_image.pack()
-        print("GF_PBR_IMAGE_PACKED", roughness_image.name, "size=", tuple(roughness_image.size), "has_data=", roughness_image.has_data)
+        roughness_image.update()
 
     normal_image = bpy.data.images.get(normal_name)
     if normal_image is None:
@@ -140,11 +176,11 @@ def apply_exportable_surface_maps(material, principled, base_color, base_roughne
                                ny / length * 0.5 + 0.5,
                                nz / length * 0.5 + 0.5, 1.0))
         normal_image.pixels.foreach_set(pixels)
-        normal_image.filepath_raw = os.path.join(os.environ.get("TMPDIR", "/tmp"), normal_image.name + ".png")
-        normal_image.file_format = "PNG"
-        normal_image.save()
-        normal_image.pack()
-        print("GF_PBR_IMAGE_PACKED", normal_image.name, "size=", tuple(normal_image.size), "has_data=", normal_image.has_data)
+        normal_image.update()
+
+    albedo_image = ensure_glb_file_image(albedo_image)
+    roughness_image = ensure_glb_file_image(roughness_image)
+    normal_image = ensure_glb_file_image(normal_image)
 
     nodes = material.node_tree.nodes
     links = material.node_tree.links
