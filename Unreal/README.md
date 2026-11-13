@@ -13,7 +13,9 @@ Open `GalacticFrontier.uproject` with Unreal Engine 5.8. The C++ project must be
 - `UGFShipFlightComponent`: inertial flight with collision sweeps, independent braking, boost reserve/recharge, angular inertia and mouse-look. Unreal distances are centimeters; source Godot speed/acceleration are converted to 9500 cm/s and 3400 cm/s².
 - `UGFDamageableComponent`: shield absorption, delayed regeneration, hull damage and destroyed state.
 - `UGFWeaponComponent` + `AGFProjectile`: primary energy weapon, cooldown, projectile travel and damage application.
-- `UGFSaveSubsystem` + `UGFPlayerProfileSave`: local pilot progression, schema version and backup slot.
+- `UGFSaveSubsystem` + `UGFPlayerProfileSave`: local pilot progression, schema version, backup slot, ship purchases/selection, module purchases, contract selection and story flags.
+- `UGFGameCatalog`: ported definitions for all four flyable ships, five upgrade modules and three contracts, including the original Godot tuning values.
+- Enemy AI includes approach/strafe/retreat states, vertical evasion and predictive projectile leading.
 
 ## First-time content setup
 
