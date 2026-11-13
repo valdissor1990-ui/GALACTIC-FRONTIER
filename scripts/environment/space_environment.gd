@@ -2,8 +2,8 @@ extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
 ## Uses generated geometry and textures only; no network or third-party assets.
 
-@export_range(300, 4000, 100) var star_count: int = 3200
-@export_range(40, 220, 10) var asteroid_count: int = 120
+@export_range(300, 4000, 100) var star_count: int = 3800
+@export_range(40, 220, 10) var asteroid_count: int = 160
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
@@ -164,11 +164,11 @@ func _build_world_environment() -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = _theme.get("ambient", Color(0.22, 0.31, 0.52))
-	environment.ambient_light_energy = 0.78
+	environment.ambient_light_energy = 0.88
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.55
-	environment.glow_strength = 0.8
+	environment.glow_intensity = 0.68
+	environment.glow_strength = 0.86
 	environment.ssao_enabled = true
 	environment.ssao_radius = 1.35
 	environment.ssao_intensity = 0.62
@@ -185,7 +185,7 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = _theme.get("key_light", Color(0.72, 0.82, 1.0))
-	key_light.light_energy = 1.65
+	key_light.light_energy = 1.82
 	key_light.shadow_enabled = true
 	key_light.directional_shadow_max_distance = 260.0
 	_stellar_key_light = key_light
@@ -197,7 +197,7 @@ func _build_world_environment() -> void:
 	fill_light.name = "NebulaFillLight"
 	fill_light.rotation_degrees = Vector3(-12.0, -148.0, 0.0)
 	fill_light.light_color = _theme.get("fill_light", Color(0.20, 0.38, 0.72))
-	fill_light.light_energy = 0.34
+	fill_light.light_energy = 0.48
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
 
@@ -327,8 +327,8 @@ func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint
 
 	var noise_texture := NoiseTexture2D.new()
 	noise_texture.noise = noise
-	noise_texture.width = 512
-	noise_texture.height = 512
+	noise_texture.width = 768
+	noise_texture.height = 768
 	noise_texture.seamless = true
 	noise_texture.generate_mipmaps = true
 
@@ -346,9 +346,11 @@ void fragment() {
 	vec2 uv_b = UV * vec2(4.1, 3.2) - drift * 0.7 + vec2(0.23, 0.41);
 	float broad = texture(nebula_noise, uv_a).r;
 	float detail = texture(nebula_noise, uv_b).r;
-	float cloud = broad * 0.72 + detail * 0.28;
-	float filaments = smoothstep(0.36, 0.74, cloud);
-	float wisps = smoothstep(0.49, 0.82, detail) * 0.22;
+	float micro = texture(nebula_noise, UV * vec2(8.2, 6.5) + drift * 1.7 + vec2(0.17, 0.63)).r;
+	float cloud = broad * 0.60 + detail * 0.27 + micro * 0.13;
+	float ridges = 1.0 - abs(cloud * 2.0 - 1.0);
+	float filaments = smoothstep(0.34, 0.72, cloud) * (0.78 + ridges * 0.34);
+	float wisps = smoothstep(0.49, 0.82, detail) * 0.22 + smoothstep(0.72, 0.91, micro) * 0.12;
 	vec2 centered = UV * 2.0 - 1.0;
 	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
 	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.36);
@@ -691,8 +693,8 @@ void fragment() {
 	add_child(moon)
 
 func _create_planet_texture() -> Texture2D:
-	const WIDTH := 768
-	const HEIGHT := 384
+	const WIDTH := 1024
+	const HEIGHT := 512
 	var noise := FastNoiseLite.new()
 	noise.seed = 19073
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
@@ -700,13 +702,19 @@ func _create_planet_texture() -> Texture2D:
 	noise.fractal_octaves = 6
 	noise.fractal_lacunarity = 2.05
 	noise.fractal_gain = 0.48
-	noise.frequency = 1.15
+	noise.frequency = 1.32
 
 	var water_dark: Color = _theme.get("water_dark", Color(0.018, 0.075, 0.16))
 	var water_light: Color = _theme.get("water_light", Color(0.035, 0.19, 0.31))
 	var land_low: Color = _theme.get("land_low", Color(0.18, 0.34, 0.31))
 	var land_high: Color = _theme.get("land_high", Color(0.43, 0.38, 0.25))
 	var snow: Color = _theme.get("snow", Color(0.78, 0.79, 0.72))
+	var detail_noise := FastNoiseLite.new()
+	detail_noise.seed = 48291
+	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	detail_noise.fractal_octaves = 4
+	detail_noise.frequency = 5.8
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
 	for y in range(HEIGHT):
 		var latitude := (float(y) / float(HEIGHT - 1) - 0.5) * PI
@@ -718,6 +726,8 @@ func _create_planet_texture() -> Texture2D:
 				cos(latitude) * sin(longitude)
 			)
 			var value := noise.get_noise_3d(direction.x * 2.8, direction.y * 2.8, direction.z * 2.8)
+			var surface_detail := detail_noise.get_noise_3d(direction.x * 5.8, direction.y * 5.8, direction.z * 5.8)
+			value += surface_detail * 0.075
 			var color: Color
 			if value < -0.18:
 				color = water_dark.lerp(water_light, clampf((value + 1.0) / 0.82, 0.0, 1.0))
@@ -826,7 +836,7 @@ func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: f
 func _build_cosmic_dust() -> void:
 	# Layered, chromatic dust motes trace the long flight corridor. A single
 	# custom-data MultiMesh keeps this visual detail out of the physics scene.
-	const DUST_COUNT := 1800
+	const DUST_COUNT := 2400
 	var dust_mesh := SphereMesh.new()
 	dust_mesh.radius = 0.22
 	dust_mesh.height = 0.44
