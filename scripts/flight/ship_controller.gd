@@ -14,15 +14,68 @@ var _flight_model: FlightModel = FlightModel.new()
 var _angular_velocity: Vector3 = Vector3.ZERO
 var _mouse_delta: Vector2 = Vector2.ZERO
 var boost_amount: float = 10.0
+var _is_destroyed: bool = false
 
 
 func _ready() -> void:
+	_apply_profile_configuration()
 	if flight_config == null:
 		push_error("ShipFlightConfig is not assigned to PlayerShip.")
 		return
 
 	boost_amount = flight_config.boost_capacity
+	var damageable := get_node_or_null("Damageable") as Damageable
+	if damageable != null:
+		damageable.destroyed.connect(_on_destroyed, CONNECT_ONE_SHOT)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _apply_profile_configuration(reset_resources: bool = true) -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null:
+		return
+
+	var config_path := str(profile.call("get_selected_ship_flight_config_path"))
+	if not config_path.is_empty():
+		var selected_config := load(config_path) as ShipFlightConfig
+		if selected_config != null:
+			flight_config = selected_config.duplicate(true) as ShipFlightConfig
+		else:
+			push_error("Selected ship flight config could not be loaded: " + config_path)
+
+	var ship_stats: Dictionary = profile.call("get_selected_ship_stats")
+	if flight_config != null and not ship_stats.is_empty():
+		flight_config.max_speed *= float(ship_stats.get("max_speed_multiplier", 1.0))
+		flight_config.acceleration *= float(ship_stats.get("acceleration_multiplier", 1.0))
+		flight_config.boost_capacity *= float(ship_stats.get("boost_capacity_multiplier", 1.0))
+		flight_config.boost_recharge_rate *= float(ship_stats.get("boost_recharge_multiplier", 1.0))
+	var damageable := get_node_or_null("Damageable") as Damageable
+	if damageable != null and not ship_stats.is_empty():
+		damageable.max_hull = float(ship_stats.get("hull", damageable.max_hull)) * float(ship_stats.get("hull_multiplier", 1.0))
+		damageable.max_shield = float(ship_stats.get("shield", damageable.max_shield)) * float(ship_stats.get("shield_multiplier", 1.0))
+		damageable.shield_regen_per_second = float(ship_stats.get("shield_regen", damageable.shield_regen_per_second)) * float(ship_stats.get("shield_regen_multiplier", 1.0))
+		if reset_resources:
+			damageable.current_hull = damageable.max_hull
+			damageable.current_shield = damageable.max_shield
+		else:
+			damageable.current_hull = minf(damageable.current_hull, damageable.max_hull)
+			damageable.current_shield = minf(damageable.current_shield, damageable.max_shield)
+		damageable.hull_changed.emit(damageable.current_hull, damageable.max_hull)
+		damageable.shield_changed.emit(damageable.current_shield, damageable.max_shield)
+	if flight_config != null:
+		boost_amount = flight_config.boost_capacity if reset_resources else minf(boost_amount, flight_config.boost_capacity)
+
+	var weapon := get_node_or_null("WeaponSystem") as WeaponSystem
+	if weapon != null and not ship_stats.is_empty():
+		weapon.shots_per_second = float(ship_stats.get("shots_per_second", weapon.shots_per_second)) * float(ship_stats.get("shots_per_second_multiplier", 1.0))
+		weapon.projectile_speed = float(ship_stats.get("projectile_speed", weapon.projectile_speed)) * float(ship_stats.get("projectile_speed_multiplier", 1.0))
+		weapon.projectile_damage = float(ship_stats.get("projectile_damage", weapon.projectile_damage)) * float(ship_stats.get("projectile_damage_multiplier", 1.0))
+
+
+func refresh_profile_upgrades() -> void:
+	# Reapply the selected ship's module multipliers without healing or refilling
+	# the craft; installing a module must not silently replace paid maintenance.
+	_apply_profile_configuration(false)
 
 
 func _notification(what: int) -> void:
@@ -35,7 +88,7 @@ func _notification(what: int) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if get_tree().paused:
+	if get_tree().paused or _is_destroyed:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -50,6 +103,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _is_destroyed:
+		velocity = Vector3.ZERO
+		return
 	if flight_config == null:
 		_mouse_delta = Vector2.ZERO
 		return
@@ -119,6 +175,24 @@ func _update_rotation(delta: float) -> void:
 			Vector3.ZERO,
 			flight_config.rotation_stabilization * delta
 		)
+
+
+func _on_destroyed() -> void:
+	_is_destroyed = true
+	velocity = Vector3.ZERO
+	_angular_velocity = Vector3.ZERO
+	_mouse_delta = Vector2.ZERO
+	set_physics_process(false)
+	set_process_unhandled_input(false)
+	var weapon := get_node_or_null("WeaponSystem")
+	if weapon != null:
+		weapon.set_process(false)
+		weapon.set_physics_process(false)
+	print("PLAYER_SHIP_DESTROYED: flight controls and weapons disabled")
+
+
+func is_destroyed() -> bool:
+	return _is_destroyed
 
 
 func set_mouse_sensitivity(value: float) -> void:

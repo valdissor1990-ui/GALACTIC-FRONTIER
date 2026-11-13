@@ -1,17 +1,15 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/flight/test_flight.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://assets/models/ships/player_fighter.glb" id="2"]
+[ext_resource type="Script" path="res://scripts/visual/runtime_gltf_model.gd" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/environment/space_environment.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter_visual.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/visual/ship_vfx.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/visual/cockpit_interior.gd" id="6"]
 
 [node name="VisualFlight" instance=ExtResource("1")]
 
 [node name="SpaceEnvironment" parent="." instance=ExtResource("3")]
-
-[node name="WorldEnvironment" parent="." index="0"]
-environment = null
 
 [node name="KeyLight" parent="." index="1"]
 visible = false
@@ -34,11 +32,26 @@ visible = false
 [node name="RightEngine" parent="PlayerShip/Visual" index="4"]
 visible = false
 
-[node name="PlayerFighterModel" parent="PlayerShip/Visual" instance=ExtResource("2")]
-scale = Vector3(0.22, 0.22, 0.22)
+[node name="PlayerFighterModel" type="Node3D" parent="PlayerShip/Visual"]
+script = ExtResource("7")
+source_path = "res://assets/models/ships/player_fighter.glb"
+model_scale = Vector3(0.30, 0.30, 0.30)
+
+[node name="ChaseCamera" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 2.35, 6.6)
+rotation_degrees = Vector3(-18, 0, 0)
+fov = 66.0
+
+; Forward-biased cockpit framing keeps the canopy structure out of the central flight view.
+[node name="CockpitCamera" parent="PlayerShip/CameraRig"]
+position = Vector3(0, 0.24, -1.72)
+fov = 76.0
 
 [node name="CombatEncounterController" parent="." index="6"]
 enemy_scene = ExtResource("4")
 
 [node name="ShipVFX" type="Node3D" parent="PlayerShip/Visual"]
 script = ExtResource("5")
+
+[node name="CockpitInterior" type="Node3D" parent="PlayerShip"]
+script = ExtResource("6")

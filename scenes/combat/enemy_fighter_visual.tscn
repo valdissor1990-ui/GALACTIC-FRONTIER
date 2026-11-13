@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/combat/enemy_fighter.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://assets/models/ships/player_fighter.glb" id="2"]
-[ext_resource type="Script" path="res://scripts/environment/enemy_visual_treatment.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/visual/runtime_gltf_model.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/environment/enemy_visual_treatment.gd" id="4"]
 
 [node name="EnemyFighterVisual" instance=ExtResource("1")]
 
@@ -18,8 +18,11 @@ visible = false
 [node name="RightEngine" parent="Visual" index="3"]
 visible = false
 
-[node name="EnemyFighterModel" parent="Visual" instance=ExtResource("2")]
-scale = Vector3(0.22, 0.22, 0.22)
-
-[node name="EnemyVisualTreatment" type="Node" parent="."]
+[node name="RaiderInterceptorModel" type="Node3D" parent="Visual"]
 script = ExtResource("3")
+source_path = "res://assets/models/ships/enemy_fighter.glb"
+model_scale = Vector3(0.36, 0.36, 0.36)
+
+[node name="HostileVisualTreatment" type="Node" parent="Visual"]
+script = ExtResource("4")
+model_path = NodePath("../RaiderInterceptorModel")

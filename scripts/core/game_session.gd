@@ -1,14 +1,21 @@
 extends Node
-## Minimal bootstrap. The flight scene is the only game scene in Phase 1.
+## Owns the top-level menu-to-mission flow.
 
-const FLIGHT_SCENE: String = "res://scenes/flight/visual_flight.tscn"
-
+const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
+const BOOTSTRAP_SCENE := "res://scenes/bootstrap/main.tscn"
 
 func _ready() -> void:
-	call_deferred("_open_flight_scene")
+	call_deferred("_open_menu")
 
-
-func _open_flight_scene() -> void:
-	var error: Error = get_tree().change_scene_to_file(FLIGHT_SCENE)
+func _open_menu() -> void:
+	if OS.get_cmdline_user_args().has("--test-mode"):
+		print("GAME_SESSION: menu autoload suppressed for isolated test run")
+		return
+	var active_scene := get_tree().current_scene
+	if active_scene != null and active_scene.scene_file_path != BOOTSTRAP_SCENE:
+		print("GAME_SESSION: keeping explicitly requested scene ", active_scene.scene_file_path)
+		return
+	var error := get_tree().change_scene_to_file(MENU_SCENE)
 	if error != OK:
-		push_error("GALACTIC FRONTIER: could not open flight scene. Error code: %s" % error)
+		push_error("GALACTIC FRONTIER: could not open main menu. Error code: %s" % error)
+		get_tree().quit(1)

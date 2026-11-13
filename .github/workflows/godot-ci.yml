@@ -6,10 +6,35 @@ on:
       - phase-1/flight-prototype
       - chatgpt/phase2-combat-integration
       - chatgpt/visual-overhaul
+      - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+      - chatgpt/cockpit-camera-polish
+      - chatgpt/save-system-foundation
+      - chatgpt/mission-save-integration
+      - chatgpt/campaign-objectives
+      - chatgpt/campaign-story-integration
+      - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
+      - chatgpt/dialogue-choice-overlay-m01
+      - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
+      - chatgpt/dialogue-choice-overlay-m01
+      - chatgpt/cockpit-camera-polish
+      - chatgpt/fullhd-showcase-qa
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
       - phase-1/flight-prototype
+      - chatgpt/ten-minute-vertical-slice
+      - chatgpt/audit-fixes-pr24
+      - chatgpt/ship-art-production
+      - chatgpt/mission-save-integration
+      - chatgpt/campaign-objectives
+      - chatgpt/m01-m05-story-integration
+      - chatgpt/campaign-story-integration
   workflow_dispatch:
 
 permissions:
@@ -41,15 +66,93 @@ jobs:
           godot --version | grep -E '^4\.7\.2\.stable'
 
       - name: Import project and parse scripts
-        run: godot --headless --editor --path . --quit
+        run: |
+          mkdir -p build
+          set -o pipefail
+          godot --headless --editor --path . --import --quit 2>&1 | tee build/godot-import.log
+          if grep -E 'ERROR:.*(Failed loading resource|No loader found|Parse Error|Unable to open file)' build/godot-import.log; then
+            echo 'Godot import reported a missing or invalid resource.'
+            exit 1
+          fi
 
       - name: Run FlightModel unit tests
         if: hashFiles('tests/flight/test_flight_model.gd') != ''
         run: godot --headless --path . --script res://tests/flight/test_flight_model.gd
 
+      - name: Run docking alignment and speed-gate tests
+        run: godot --headless --path . --script res://tests/flight/test_docking_rules.gd
+
+      - name: Run space obstacle and compound hitbox physics tests
+        run: godot --headless --path . --script res://tests/environment/test_space_collisions.gd -- --test-mode
+
+      - name: Validate actual Aurelia route clearance and scan binding
+        run: godot --headless --path . res://tests/demo/test_route_safety.tscn
+
+      - name: Validate procedural engine, weapon and impact audio streams
+        run: godot --headless --path . --script res://tests/audio/test_audio_manager.gd
+
       - name: Run enemy combat and encounter tests
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
+
+      - name: Run ship visual fallback regression tests
+        if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
+        run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
+
+      - name: Run combat systems regression tests
+        if: hashFiles('tests/combat/test_combat_systems.gd') != ''
+        run: godot --headless --path . --script res://tests/combat/test_combat_systems.gd
+
+      - name: Run swept projectile collision regression test
+        run: godot --headless --path . --script res://tests/combat/test_projectile_sweep.gd
+
+      - name: Run updater version and configuration tests
+        run: godot --headless --path . --script res://tests/update/test_update_manager.gd
+
+      - name: Run M01-M05 story progression, dialogue and save tests
+        run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
+
+      - name: Run M01-M05 runtime campaign integration tests
+        run: godot --headless --path . --script res://tests/story/test_campaign_runtime.gd -- --test-mode
+
+      - name: Run local save system regression tests
+        run: godot --headless --path . --script res://tests/save/test_save_manager.gd
+
+      - name: Run mission checkpoint resume integration test
+        run: godot --headless --path . --script res://tests/save/test_mission_resume.gd -- --test-mode
+
+
+      - name: Run accelerated demo mission regression test
+        if: hashFiles('tests/demo/test_demo_mission.gd') != ''
+        run: godot --headless --path . --script res://tests/demo/test_demo_mission.gd
+      - name: Run mission failure and wave-statistics regression test
+        run: godot --headless --path . res://tests/demo/test_mission_failure.tscn
+
+      - name: Run mission retry and main-menu navigation test
+        run: godot --headless --path . --script res://tests/demo/test_mission_retry.gd -- --test-mode
+
+      - name: Fleet hangar GLB loading and navigation regression test
+        run: godot --headless --path . --script res://tests/ui/test_fleet_hangar.gd
+
+      - name: Persistent player ship selection integration test
+        run: godot --headless --path . --script res://tests/ui/test_player_ship_selection.gd -- --test-mode
+
+      - name: Persistent ship module and stat integration test
+        run: godot --headless --path . --script res://tests/ui/test_ship_modules.gd -- --test-mode
+
+      - name: Contract progression and star map UI integration test
+        run: godot --headless --path . --script res://tests/ui/test_contract_progression.gd -- --test-mode
+      - name: Contract difficulty and system environment integration test
+        run: godot --headless --path . --script res://tests/demo/test_contract_variants.gd -- --test-mode
+
+      - name: Main menu fleet hangar navigation integration test
+        run: godot --headless --path . --script res://tests/ui/test_main_menu_hangar_navigation.gd
+
+      - name: Main menu checkpoint Continue integration test
+        run: godot --headless --path . --script res://tests/ui/test_main_menu_continue.gd -- --test-mode
+
+      - name: Headless main menu smoke test
+        run: godot --headless --path . res://scenes/ui/main_menu.tscn --quit-after 3
 
       - name: Headless bootstrap-scene smoke test
         run: godot --headless --path . --quit-after 10
@@ -59,6 +162,60 @@ jobs:
 
       - name: Headless visual flight-scene smoke test
         run: godot --headless --path . res://scenes/flight/visual_flight.tscn --quit-after 8
+
+      - name: Headless ten-minute demo scene smoke test
+        run: godot --headless --path . res://scenes/demo/ten_minute_demo.tscn --quit-after 12
+
+      - name: Validate every scene and its external dependencies
+        run: |
+          mkdir -p build
+          cat > build/check_scenes.gd <<'EOF'
+          extends SceneTree
+          func _initialize() -> void:
+              call_deferred("_run")
+          func _run() -> void:
+              var directories: Array[String] = ["res://scenes", "res://tests"]
+              var failures := 0
+              var resource_pattern := RegEx.new()
+              resource_pattern.compile('path="(res://[^"]+)"')
+              while not directories.is_empty():
+                  var directory: String = directories.pop_back()
+                  var access := DirAccess.open(directory)
+                  if access == null:
+                      push_error("SCENE_SCAN_DIR_FAIL: " + directory)
+                      failures += 1
+                      continue
+                  access.list_dir_begin()
+                  while true:
+                      var entry := access.get_next()
+                      if entry.is_empty():
+                          break
+                      if entry.begins_with("."):
+                          continue
+                      var path := directory.path_join(entry)
+                      if access.current_is_dir():
+                          directories.append(path)
+                      elif entry.ends_with(".tscn"):
+                          var source := FileAccess.get_file_as_string(path)
+                          for match_result in resource_pattern.search_all(source):
+                              var dependency: String = match_result.get_string(1)
+                              if not FileAccess.file_exists(dependency):
+                                  push_error("MISSING_SCENE_DEPENDENCY: " + path + " -> " + dependency)
+                                  failures += 1
+                          var packed := ResourceLoader.load(path) as PackedScene
+                          if packed == null:
+                              push_error("SCENE_LOAD_FAIL: " + path)
+                              failures += 1
+              print("SCENE_DEPENDENCY_VALIDATION failures=", failures)
+              quit(1 if failures > 0 else 0)
+          EOF
+          godot --headless --path . --script build/check_scenes.gd
+
+
+      - name: Validate all seven ship GLBs through Godot's runtime glTF parser
+        if: hashFiles('tests/assets/test_ship_assets.gd') != ''
+        run: godot --headless --path . --script res://tests/assets/test_ship_assets.gd
+
 
       - name: Export Windows Desktop build
         run: |
@@ -91,7 +248,18 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $game = Start-Process -FilePath ".\\build\\GALACTIC-FRONTIER.exe" -ArgumentList @("--headless", "--quit-after", "10") -Wait -PassThru
+          $exe = (Resolve-Path ".\\build\\GALACTIC-FRONTIER.exe").Path
+          & $exe --version
+          if ([int]$LASTEXITCODE -ne 0) {
+            throw "Windows executable failed its engine-version startup with code $LASTEXITCODE"
+          }
+          $stdout = Join-Path $PWD "build\\windows-smoke.stdout.log"
+          $stderr = Join-Path $PWD "build\\windows-smoke.stderr.log"
+          $game = Start-Process -FilePath $exe -ArgumentList @("--headless", "--verbose", "--quit-after", "10") -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           if ($game.ExitCode -ne 0) {
+            Write-Host "----- Windows stdout -----"
+            if (Test-Path $stdout) { Get-Content $stdout }
+            Write-Host "----- Windows stderr -----"
+            if (Test-Path $stderr) { Get-Content $stderr }
             throw "Windows executable exited with code $($game.ExitCode)"
           }

@@ -18,3 +18,18 @@ The first Blender preview was inspected. The model has a readable fighter silhou
 - Godot import/parser and scene smoke test for this branch: PENDING.
 - Interactive Windows playtest: NOT RUN.
 - The scene scale/orientation of the imported GLB must be confirmed by Godot CI and then by a human visual review.
+
+## Playable vertical-slice mission
+
+- `scenes/demo/ten_minute_demo.tscn` launches the Silent Relay mission using the real flight and combat systems.
+- Mission loop: fly to the relay, scan it with F, defeat three enemy waves, investigate and scan a wreck, defeat three further waves, then return to the orbital carrier.
+- The mission director provides navigation, objective, radio and elapsed-time HUD elements. Enemy waves use the existing enemy AI, projectile, shield and hull systems.
+- Default bootstrap now opens this mission. The standalone visual flight scene remains available for testing.
+- Automated scene startup is checked in Godot CI; interactive Windows playtesting and visual quality review remain separate acceptance gates.
+
+## Visual QA correction pass — 2026-11-12
+
+- Removed the inherited null WorldEnvironment override from `scenes/flight/visual_flight.tscn`. The procedural space scene creates its own WorldEnvironment; the null override could mask the sky and environment settings.
+- Increased the player and enemy GLB scale from 0.22 to 0.30 to improve readability in the chase camera.
+- Moved the chase camera closer and reduced its field of view from 74° to 66° to give the ship more screen area.
+- These are corrective hypotheses based on the failed visual capture, not accepted visual results. Godot CI and a new frame-by-frame capture review must pass before the scene is approved.

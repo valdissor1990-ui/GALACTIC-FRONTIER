@@ -150,6 +150,16 @@ def cylinder_between(name, start, end, radius, material, vertices=24, radius_end
     return finish_mesh(obj, material, 0.025, True)
 
 
+
+def add_detail_uv(mesh, scale=4.0):
+    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            vertex = mesh.vertices[vertex_index]
+            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+
 def loft_fuselage(name, sections, material, sides=12):
     vertices = []
     faces = []
@@ -173,6 +183,7 @@ def loft_fuselage(name, sections, material, sides=12):
     faces.append(tuple(last + i for i in range(sides)))
     mesh = bpy.data.meshes.new(name + " mesh")
     mesh.from_pydata(vertices, [], faces)
+    add_detail_uv(mesh)
     mesh.materials.append(material)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
@@ -198,6 +209,7 @@ def extruded_wing(name, outline, z_bottom, z_top, material, bevel=0.10):
         faces.append((i, j, j + count, i + count))
     mesh = bpy.data.meshes.new(name + " mesh")
     mesh.from_pydata(vertices, [], faces)
+    add_detail_uv(mesh)
     mesh.materials.append(material)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
@@ -352,6 +364,168 @@ def create_ship(materials):
     return root
 
 
+
+def add_micro_detail(root, materials):
+    """Second-pass close-range detailing for the player fighter."""
+    armor, dark, accent, white, glow = (
+        materials["armor"], materials["dark"], materials["accent"],
+        materials["white"], materials["glow"]
+    )
+    for side in (-1, 1):
+        # Individual armored wing tiles with recessed fasteners.
+        for idx, y in enumerate((-1.85, -0.75, 0.40, 1.45, 2.10)):
+            x = side * (2.05 + idx * .48)
+            cube("Player wing armor tile %s %s" % (side, idx),
+                 (x, y, .205), (.66, .78, .055), armor, .035,
+                 (0, 0, side * -.11))
+            for k in range(4):
+                uv_sphere("Player wing captive bolt %s %s %s" % (side, idx, k),
+                          (side*(abs(x)-.23+(k%2)*.46), y-.27+(k//2)*.54, .24),
+                          (.026,.026,.014), dark)
+        # Recessed panel separation lines and maintenance rails.
+        for idx in range(6):
+            y = -1.55 + idx*.66
+            cube("Player wing panel seam %s %s" % (side, idx),
+                 (side*(2.15+idx*.40), y, .235), (.035,.48,.018), dark, .006,
+                 (0,0,side*-.10))
+        # Exposed hinge cylinders, hydraulic lines and actuator covers.
+        cylinder_between("Player wing pivot %s" % side,
+                         (side*.82,-.10,-.22),(side*1.85,.55,-.22),.10,dark,radius_end=.07)
+        cube("Player actuator cover %s" % side,
+             (side*1.42,.42,-.17),(.34,.62,.12),armor,.055,(0,0,side*-.25))
+        # Engine heat exchanger stacks and ceramic nozzle collars.
+        for k in range(6):
+            y = 3.45 + k*.24
+            cube("Player engine heat sink %s %s" % (side,k),
+                 (side*1.34,y,-.43),(.52,.075,.13),dark,.022)
+        cylinder_between("Player engine ceramic collar %s" % side,
+                         (side*.92,6.05,-.02),(side*.92,6.35,-.02),.39,armor,radius_end=.34)
+        # Small optical/navigation modules on wing tips.
+        cube("Player wingtip nav pod %s" % side,
+             (side*4.98,2.28,.24),(.30,.50,.16),dark,.065)
+        uv_sphere("Player wingtip nav lens %s" % side,
+                  (side*5.00,2.30,.29),(.10,.14,.10),glow if side < 0 else accent)
+        # Antenna receivers and side-mounted sensor windows.
+        cylinder_between("Player dorsal antenna %s" % side,
+                         (side*.28,2.2,.54),(side*.28,2.2,1.05),.035,dark,radius_end=.018)
+        uv_sphere("Player antenna cap %s" % side,
+                  (side*.28,2.2,1.07),(.075,.075,.075),accent)
+        cube("Player side sensor window %s" % side,
+             (side*.82,-3.75,.12),(.035,.38,.20),glow,.025)
+        # Landing strut joints and reinforced skid ends.
+        uv_sphere("Player landing joint %s" % side,
+                  (side*.72,1.1,-.63),(.16,.16,.16),armor)
+        cube("Player landing skid reinforcement %s" % side,
+             (side*.72,1.1,-.87),(.50,.18,.12),dark,.045)
+    # Fine centerline panel seams, nose sensor bezel and belly service hatches.
+    cube("Player nose sensor armored bezel",(0,-7.18,.08),(.34,.24,.22),armor,.055)
+    for idx in range(5):
+        cube("Player dorsal spine segment %s" % idx,
+             (0,-.65+idx*1.05,.615),(.42,.68,.045),dark,.035)
+    cube("Player belly maintenance hatch",(0,.15,-.505),(.40,.92,.045),armor,.035)
+    for idx in range(6):
+        cube("Player ventral cooling slot %s" % idx,
+             (-.20+idx*.08,1.0,-.535),(.035,.52,.018),dark,.006)
+    # Keep all added geometry attached to the exported ship root.
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH","EMPTY"}:
+            obj.parent = root
+
+
+
+def add_integrated_surface_detail(root, materials):
+    """Add close-range aerospace structure that follows the ship's existing silhouette."""
+    hull, armor, dark, accent, glow, white = (
+        materials["hull"], materials["armor"], materials["dark"],
+        materials["accent"], materials["glow"], materials["white"]
+    )
+    # Tapered armor islands follow the swept wing planform instead of floating rectangular tiles.
+    for side in (-1, 1):
+        outline = [(side*x, y) for x, y in [
+            (1.10, -1.75), (1.55, -1.20), (4.55, 1.30),
+            (4.82, 1.92), (3.90, 1.72), (1.55, 0.72)
+        ]]
+        extruded_wing("Integrated wing armor skin %s" % side, outline, 0.115, 0.205, armor, 0.045)
+        outer = [(side*x, y) for x, y in [
+            (3.15, 0.75), (3.55, 0.98), (5.12, 2.16),
+            (4.75, 2.28), (3.70, 1.70)
+        ]]
+        extruded_wing("Wingtip armored cap %s" % side, outer, 0.105, 0.235, dark, 0.035)
+        # Leading-edge reinforcement rails and trailing-edge control surfaces.
+        cylinder_between("Wing leading edge spar %s" % side,
+                         (side*1.05, -2.35, 0.13), (side*5.15, 2.42, 0.13),
+                         0.075, dark, radius_end=0.035)
+        control_outline = [(side*x, y) for x, y in [
+            (2.05, 0.65), (2.55, 0.98), (4.72, 2.00),
+            (4.35, 2.12), (2.45, 1.32)
+        ]]
+        extruded_wing("Articulated trailing control surface %s" % side,
+                      control_outline, -0.005, 0.075, hull, 0.025)
+        # Recessed-looking maintenance bays with nested lips and fasteners.
+        for idx, (x, y) in enumerate(((2.15, -0.15), (3.05, 0.62), (3.88, 1.28))):
+            x *= side
+            cube("Wing service bay rim %s %s" % (side, idx),
+                 (x, y, 0.225), (0.48, 0.66, 0.045), dark, 0.055,
+                 (0, 0, side*-0.12))
+            cube("Wing service bay inset %s %s" % (side, idx),
+                 (x, y, 0.251), (0.34, 0.49, 0.025), armor, 0.035,
+                 (0, 0, side*-0.12))
+            for k in range(4):
+                uv_sphere("Wing bay captive bolt %s %s %s" % (side, idx, k),
+                          (x + side*(-0.16 + (k%2)*0.32), y - 0.22 + (k//2)*0.44, 0.269),
+                          (0.018, 0.018, 0.010), white)
+        # Recessed radiator trenches and repeated heat-exchanger vanes.
+        cube("Wing radiator trench %s" % side,
+             (side*1.78, 1.05, 0.235), (0.28, 1.05, 0.045), dark, 0.045,
+             (0, 0, side*-0.10))
+        for k in range(7):
+            cube("Wing radiator vane %s %s" % (side, k),
+                 (side*1.78, 0.62 + k*0.145, 0.264), (0.22, 0.045, 0.025),
+                 white if k in (0,6) else armor, 0.012)
+        # Side armor cheek panels make the central fuselage less cylindrical.
+        for y in (-3.8, -2.3, -0.7, 1.0, 2.6):
+            cube("Fuselage lateral armor cheek %s %.1f" % (side, y),
+                 (side*0.72, y, 0.10), (0.13, 0.82, 0.34), armor, 0.075,
+                 (0, side*0.10, 0))
+        # Engine nacelle shoulder fairings and segmented thermal shielding.
+        cube("Engine shoulder fairing %s" % side,
+             (side*1.02, 3.65, 0.40), (0.92, 1.18, 0.18), hull, 0.16)
+        for k in range(5):
+            y = 4.55 + k*0.22
+            cube("Engine thermal louver %s %s" % (side, k),
+                 (side*1.34, y, -0.43), (0.48, 0.075, 0.12), dark, 0.025)
+        cylinder_between("Engine nozzle armored lip %s" % side,
+                         (side*0.92, 6.12, -0.02), (side*0.92, 6.43, -0.02),
+                         0.39, armor, radius_end=0.33)
+        cylinder_between("Engine inner nozzle throat %s" % side,
+                         (side*0.92, 6.22, -0.02), (side*0.92, 6.48, -0.02),
+                         0.245, dark, radius_end=0.19)
+        # Navigation beacons are embedded into the wingtip armor.
+        uv_sphere("Embedded wingtip beacon %s" % side,
+                  (side*4.98, 2.30, 0.27), (0.075, 0.12, 0.065),
+                  glow if side < 0 else accent)
+    # Cockpit glazing receives a layered brow, rear pressure bulkhead and side sills.
+    cube("Cockpit forward brow", (0, -3.65, 0.77), (1.02, 0.22, 0.16), armor, 0.09)
+    cube("Cockpit rear pressure bulkhead", (0, -1.52, 0.68), (1.18, 0.24, 0.20), dark, 0.08)
+    for side in (-1, 1):
+        cube("Cockpit lower sill %s" % side, (side*0.53, -2.58, 0.55),
+             (0.10, 1.72, 0.13), armor, 0.045, (math.radians(-10),0,side*math.radians(-4)))
+        cube("Canopy rear latch %s" % side, (side*0.42, -1.60, 0.77),
+             (0.12, 0.18, 0.12), accent, 0.035)
+    # A continuous dorsal spine cap and angular ventral armor complete the centerline.
+    extruded_wing("Dorsal spine crown",
+                  [(-0.30,-1.65),(-0.22,-2.15),(0.22,-2.15),(0.30,-1.65),
+                   (0.27,2.85),(0.0,3.35),(-0.27,2.85)],
+                  0.48, 0.64, armor, 0.055)
+    cube("Ventral reactor access armor", (0, 1.55, -0.51), (0.66, 1.18, 0.12), armor, 0.07)
+    for idx in range(6):
+        cube("Ventral heat vent %s" % idx, (-0.25 + idx*0.10, 1.60, -0.58),
+             (0.035, 0.66, 0.025), dark, 0.008)
+    for obj in list(bpy.context.scene.objects):
+        if obj != root and obj.parent is None and obj.type in {"MESH", "EMPTY"}:
+            obj.parent = root
+
+
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
     # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
@@ -410,7 +584,8 @@ def main():
         "white": make_material("Identification ceramic", (0.62, 0.72, 0.78), 0.48, 0.30),
     }
 
-    create_ship(materials)
+    root = create_ship(materials)
+    add_integrated_surface_detail(root, materials)
     setup_scene(materials, out_dir)
 
     # Select only the ship hierarchy for clean GLB export.

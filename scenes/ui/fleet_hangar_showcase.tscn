@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/fleet_hangar.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/fleet_hangar_showcase_director.gd" id="2"]
+
+[node name="FleetHangarShowcase" type="Node"]
+script = ExtResource("2")
+
+[node name="FleetHangar" parent="." instance=ExtResource("1")]

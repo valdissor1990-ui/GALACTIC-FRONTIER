@@ -3,6 +3,7 @@ class_name CombatEncounterController
 ## Spawns a single enemy fighter, waits for its destruction, then respawns after a delay.
 
 @export var enemy_scene: PackedScene
+@export var auto_start: bool = true
 @export var player_path: NodePath
 @export var spawn_position: Vector3 = Vector3(0.0, 0.0, -80.0)
 @export_range(0.5, 60.0, 0.5) var respawn_delay: float = 4.0
@@ -21,7 +22,8 @@ func _ready() -> void:
 	if _player == null:
 		push_error("CombatEncounterController could not resolve player_path.")
 		return
-	call_deferred("start_encounter")
+	if auto_start:
+		call_deferred("start_encounter")
 
 
 func _process(delta: float) -> void:

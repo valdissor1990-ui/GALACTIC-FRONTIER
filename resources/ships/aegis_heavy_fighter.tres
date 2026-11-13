@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShipFlightConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/flight/ship_flight_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+max_speed = 80.0
+acceleration = 28.0
+drag = 0.95
+boost_speed_multiplier = 1.45
+boost_acceleration_multiplier = 1.25
+brake_drag = 19.0
+rotation_speed = 1.05
+rotation_acceleration = 4.4
+rotation_stabilization = 3.5
+boost_capacity = 12.0
+boost_recharge_rate = 1.8

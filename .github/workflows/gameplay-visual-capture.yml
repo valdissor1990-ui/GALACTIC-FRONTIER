@@ -1,0 +1,205 @@
+name: Gameplay visual quality capture
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+      - chatgpt/fullhd-showcase-qa
+      - chatgpt/cockpit-camera-polish
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
+
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - chatgpt/ten-minute-vertical-slice
+      - chatgpt/ship-art-production
+      - chatgpt/audit-fixes-pr24
+      - chatgpt/mission-save-integration
+      - chatgpt/campaign-objectives
+      - chatgpt/campaign-story-integration
+    paths:
+      - "scenes/**"
+      - "scripts/**"
+      - "assets/**"
+      - ".github/workflows/gameplay-visual-capture.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gameplay-visual-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Render and inspect real gameplay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Install virtual display and screenshot tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xvfb python3-pil libvulkan1 mesa-vulkan-drivers vulkan-tools
+          godot --version
+          xvfb-run -a vulkaninfo --summary
+
+      - name: Verify all seven original ship GLBs are present
+        run: |
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            test -s "assets/models/ships/${ship}.glb"
+          done
+
+      - name: Import project and validate scripts and GLB resources
+        run: godot --headless --editor --path . --import --quit
+
+      - name: Capture eight deterministic Full HD gameplay screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/screenshots
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 600); do
+              if grep -q "SHOWCASE_SEQUENCE_COMPLETE" build/gameplay-showcase.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data"/gameplay-*.png build/screenshots/ 2>/dev/null || true
+            cp "$app_data"/carrier-services.png build/screenshots/ 2>/dev/null || true
+            cp "$app_data"/contract-board.png build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              echo "Showcase did not finish within 150 seconds; captured $(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l) screenshots."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
+            if ! grep -Eq "Vulkan [0-9]" build/gameplay-showcase.log || ! grep -q "Forward+" build/gameplay-showcase.log; then
+              echo "Visual QA did not use the required Forward+ Vulkan renderer."
+              cat build/gameplay-showcase.log
+              exit 1
+            fi
+            test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
+      - name: Capture seven-ship Full HD hangar lineup in Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 240); do
+              if grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data/fleet-hangar.png" build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            if ! grep -Eq "Vulkan [0-9]" build/fleet-hangar.log || ! grep -q "Forward+" build/fleet-hangar.log; then
+              echo "Hangar capture did not use the required Forward+ Vulkan renderer."
+              cat build/fleet-hangar.log
+              exit 1
+            fi
+            test -s build/screenshots/fleet-hangar.png
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
+      - name: Build and validate screenshot contact sheet
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          files = sorted(Path("build/screenshots").glob("gameplay-*.png"))
+          if len(files) != 8:
+              raise SystemExit(f"Expected 8 screenshots, got {len(files)}")
+
+          thumbs = []
+          for path in files:
+              image = Image.open(path).convert("RGB")
+              if image.size != (1920, 1080):
+                  raise SystemExit(f"Unexpected screenshot size: {path} {image.size}")
+              extrema = image.convert("L").getextrema()
+              if extrema[1] - extrema[0] < 12:
+                  raise SystemExit(f"Screenshot has almost no visual detail: {path}")
+              thumbs.append(image.resize((480, 270)))
+
+          sheet = Image.new("RGB", (960, 1080), "#10151d")
+          for i, image in enumerate(thumbs):
+              sheet.paste(image, ((i % 2) * 480, (i // 2) * 270))
+          sheet.save("build/screenshots/contact-sheet.png")
+          PY
+
+      - name: Verify full mission sequence and screenshot evidence
+        run: |
+          cat build/gameplay-showcase.log
+          test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
+          test -s build/screenshots/contact-sheet.png
+          test -s build/screenshots/fleet-hangar.png
+          test -s build/screenshots/carrier-services.png
+          test -s build/screenshots/contract-board.png
+          python3 - <<'PY'
+          from PIL import Image
+          for path in ("build/screenshots/fleet-hangar.png", "build/screenshots/carrier-services.png", "build/screenshots/contract-board.png"):
+              image = Image.open(path)
+              if image.size != (1920, 1080):
+                  raise SystemExit(f"Unexpected Full HD screenshot size: {path} {image.size}")
+          PY
+          grep -E "FLEET_HANGAR_SHIPS_LOADED=7" build/fleet-hangar.log
+          grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
+          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png build/screenshots/carrier-services.png build/screenshots/contract-board.png
+          grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
+          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 10
+          for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
+            grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
+          done
+          grep -E "SHOWCASE_SEQUENCE_COMPLETE stage=7" build/gameplay-showcase.log
+          if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
+            echo "Gameplay visual capture contains broken GLB resources or scene overrides."
+            exit 1
+          fi
+
+      - name: Upload Full HD gameplay screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GALACTIC-FRONTIER-gameplay-visual-qa-fullhd
+          path: |
+            build/screenshots/*.png
+            build/gameplay-showcase.log
+            build/fleet-hangar.log
+          if-no-files-found: error
+          retention-days: 30
