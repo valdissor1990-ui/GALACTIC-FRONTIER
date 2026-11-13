@@ -47,8 +47,8 @@ fov = 60.0
 
 ; Forward-biased cockpit framing keeps the canopy structure out of the central flight view.
 [node name="CockpitCamera" parent="PlayerShip/CameraRig"]
-position = Vector3(0, 0.20, -0.92)
-fov = 72.0
+position = Vector3(0, 0.18, -0.25)
+fov = 70.0
 
 [node name="CombatEncounterController" parent="." index="6"]
 enemy_scene = ExtResource("4")
