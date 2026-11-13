@@ -57,6 +57,14 @@ func _capture_sequence() -> void:
 	print("SPACE_SHOWCASE_CAMERA_ACTIVE=", get_viewport().get_camera_3d() == _camera,
 		" diagnostic_save=", diagnostic_error,
 		" children=", _environment.get_child_count())
+	var visible_mesh_children := 0
+	for child in _environment.get_children():
+		if child is MeshInstance3D and child.mesh != null and child.visible:
+			visible_mesh_children += 1
+	print("SPACE_SHOWCASE_VISIBLE_MESH_CHILDREN=", visible_mesh_children,
+		" camera_position=", _camera.global_position,
+		" camera_forward=", -_camera.global_basis.z,
+		" world_environment=", _environment.get_node_or_null("WorldEnvironment") != null)
 	diagnostic_sphere.queue_free()
 	await get_tree().process_frame
 
