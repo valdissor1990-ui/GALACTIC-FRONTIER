@@ -87,10 +87,11 @@ const CONTRACT_CATALOG := {
 const STORY_FLAG_KEYS := [
 	"campaign_started", "m01_done", "vesper_access", "m02_done", "m03_done",
 	"shared_helix", "shared_union", "kept_private", "kestrel_access",
-	"m04_done", "relay_contact_1", "act1_complete", "act2_complete",
-	"act3_complete", "act4_complete", "rheya_hired", "fisk_rivalry_stage_1",
-	"fisk_rivalry_stage_2", "fisk_rivalry_stage_3", "dock_lien_cleared",
-	"ending_helix", "ending_union", "ending_seal", "ending_custody", "ending_break"
+	"m04_done", "m05_done", "relay_contact_1", "act1_complete",
+	"act2_complete", "act3_complete", "act4_complete", "dock_lien_status",
+	"rheya_hired", "fisk_rivalry_stage_1", "fisk_rivalry_stage_2",
+	"fisk_rivalry_stage_3", "act4_path_helix", "act4_path_union",
+	"act4_path_seal", "act4_path_custody", "act4_path_break"
 ]
 
 const FLYABLE_SHIPS := {
