@@ -94,7 +94,7 @@ jobs:
               cat build/gameplay-showcase.log
               exit 1
             fi
-            if ! grep -q "Vulkan API" build/gameplay-showcase.log || ! grep -q "Forward+" build/gameplay-showcase.log; then
+            if ! grep -Eq "Vulkan [0-9]" build/gameplay-showcase.log || ! grep -q "Forward+" build/gameplay-showcase.log; then
               echo "Visual QA did not use the required Forward+ Vulkan renderer."
               cat build/gameplay-showcase.log
               exit 1
