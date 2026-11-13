@@ -11,17 +11,30 @@ var _passed: int = 0
 
 
 func _initialize() -> void:
+	call_deferred("_run_tests")
+
+
+func _run_tests() -> void:
 	print("=== GALACTIC FRONTIER — Pause & mouse tests ===")
 
 	_test_mouse_not_accumulated_while_paused()
+	await process_frame
 	_test_mouse_delta_is_capped_single_event()
+	await process_frame
 	_test_mouse_delta_capped_across_multiple_events()
+	await process_frame
 	_test_focus_out_clears_mouse_delta()
+	await process_frame
 	_test_focus_in_clears_mouse_delta()
+	await process_frame
 	_test_focus_in_captures_mouse_when_not_paused()
+	await process_frame
 	_test_focus_in_does_not_capture_mouse_when_paused()
+	await process_frame
 	_test_hud_toggle_pause_cycle()
+	await process_frame
 	_test_sensitivity_clamped()
+	await process_frame
 
 	print("")
 	if _failed == 0:
