@@ -474,19 +474,19 @@ func _build_nebulae() -> void:
 	_add_nebula(
 		"PrimaryNebula",
 		Vector3(-138.0, 54.0, -465.0),
-		Vector2(310.0, 178.0),
+		Vector2(220.0, 126.0),
 		_theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)),
 		1138
 	)
 	_add_nebula(
 		"SecondaryNebula",
 		Vector3(158.0, -42.0, -520.0),
-		Vector2(270.0, 152.0),
+		Vector2(190.0, 110.0),
 		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)),
 		8821
 	)
-	_add_nebula("TertiaryNebula", Vector3(-265.0, -112.0, -760.0), Vector2(360.0, 220.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
-	_add_nebula("FarNebula", Vector3(285.0, 185.0, -1120.0), Vector2(430.0, 270.0), _theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)) * Color(1.0, 1.0, 1.0, 0.44), 77291)
+	_add_nebula("TertiaryNebula", Vector3(-265.0, -112.0, -760.0), Vector2(250.0, 152.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
+	_add_nebula("FarNebula", Vector3(285.0, 185.0, -1120.0), Vector2(300.0, 188.0), _theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)) * Color(1.0, 1.0, 1.0, 0.44), 77291)
 
 
 func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint: Color, seed_value: int) -> void:
