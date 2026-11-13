@@ -1,6 +1,7 @@
 #include "GFWeaponComponent.h"
 
 #include "GFProjectile.h"
+#include "GFShipVfxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -54,6 +55,14 @@ bool UGFWeaponComponent::FireOnce()
         Movement->InitialSpeed = ProjectileSpeed;
         Movement->MaxSpeed = ProjectileSpeed;
         Movement->Velocity = Owner->GetActorForwardVector() * ProjectileSpeed;
+    }
+
+    if (bPlayMuzzleVfx)
+    {
+        if (UGFShipVfxComponent* Vfx = Owner->FindComponentByClass<UGFShipVfxComponent>())
+        {
+            Vfx->PlayMuzzleFlash(MuzzleOffset);
+        }
     }
     return true;
 }
