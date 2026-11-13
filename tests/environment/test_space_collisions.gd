@@ -25,7 +25,9 @@ func _run() -> void:
 		var expected_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
 		var starfield := environment.get_node_or_null("Starfield") as MultiMeshInstance3D
 		_check(starfield != null and starfield.multimesh.instance_count == expected_stars, "starfield instance count follows the active quality preset")
-		_check(asteroid_field != null and asteroid_field.multimesh.instance_count == quality.asteroid_count() + 28, "asteroid count follows the active quality preset")
+		var expected_asteroids := quality.asteroid_count() + 28
+		var actual_asteroids := asteroid_field.multimesh.instance_count if asteroid_field != null else -1
+		_check(asteroid_field != null and actual_asteroids == expected_asteroids, "asteroid count follows active preset (actual=%d expected=%d base=%d)" % [actual_asteroids, expected_asteroids, environment.asteroid_count])
 		var quality_planet := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
 		_check(quality_planet != null and (quality_planet.mesh as SphereMesh).radial_segments == quality.planet_segments() * 2, "planet tessellation follows the active quality preset")
 	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
