@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -16,6 +16,7 @@
 [ext_resource type="Shader" path="res://assets/shaders/engine_plume.gdshader" id="14"]
 [ext_resource type="Script" path="res://scripts/vfx/engine_thrust_fx.gd" id="15"]
 [ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="16"]
+[ext_resource type="Script" path="res://scripts/vfx/gravitational_lens_fx.gd" id="17"]
 
 [sub_resource type="ShaderMaterial" id="Material_hull"]
 render_priority = 0
@@ -189,6 +190,11 @@ position = Vector3(0, 0, -2.8)
 script = ExtResource("16")
 vignette_strength = 0.48
 chroma_strength = 0.0018
+
+[node name="GravitationalLensFx" type="Node" parent="."]
+script = ExtResource("17")
+camera_path = NodePath("../PlayerShip/CameraRig/ChaseCamera")
+strength_multiplier = 1.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 layer = 10
