@@ -89,6 +89,10 @@ static func _finished_material(source: StandardMaterial3D) -> StandardMaterial3D
 	if material.roughness_texture == null:
 		material.roughness_texture = _surface_roughness_noise
 		material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	# The fleet uses painted aerospace armor, not mirror-finished bare metal.
+	# A restrained metalness ceiling keeps the hull readable without relying on
+	# an expensive reflection probe in the large open-space scene.
+	material.metallic = minf(material.metallic, 0.62)
 	material.roughness = clampf(material.roughness, 0.24, 0.88)
 	return material
 
