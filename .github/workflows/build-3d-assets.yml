@@ -10,7 +10,7 @@ on:
       - ".github/workflows/build-3d-assets.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: galactic-frontier-asset-build-${{ github.ref }}
@@ -146,6 +146,34 @@ jobs:
           Path("build/unreal-assets/BUILD_REPORT.md").write_text("\\n".join(summary) + "\\n")
           print("\\n".join(summary))
           PY
+
+
+      - name: Publish validated models into the Unreal source folders
+        run: |
+          set -euo pipefail
+          mkdir -p art_source/ships assets/models/ships assets/models/space assets/models/planets assets/previews
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            cp "build/unreal-assets/$ship.blend" "art_source/ships/$ship.blend"
+            cp "build/unreal-assets/$ship.glb" "assets/models/ships/$ship.glb"
+            cp "build/unreal-assets/${ship}_preview.png" "assets/previews/${ship}_preview.png"
+          done
+          cp build/unreal-assets/environment/space/space_backdrop.glb assets/models/space/
+          cp build/unreal-assets/environment/planets/*.glb assets/models/planets/
+          cp build/unreal-assets/build-validation.json assets/models/ships/fleet-build-validation.json
+          cp build/unreal-assets/BUILD_REPORT.md assets/models/BUILD_REPORT.md
+
+      - name: Commit validated generated assets to migration branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art_source/ships assets/models/ships assets/models/space assets/models/planets assets/models/BUILD_REPORT.md assets/previews
+          if git diff --cached --quiet; then
+            echo "Generated models are identical to the current branch; no asset commit needed."
+          else
+            git commit -m "Build validated ship fleet, space backdrop and planets"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Upload complete model package
         uses: actions/upload-artifact@v4
