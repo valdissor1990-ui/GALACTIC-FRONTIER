@@ -70,6 +70,12 @@ func _build_menu() -> void:
 	start.custom_minimum_size = Vector2(390, 54)
 	start.pressed.connect(_start_game)
 	layout.add_child(start)
+	var contracts := Button.new()
+	contracts.name = "ContractBoardButton"
+	contracts.text = "  STAR MAP  /  CONTRACT BOARD"
+	contracts.custom_minimum_size = Vector2(390, 48)
+	contracts.pressed.connect(_open_contract_board)
+	layout.add_child(contracts)
 	var hangar := Button.new()
 	hangar.name = "FleetHangarButton"
 	hangar.text = "  FLEET HANGAR"
@@ -193,6 +199,12 @@ func _is_valid_checkpoint(saved: Dictionary) -> bool:
 		return false
 	var stage := int(payload.get("stage", -1))
 	return stage >= 0 and stage <= 6
+
+
+func _open_contract_board() -> void:
+	var error := get_tree().change_scene_to_file("res://scenes/ui/contract_board.tscn")
+	if error != OK:
+		push_error("Could not open the star map and contract board: %s" % error)
 
 
 func _open_hangar() -> void:
