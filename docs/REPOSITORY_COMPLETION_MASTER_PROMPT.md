@@ -107,6 +107,28 @@
 - Убедиться, что .blend остаются в art_source, а Godot импортирует только предназначенные GLB/текстуры.
 - Устранить гонки и ненужные повторные запуски Blender CI, проверить concurrency и публикацию артефактов.
 
+## 3.4 Обязательный графический эталон 2022 года
+
+Считать источниками приёмки:
+- `docs/GRAPHICS_TARGET_2022.md`;
+- `docs/GRAPHICS_2022_ACCEPTANCE_MATRIX.md`;
+- `docs/VISUAL_TARGET.md`;
+- `docs/FLEET_VISUAL_QA_2026-11-13.md`.
+
+Цель: премиальная PC-подача уровня сильных игр 2018–2022 годов, нативный Full HD 1920×1080, целевой бюджет 60 FPS (16,7 ms кадр) на GTX 1660 / RX 580 классе. Это целевой критерий, а не обещание: подтверждать только реальным профилированием на физическом GPU.
+
+Обязательные технические критерии:
+- Forward+ / Vulkan — продуктовый рендерер; не принимать Compatibility/OpenGL captures как доказательство качества.
+- Hero ship textures до 2K, вторичные ассеты обычно 1K; mipmaps, anisotropic filtering и GPU compression. Не использовать 4K без отдельного измеренного обоснования.
+- PBR: albedo + tangent-space normal + ORM (AO/roughness/metallic) + emissive там, где оправдано.
+- Проверять UV checker, texel density, overlap/stretching, нормали, tangents и фактическое наличие embedded texture images в GLB.
+- LOD0/LOD1/LOD2 с измеренными порогами, отсутствием заметного popping и отдельными budgets по классам.
+- Замерять frame time, 1% lows, GPU/CPU time, VRAM, draw calls и shader warm-up; нельзя утверждать 60 FPS по headless CI.
+- Не компенсировать отсутствующую геометрию bloom, outlines, post-processing или screen-space decals.
+- Визуальные кадры должны быть Forward+ 1920×1080 и включать фронт/бок/верх/зад/3⁄4/macro для кораблей, планетные дальний/средний/ближний планы, бой и UI на светлом/тёмном фоне.
+
+Приёмка графики — отдельно от технической сборки. Сверять каждый корабль с SVG art direction, а не только с текущей процедурной моделью.
+
 ## 4. КОСМОС И ОКРУЖЕНИЕ — ПРИОРИТЕТ №2
 
 Доработать существующую среду, а не строить новую вместо неё:
@@ -245,6 +267,14 @@
 Не использовать «готово», если есть только коммит. Всегда указывать точные branch, base SHA, head SHA, PR, файлы, CI run URLs, результаты тестов и оставшиеся риски.
 
 ## 12. ПАКЕТЫ РАБОТ И ПОРЯДОК
+
+Перед Пакетом A также выполнить отдельный P0 backlog из Full HD roadmap:
+- проверить Full HD anchors/safe areas и локализацию RU/EN;
+- подтвердить Forward+ Vulkan в visual capture workflow;
+- завершить swept projectile collision regression;
+- сделать gameplay RNG детерминированным по seed;
+- ограничить projectile lights и включать SSAO только в подходящих interior scenes;
+- выполнить mesh consolidation и LOD budgets по всем семи кораблям.
 
 Пакет A — Repo map и audit baseline: полная карта веток/PR/файлов/тестов/активов; определить единый базовый интеграционный поток.
 Пакет B — Hero ship: законченная детализация Player Fighter Mk.I, UV/PBR/GLB, превью, импорт Godot, сцены hangar/flight.
