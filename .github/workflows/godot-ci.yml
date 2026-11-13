@@ -103,6 +103,9 @@ jobs:
         if: hashFiles('tests/combat/test_combat_systems.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_combat_systems.gd
 
+      - name: Run swept projectile collision regression test
+        run: godot --headless --path . --script res://tests/combat/test_projectile_sweep.gd
+
       - name: Run updater version and configuration tests
         run: godot --headless --path . --script res://tests/update/test_update_manager.gd
 

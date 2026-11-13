@@ -9,6 +9,7 @@ class_name CombatProjectile
 var _direction: Vector3 = Vector3.FORWARD
 var _source: Node3D
 var _remaining_lifetime: float = 5.0
+var _impacted: bool = false
 
 
 func configure(direction: Vector3, source: Node3D, projectile_speed: float, projectile_damage: float) -> void:
@@ -25,10 +26,72 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	global_position += _direction * speed * delta
+	var motion := _direction * speed * delta
+	if _sweep_for_impact(motion):
+		_remaining_lifetime -= delta
+		if _remaining_lifetime <= 0.0 and is_inside_tree():
+			queue_free()
+		return
+	global_position += motion
 	_remaining_lifetime -= delta
 	if _remaining_lifetime <= 0.0:
 		queue_free()
+
+
+func _sweep_for_impact(motion: Vector3) -> bool:
+	if motion.length_squared() <= 0.000001 or not is_inside_tree():
+		return false
+	var space := get_world_3d().direct_space_state
+	var excluded: Array[RID] = []
+	if _source is CollisionObject3D:
+		excluded.append((_source as CollisionObject3D).get_rid())
+
+	# Nine parallel rays approximate the projectile's 0.12 m spherical radius.
+	# This avoids discrete overlap tunnelling without allocating physics bodies.
+	var right_raw := _direction.cross(Vector3.UP)
+	if right_raw.length_squared() <= 0.0001:
+		right_raw = _direction.cross(Vector3.RIGHT)
+	var right := right_raw.normalized()
+	var up := _direction.cross(right).normalized()
+	var radius := 0.12
+	var diagonal := radius * 0.70710678
+	var offsets: Array[Vector3] = [
+		Vector3.ZERO,
+		right * radius, -right * radius,
+		up * radius, -up * radius,
+		(right + up) * diagonal, (right - up) * diagonal,
+		(-right + up) * diagonal, (-right - up) * diagonal
+	]
+	var best_distance_squared := INF
+	var best_collider: Node3D
+	var best_position := global_position
+	for offset in offsets:
+		var ray := PhysicsRayQueryParameters3D.create(
+			global_position + offset,
+			global_position + motion + offset,
+			collision_mask,
+			excluded
+		)
+		ray.collide_with_areas = false
+		ray.collide_with_bodies = true
+		var hit := space.intersect_ray(ray)
+		if hit.is_empty():
+			continue
+		var collider: Variant = hit.get("collider")
+		if not collider is Node3D or _is_source_or_child(collider as Node3D):
+			continue
+		var hit_position: Vector3 = hit.get("position", global_position + motion)
+		var projectile_position := hit_position - offset
+		var distance_squared := global_position.distance_squared_to(projectile_position)
+		if distance_squared < best_distance_squared:
+			best_distance_squared = distance_squared
+			best_collider = collider as Node3D
+			best_position = projectile_position
+	if best_collider == null:
+		return false
+	global_position = best_position
+	_on_body_entered(best_collider)
+	return true
 
 
 func _create_trail() -> void:
@@ -78,8 +141,9 @@ func _create_trail() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if body == null or _is_source_or_child(body):
+	if _impacted or body == null or _is_source_or_child(body):
 		return
+	_impacted = true
 
 	var audio_manager := get_node_or_null("/root/AudioManager")
 	if audio_manager != null:
