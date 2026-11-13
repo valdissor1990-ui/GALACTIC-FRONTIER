@@ -334,6 +334,11 @@ void fragment() {
 	float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
 	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands);
 	vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
+	float storm_distance = length(vec2((UV.x - 0.63) * 1.8, UV.y - 0.43));
+	float storm_edge = 1.0 - smoothstep(0.025, 0.105, storm_distance);
+	float storm_swirl = sin(atan(UV.y - 0.43, (UV.x - 0.63) * 1.8) * 7.0 + storm_distance * 210.0);
+	vec3 storm_color = mix(band_highlight.rgb, band_dark.rgb, smoothstep(-0.4, 0.65, storm_swirl));
+	band_color = mix(band_color, storm_color, storm_edge * 0.82);
 	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
 	ROUGHNESS = 0.91;
 	METALLIC = 0.0;
