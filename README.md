@@ -6,6 +6,8 @@
 - [Инструкция для Grok](GROK_START_HERE.md)
 - [Подробный мастер-план](docs/PROJECT_MASTER_PLAN.md)
 - [Дорожная карта](docs/ROADMAP.md)
+- [Графическая библия и художественный стандарт](docs/GRAPHICS_ART_BIBLE.md)
+- [Краткий визуальный эталон](docs/VISUAL_TARGET.md)
 - [Журнал решений](docs/DECISIONS.md)
 - [Аудит Grok от 11.11.2026](docs/AUDIT_GROK_2026-11-11.md)
 - [Реестр сторонних компонентов и лицензий](docs/THIRD_PARTY_NOTICES.md)
