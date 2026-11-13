@@ -45,6 +45,9 @@ func _run() -> void:
 	_check(environment.has_node("NacreonRings"), "the distant gas giant has a separate ring mesh")
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
+	var star_clusters := environment.get_node_or_null("ChromaticStarClusters") as MultiMeshInstance3D
+	_check(star_clusters != null and star_clusters.multimesh.instance_count == 552 and star_clusters.multimesh.use_custom_data, "six chromatic star clusters use one custom-data MultiMesh")
+	_check(environment.has_node("PrimaryNebula") and environment.has_node("SecondaryNebula") and environment.has_node("TertiaryNebula") and environment.has_node("FarNebula"), "four nebula layers are generated at different depths")
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
