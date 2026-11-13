@@ -13,6 +13,7 @@ on:
       - chatgpt/campaign-objectives
       - chatgpt/campaign-runtime-manager
       - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
   pull_request:
@@ -27,6 +28,7 @@ on:
       - chatgpt/campaign-objectives
       - chatgpt/m01-m05-story-integration
       - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
   workflow_dispatch:
 
 permissions:
