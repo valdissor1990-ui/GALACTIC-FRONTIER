@@ -1110,7 +1110,7 @@ func _build_comet_landmark() -> void:
 	nucleus_material.emission_energy_multiplier = 0.34
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
-	nucleus.scale = Vector3(20.0, 14.0, 18.0)
+	nucleus.scale = Vector3(24.0, 17.0, 22.0)
 	_comet_root.add_child(nucleus)
 
 	var coma := MeshInstance3D.new()
@@ -1138,7 +1138,7 @@ void fragment() {
 	coma_material.set_shader_parameter("coma_tint", Color(0.42, 0.76, 1.0, 0.34))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
-	coma.scale = Vector3(44.0, 34.0, 38.0)
+	coma.scale = Vector3(54.0, 42.0, 48.0)
 	_comet_root.add_child(coma)
 
 	var tail := MeshInstance3D.new()
