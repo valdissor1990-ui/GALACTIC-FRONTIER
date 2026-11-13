@@ -30,7 +30,13 @@ func _run() -> void:
 	var projectile_scene := load("res://scenes/combat/projectile.tscn") as PackedScene
 	var projectile := projectile_scene.instantiate() as CombatProjectile
 	world.add_child(projectile)
-	projectile.configure(Vector3.FORWARD, null, 180.0, 18.0)
+	var source := Node3D.new()
+	source.name = "FreedProjectileOwner"
+	world.add_child(source)
+	projectile.configure(Vector3.FORWARD, source, 180.0, 18.0)
+	# The firing ship can be destroyed while its projectile is still in flight.
+	source.queue_free()
+	await process_frame
 	await physics_frame
 	await process_frame
 
