@@ -247,7 +247,7 @@ func _update_hud() -> void:
 		return
 	var objective := ""
 	match stage:
-		MissionStage.OUTBOUND: objective = "FLY TO THE SILENT RELAY"
+		MissionStage.OUTBOUND: objective = "FLY TO THE %s RELAY" % _system_name.to_upper()
 		MissionStage.SCAN_RELAY: objective = "SCAN RELAY CORE  [F]"
 		MissionStage.DEFEND_RELAY: objective = "DEFEND THE RELAY  |  WAVE %d/%d  |  HOSTILES %d" % [wave_index, _waves_per_encounter, enemies_remaining]
 		MissionStage.INVESTIGATE_WRECK: objective = "INVESTIGATE THE WRECK"
@@ -308,11 +308,11 @@ func _build_mission_hud() -> void:
 	column.add_theme_constant_override("separation", 7)
 	panel.add_child(column)
 	_mission_label = Label.new()
-	_mission_label.text = "CONTRACT  /  OPERATION SILENT RELAY"
+	_mission_label.text = "CONTRACT  /  %s  •  %s" % [_contract_name.to_upper(), _system_name.to_upper()]
 	_mission_label.add_theme_color_override("font_color", Color(0.35, 0.82, 1.0))
 	column.add_child(_mission_label)
 	_objective_label = Label.new()
-	_objective_label.text = "FLY TO THE SILENT RELAY"
+	_objective_label.text = "FLY TO THE %s RELAY" % _system_name.to_upper()
 	_objective_label.add_theme_font_size_override("font_size", 19)
 	_objective_label.add_theme_color_override("font_color", Color(0.92, 0.96, 1.0))
 	column.add_child(_objective_label)
@@ -916,7 +916,7 @@ func _show_mission_result(success: bool) -> void:
 	title.add_theme_color_override("font_color", Color("#67d9f3") if success else Color("#ff887d"))
 	column.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "THE SILENT RELAY  /  DEBRIEFING"
+	subtitle.text = _contract_name.to_upper() + "  /  DEBRIEFING"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_color_override("font_color", Color("#9eb8c8"))
 	column.add_child(subtitle)
