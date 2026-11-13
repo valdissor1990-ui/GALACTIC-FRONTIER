@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - chatgpt/ship-art-production
+      - chatgpt/ship-art-uv-pipeline
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
