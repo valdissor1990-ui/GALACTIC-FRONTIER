@@ -1,4 +1,4 @@
-[gd_scene load_steps=44 format=3]
+[gd_scene load_steps=45 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -16,6 +16,7 @@
 [ext_resource type="Shader" path="res://shaders/space/test_flight_star_sky.gdshader" id="13"]
 [ext_resource type="Script" path="res://scripts/graphics/dynamic_resolution.gd" id="14"]
 [ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="15"]
+[ext_resource type="Script" path="res://scripts/vfx/gravitational_lens_fx.gd" id="16"]
 
 
 [sub_resource type="BoxMesh" id="BoxMesh_wing_panel"]
@@ -162,6 +163,9 @@ script = ExtResource("14")
 
 [node name="ScreenPostFx" type="CanvasLayer" parent="."]
 script = ExtResource("15")
+
+[node name="GravitationalLensFx" type="Node" parent="."]
+script = ExtResource("16")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_space")
