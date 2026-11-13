@@ -8,6 +8,8 @@ are inventoried per source file; multi-mesh GLBs are deliberately flagged
 rather than silently treated as complete single-mesh ships.
 """
 from pathlib import Path
+import json
+import struct
 import unreal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -19,11 +21,101 @@ def log(message):
     unreal.log("[GF Setup] " + str(message))
 
 
+def inspect_glb_scene(source_path: Path):
+    """Read the GLB JSON chunk and log the complete source node/mesh hierarchy.
+
+    This does not replace Interchange import. It provides a source-of-truth
+    inventory so assembly can be validated against original node transforms.
+    """
+    try:
+        with source_path.open("rb") as stream:
+            header = stream.read(12)
+            if len(header) != 12:
+                raise ValueError("truncated GLB header")
+            magic, version, total_length = struct.unpack("<4sII", header)
+            if magic != b"glTF" or version != 2:
+                raise ValueError("expected binary glTF 2.0")
+            if total_length < 20:
+                raise ValueError("invalid GLB length")
+            json_length, json_type = struct.unpack("<I4s", stream.read(8))
+            if json_type != b"JSON" or json_length > total_length - 20:
+                raise ValueError("missing or invalid GLB JSON chunk")
+            document = json.loads(stream.read(json_length).decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+
+        nodes = document.get("nodes", [])
+        meshes = document.get("meshes", [])
+        materials = document.get("materials", [])
+        scenes = document.get("scenes", [])
+        scene_index = document.get("scene", 0)
+        roots = scenes[scene_index].get("nodes", []) if scenes and scene_index < len(scenes) else [
+            i for i, node in enumerate(nodes)
+            if not any(i in parent.get("children", []) for parent in nodes)
+        ]
+
+        mesh_instances = []
+        visited = set()
+
+        def visit(node_index, parent_path):
+            if node_index < 0 or node_index >= len(nodes):
+                log("GLB hierarchy warning: invalid node index " + str(node_index))
+                return
+            node = nodes[node_index]
+            node_name = node.get("name", "Node_" + str(node_index))
+            node_path = parent_path + "/" + node_name
+            if node_index in visited:
+                log("GLB hierarchy warning: repeated/cyclic node reference " + node_path)
+                return
+            visited.add(node_index)
+            mesh_index = node.get("mesh")
+            if mesh_index is not None:
+                if 0 <= mesh_index < len(meshes):
+                    mesh = meshes[mesh_index]
+                    primitive_materials = []
+                    for primitive in mesh.get("primitives", []):
+                        material_index = primitive.get("material")
+                        primitive_materials.append(
+                            materials[material_index].get("name", "Material_" + str(material_index))
+                            if material_index is not None and 0 <= material_index < len(materials)
+                            else None)
+                    item = {
+                        "node": node_path,
+                        "node_index": node_index,
+                        "mesh_index": mesh_index,
+                        "mesh_name": mesh.get("name", "Mesh_" + str(mesh_index)),
+                        "matrix": node.get("matrix"),
+                        "translation": node.get("translation"),
+                        "rotation": node.get("rotation"),
+                        "scale": node.get("scale"),
+                        "primitive_materials": primitive_materials,
+                    }
+                    mesh_instances.append(item)
+                    log("GLB mesh node: " + json.dumps(item, ensure_ascii=False))
+                else:
+                    log("GLB hierarchy warning: invalid mesh index " + str(mesh_index))
+            for child_index in node.get("children", []):
+                visit(child_index, node_path)
+
+        for root_index in roots:
+            visit(root_index, "")
+        log("GLB source inventory " + source_path.name +
+            ": nodes=" + str(len(nodes)) +
+            ", meshes=" + str(len(meshes)) +
+            ", materials=" + str(len(materials)) +
+            ", mesh_instances=" + str(len(mesh_instances)) +
+            ", scene_roots=" + str(len(roots)))
+        return mesh_instances
+    except Exception as error:
+        unreal.log_error("[GF Setup] Could not inspect GLB hierarchy " +
+                         str(source_path) + ": " + str(error))
+        return []
+
+
 def import_glb(source_path: Path, destination_path: str):
     if not source_path.exists():
         unreal.log_warning("[GF Setup] Missing source: " + str(source_path))
         return []
 
+    source_nodes = inspect_glb_scene(source_path)
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", str(source_path))
     task.set_editor_property("destination_path", destination_path)
@@ -39,7 +131,8 @@ def import_glb(source_path: Path, destination_path: str):
         if isinstance(asset, unreal.StaticMesh):
             mesh_assets.append(asset)
 
-    log("GLB " + source_path.name + ": imported_objects=" + str(len(imported)) +
+    log("GLB " + source_path.name + ": source_mesh_instances=" + str(len(source_nodes)) +
+        ", imported_objects=" + str(len(imported)) +
         ", static_meshes=" + str([mesh.get_path_name() for mesh in mesh_assets]))
     if len(mesh_assets) > 1:
         unreal.log_warning(
