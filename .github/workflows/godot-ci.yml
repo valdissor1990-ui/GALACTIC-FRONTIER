@@ -11,6 +11,8 @@ on:
       - chatgpt/save-system-foundation
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
+      - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
   pull_request:
@@ -24,6 +26,7 @@ on:
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
       - chatgpt/m01-m05-story-integration
+      - chatgpt/campaign-runtime-manager
   workflow_dispatch:
 
 permissions:
