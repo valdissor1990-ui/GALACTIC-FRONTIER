@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -21,6 +21,62 @@ ambient_light_source = 1
 ambient_light_color = Color(0.24, 0.31, 0.48, 1)
 ambient_light_energy = 0.35
 tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.32
+glow_strength = 0.72
+glow_bloom = 0.04
+glow_hdr_threshold = 1.35
+glow_hdr_scale = 1.0
+
+
+[sub_resource type="BoxMesh" id="BoxMesh_wing_panel"]
+size = Vector3(1.55, 0.16, 1.25)
+[sub_resource type="BoxMesh" id="BoxMesh_dorsal_spine"]
+size = Vector3(0.34, 0.18, 2.25)
+[sub_resource type="BoxMesh" id="BoxMesh_armor_pod"]
+size = Vector3(0.48, 0.3, 1.45)
+[sub_resource type="BoxMesh" id="BoxMesh_fin"]
+size = Vector3(0.12, 0.58, 0.88)
+[sub_resource type="SphereMesh" id="SphereMesh_canopy"]
+radius = 0.48
+height = 0.38
+radial_segments = 24
+rings = 12
+[sub_resource type="StandardMaterial3D" id="Material_secondary"]
+albedo_color = Color(0.055, 0.095, 0.15, 1)
+metallic = 0.82
+roughness = 0.42
+[sub_resource type="StandardMaterial3D" id="Material_canopy"]
+albedo_color = Color(0.012, 0.065, 0.095, 1)
+metallic = 0.68
+roughness = 0.18
+emission_enabled = true
+emission = Color(0.0, 0.055, 0.075, 1)
+emission_energy_multiplier = 0.28
+[sub_resource type="CylinderMesh" id="CylinderMesh_thruster"]
+top_radius = 0.22
+bottom_radius = 0.27
+height = 0.22
+radial_segments = 20
+[sub_resource type="StandardMaterial3D" id="Material_thruster_core"]
+shading_mode = 0
+albedo_color = Color(0.035, 0.42, 0.58, 1)
+emission_enabled = true
+emission = Color(0.015, 0.32, 0.55, 1)
+emission_energy_multiplier = 2.1
+[sub_resource type="StyleBoxFlat" id="StyleBox_HUD"]
+bg_color = Color(0.012, 0.025, 0.045, 0.78)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.12, 0.42, 0.55, 0.72)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0.015, 0.03, 0.45)
+shadow_size = 7
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_player_fuselage"]
 size = Vector3(1.35, 0.82, 4.17)
@@ -71,7 +127,8 @@ environment = SubResource("Environment_space")
 
 [node name="KeyLight" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-28, 32, 0)
-light_energy = 1.2
+light_energy = 1.35
+light_color = Color(0.72, 0.84, 1, 1)
 shadow_enabled = true
 
 [node name="DistantPlanet" type="MeshInstance3D" parent="."]
@@ -109,6 +166,75 @@ surface_material_override/0 = SubResource("Material_accent")
 position = Vector3(0, -0.08, 0.25)
 mesh = SubResource("BoxMesh_wings")
 surface_material_override/0 = SubResource("Material_hull")
+
+[node name="LeftWingPanel" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-1.05, -0.015, 0.28)
+rotation_degrees = Vector3(0, -8, -2)
+mesh = SubResource("BoxMesh_wing_panel")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="RightWingPanel" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(1.05, -0.015, 0.28)
+rotation_degrees = Vector3(0, 8, 2)
+mesh = SubResource("BoxMesh_wing_panel")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="DorsalSpine" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0, 0.29, -0.02)
+mesh = SubResource("BoxMesh_dorsal_spine")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="LeftArmorPod" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-0.82, 0.04, 0.55)
+mesh = SubResource("BoxMesh_armor_pod")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="RightArmorPod" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0.82, 0.04, 0.55)
+mesh = SubResource("BoxMesh_armor_pod")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="CockpitCanopy" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0, 0.31, -0.76)
+scale = Vector3(0.82, 0.72, 1.45)
+mesh = SubResource("SphereMesh_canopy")
+surface_material_override/0 = SubResource("Material_canopy")
+
+[node name="LeftTailFin" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-0.56, 0.34, 1.12)
+rotation_degrees = Vector3(0, 0, -9)
+mesh = SubResource("BoxMesh_fin")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="RightTailFin" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0.56, 0.34, 1.12)
+rotation_degrees = Vector3(0, 0, 9)
+mesh = SubResource("BoxMesh_fin")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="LeftThrusterNozzle" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-0.38, 0, 2.12)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("CylinderMesh_thruster")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="RightThrusterNozzle" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0.38, 0, 2.12)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("CylinderMesh_thruster")
+surface_material_override/0 = SubResource("Material_secondary")
+
+[node name="LeftThrusterCore" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(-0.38, 0, 2.245)
+scale = Vector3(0.62, 0.62, 0.62)
+mesh = SubResource("SphereMesh_canopy")
+surface_material_override/0 = SubResource("Material_thruster_core")
+
+[node name="RightThrusterCore" type="MeshInstance3D" parent="PlayerShip/Visual"]
+position = Vector3(0.38, 0, 2.245)
+scale = Vector3(0.62, 0.62, 0.62)
+mesh = SubResource("SphereMesh_canopy")
+surface_material_override/0 = SubResource("Material_thruster_core")
 
 [node name="LeftEngine" type="MeshInstance3D" parent="PlayerShip/Visual"]
 position = Vector3(-0.38, 0, 1.72)
@@ -162,6 +288,7 @@ offset_bottom = 190.0
 
 [node name="Panel" type="PanelContainer" parent="HUD/Telemetry"]
 layout_mode = 1
+theme_override_styles/panel = SubResource("StyleBox_HUD")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -180,6 +307,7 @@ theme_override_constants/separation = 8
 [node name="TitleLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
 layout_mode = 2
 text = "GALACTIC FRONTIER  /  FLIGHT TEST"
+theme_override_colors/font_color = Color(0.42, 0.86, 0.96, 1)
 
 [node name="SpeedLabel" type="Label" parent="HUD/Telemetry/Panel/Margin/VBox"]
 layout_mode = 2
@@ -222,6 +350,7 @@ damageable_path = NodePath("../PlayerShip/Damageable")
 
 [node name="CombatPanel" type="PanelContainer" parent="CombatHUD"]
 anchors_preset = 1
+theme_override_styles/panel = SubResource("StyleBox_HUD")
 anchor_left = 1.0
 anchor_top = 0.0
 anchor_right = 1.0
@@ -245,6 +374,7 @@ theme_override_constants/separation = 7
 [node name="TargetLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
 layout_mode = 2
 text = "TARGET  NO TARGET"
+theme_override_colors/font_color = Color(0.45, 0.88, 0.96, 1)
 
 [node name="TargetStatusLabel" type="Label" parent="CombatHUD/CombatPanel/Margin/VBox"]
 layout_mode = 2
