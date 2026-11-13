@@ -38,7 +38,7 @@ void AGFEnemyShip::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     AActor* Target = CombatTarget.Get();
-    if (!IsValid(Target) || !Damageable || Damageable->IsDestroyed()) return;
+    if (!Damageable || Damageable->IsDestroyed()) return;
 
     if (!IsValid(Target))
     {
