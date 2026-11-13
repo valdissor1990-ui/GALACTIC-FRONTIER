@@ -23,6 +23,7 @@ on:
       - chatgpt/dialogue-choice-overlay-m01
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
+      - chatgpt/grok-completion-full-2026-11
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
@@ -113,6 +114,9 @@ jobs:
 
       - name: Run updater version and configuration tests
         run: godot --headless --path . --script res://tests/update/test_update_manager.gd
+
+      - name: Run graphics quality preset regression tests
+        run: godot --headless --path . --script res://tests/graphics/test_graphics_quality.gd
 
       - name: Run M01-M05 story progression, dialogue and save tests
         run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
