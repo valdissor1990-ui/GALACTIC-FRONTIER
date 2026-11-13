@@ -27,17 +27,18 @@ var _derelict_root: Node3D
 var _orbital_station_root: Node3D
 var _traffic_roots: Array[Node3D] = []
 var _dust_count: int = 2400
+var _system_asteroid_density: int = 120
 var _applied_quality_preset: int = -1
 
 
 func _ready() -> void:
 	_rng.seed = 741_2026
 	var quality := get_node_or_null("/root/GraphicsQuality")
+	_load_system_theme()
 	if quality != null:
 		star_count = roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
-		asteroid_count = quality.asteroid_count()
+		asteroid_count = roundi(float(_system_asteroid_density) * float(quality.asteroid_count()) / 160.0)
 		_dust_count = maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
-	_load_system_theme()
 	_build_world_environment()
 	_build_stellar_primary()
 	_build_starfield()
@@ -81,7 +82,7 @@ func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 			_starfield.queue_free()
 		_build_starfield()
 
-	var desired_asteroids: int = quality.asteroid_count()
+	var desired_asteroids: int = roundi(float(_system_asteroid_density) * float(quality.asteroid_count()) / 160.0)
 	if rebuild_fields and desired_asteroids != asteroid_count:
 		asteroid_count = desired_asteroids
 		for node_name in ["AsteroidField", "KenneyMeteorVariants"]:
@@ -283,7 +284,8 @@ func _load_system_theme() -> void:
 	var profile := get_node_or_null("/root/GameProfile")
 	var system: Dictionary = profile.call("get_active_system") if profile != null else {"id": "aurelia", "asteroid_density": 120}
 	_system_id = str(system.get("id", "aurelia"))
-	asteroid_count = int(system.get("asteroid_density", 120))
+	_system_asteroid_density = maxi(40, int(system.get("asteroid_density", 120)))
+	asteroid_count = _system_asteroid_density
 	match _system_id:
 		"vesper":
 			_theme = {
