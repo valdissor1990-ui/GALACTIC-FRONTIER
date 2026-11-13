@@ -119,7 +119,21 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
     imported = import_existing_fleet()
     player_mesh = find_static_mesh(imported, "player_fighter")
-    if not player_mesh:
+    if player_mesh:
+        # Keep a visible fallback on the native pawn class. BeginPlay will replace
+        # it with the catalog-selected mesh when that soft reference resolves.
+        pawn_class = unreal.load_class(None, "/Script/GalacticFrontier.GFPlayerShipPawn")
+        if pawn_class:
+            pawn_default = pawn_class.get_default_object()
+            pawn_mesh = pawn_default.get_editor_property("ship_mesh")
+            if pawn_mesh:
+                pawn_mesh.set_static_mesh(player_mesh)
+                log("Assigned Player Fighter fallback mesh to GFPlayerShipPawn: " + player_mesh.get_path_name())
+            else:
+                unreal.log_warning("[GF Setup] GFPlayerShipPawn CDO has no ShipMesh component.")
+        else:
+            unreal.log_warning("[GF Setup] GFPlayerShipPawn class not found; compile C++ before setup.")
+    else:
         unreal.log_warning("[GF Setup] Player Fighter asset was not found by the importer; inspect imported GLB objects.")
     create_flight_test_level(imported)
     log("Setup finished. Inspect GLB hierarchy/materials, then verify scale, orientation, pivots and collision before acceptance.")
