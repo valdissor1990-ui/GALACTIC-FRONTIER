@@ -12,6 +12,7 @@ class UGFShipFlightComponent;
 class UGFDamageableComponent;
 class UGFWeaponComponent;
 class UGFTargetingComponent;
+class UGFShipVfxComponent;
 
 UCLASS()
 class GALACTICFRONTIER_API AGFPlayerShipPawn : public APawn
@@ -44,6 +45,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship")
     TObjectPtr<UGFTargetingComponent> Targeting;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|VFX")
+    TObjectPtr<UGFShipVfxComponent> ShipVfx;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|Camera")
     TObjectPtr<USpringArmComponent> ChaseArm;
