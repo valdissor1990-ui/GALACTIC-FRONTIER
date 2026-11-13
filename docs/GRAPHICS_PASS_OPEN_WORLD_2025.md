@@ -2,35 +2,35 @@
 
 **Branch:** `grok/graphics-open-world-2025`  
 **Author:** Grok  
-**Status:** Slice 2 — thrusters, relay landmark, combat bolt
+**Status:** Slice 3 — combat feedback shaders
 
-## Slice 1
-- Starfield + nebula sky shader
-- Hull Fresnel / panel shader
-- OpenSpaceBackdrop (ACES, glow, SSAO, dual planets, MultiMesh belt)
-- Wired into `test_flight.tscn`
+## Shaders
 
-## Slice 2 (this update)
+| Shader | Role |
+|--------|------|
+| `space_starfield_sky.gdshader` | Stars, nebula, dust band |
+| `hull_fresnel.gdshader` | Panels, rim, **hit_flash**, heat |
+| `engine_plume.gdshader` | Additive thruster glow |
+| `relay_pulse.gdshader` | Silent Relay ring |
 
-| Piece | Path |
-|-------|------|
-| Engine plume shader | `assets/shaders/engine_plume.gdshader` |
-| Relay pulse shader | `assets/shaders/relay_pulse.gdshader` |
-| Thrust FX controller | `scripts/vfx/engine_thrust_fx.gd` |
-| Silent Relay beacon | `scenes/environment/silent_relay_beacon.tscn` |
-| Emissive projectile | `scenes/combat/projectile.tscn` |
-| Backdrop spawns relay | `scripts/environment/open_space_backdrop.gd` |
-| Ship plumes + sparks | `scenes/flight/test_flight.tscn` |
+## Slice 3
+- `hit_flash` + `heat` uniforms on hull shader
+- `scripts/vfx/hit_flash_fx.gd` listens to Damageable
+- Enemy fighter uses red hull shader + HitFlashFx
+- Starfield: brighter giants + dust plane
 
-Thrust intensity follows speed + boost (visual only, no physics change).
+## How hit flash works
+1. Damageable emits hull/shield/destroyed
+2. HitFlashFx raises `hit_flash` on duplicated ShaderMaterials under Visual
+3. Value decays in `_process`
 
-## Still next
-- PBR maps on GLB `player_fighter` / fleet
-- Enemy fighter material parity
-- Hit / explosion one-shots
-- Profile MultiMesh + particles on target hardware
-- Merge with ChatGPT deep-space / fleet branches when stable
+Does not change combat numbers — visual only.
 
 ## Preview
-`scenes/flight/test_flight.tscn` — Godot 4.7 Forward+.  
-Runtime **NOT RUN** in this agent environment.
+`scenes/flight/test_flight.tscn` — shoot enemy, watch orange flash.  
+Runtime **NOT RUN** here.
+
+## Next
+- Player HitFlashFx wiring in scene (params ready on shader)
+- Explosion one-shot on destroyed
+- GLB ship materials
