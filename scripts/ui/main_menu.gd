@@ -126,7 +126,7 @@ func _build_menu() -> void:
 		_rollback_button.pressed.connect(_confirm_rollback)
 		layout.add_child(_rollback_button)
 	var controls := Label.new()
-	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F5 — SAVE     F9 — LOAD"
+	controls.text = "WASD / MOUSE — FLIGHT     LMB — FIRE     T — LOCK\nF — SCAN     C — CAMERA     SHIFT — BOOST     F10 — GRAPHICS     F5 — SAVE     F9 — LOAD"
 	controls.add_theme_font_size_override("font_size", 12)
 	controls.add_theme_color_override("font_color", Color("#7294a8"))
 	layout.add_child(controls)
