@@ -887,13 +887,19 @@ void fragment() {
 	float radial = (radius - 0.48) / 0.505;
 	float broad = sin(radial * 54.0 + sin(radial * 11.0) * 0.55);
 	float fine = sin(radial * 214.0 + sin(radial * 37.0)) * 0.12;
-	float bands = smoothstep(-0.18, 0.38, broad + fine);
-	float variation = 0.88 + 0.12 * sin(radial * 17.0);
-	vec3 color = ring_tint.rgb * variation * mix(0.68, 1.12, bands);
-	float edge_fade = 1.0 - smoothstep(0.94, 0.99, radius);
+	float grain = sin(radial * 690.0 + sin(radial * 83.0) * 1.7) * 0.045;
+	float bands = smoothstep(-0.18, 0.38, broad + fine + grain);
+	float shepherd_gap_a = 1.0 - smoothstep(0.006, 0.018, abs(radial - 0.315));
+	float shepherd_gap_b = 1.0 - smoothstep(0.004, 0.014, abs(radial - 0.705));
+	float gap_mask = 1.0 - max(shepherd_gap_a * 0.92, shepherd_gap_b * 0.72);
+	float variation = 0.84 + 0.12 * sin(radial * 17.0) + grain;
+	float radial_fade = smoothstep(0.0, 0.045, radial) * (1.0 - smoothstep(0.94, 0.99, radius));
+	vec3 color = ring_tint.rgb * variation * mix(0.62, 1.16, bands);
+	float particulate = 0.78 + 0.22 * noise21(vec2(radial * 180.0, atan(centered.y, centered.x) * 22.0));
+	color *= particulate;
 	ALBEDO = color;
-	EMISSION = color * 0.035;
-	ALPHA = mix(0.045, 0.30, bands) * edge_fade;
+	EMISSION = color * 0.028;
+	ALPHA = mix(0.035, 0.30, bands) * radial_fade * gap_mask;
 }
 """
 	var ring_material := ShaderMaterial.new()
