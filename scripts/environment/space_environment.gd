@@ -21,6 +21,8 @@ var _distant_galaxy: MeshInstance3D
 var _stellar_primary: MeshInstance3D
 var _stellar_corona: MeshInstance3D
 var _stellar_key_light: DirectionalLight3D
+var _comet_root: Node3D
+var _derelict_root: Node3D
 
 
 func _ready() -> void:
@@ -36,6 +38,8 @@ func _ready() -> void:
 	_build_companion_worlds()
 	_build_asteroid_field()
 	_build_cosmic_dust()
+	_build_comet_landmark()
+	_build_derelict_landmark()
 
 
 func _process(delta: float) -> void:
@@ -97,6 +101,12 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_companion_moon):
 		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
 		_companion_moon.rotate_y(delta * 0.012)
+	if is_instance_valid(_comet_root):
+		var comet_transform := camera_transform * Transform3D(Basis(Vector3(0.2, 0.8, 0.1).normalized(), delta * 0.012), Vector3(-520.0, 205.0, -1880.0))
+		_comet_root.global_transform = comet_transform
+	if is_instance_valid(_derelict_root):
+		var derelict_transform := camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
+		_derelict_root.global_transform = derelict_transform
 
 
 
@@ -975,3 +985,181 @@ func _random_unit_vector() -> Vector3:
 	if vector.length_squared() < 0.0001:
 		return Vector3.UP
 	return vector.normalized()
+
+
+func _build_comet_landmark() -> void:
+	# A camera-relative comet provides a readable moving celestial landmark.
+	# Its tail is a single transparent quad; it adds no physics bodies.
+	_comet_root = Node3D.new()
+	_comet_root.name = "CometLandmark"
+	add_child(_comet_root)
+
+	var nucleus := MeshInstance3D.new()
+	nucleus.name = "CometNucleus"
+	var nucleus_mesh := SphereMesh.new()
+	nucleus_mesh.radius = 1.0
+	nucleus_mesh.height = 2.0
+	nucleus_mesh.radial_segments = 24
+	nucleus_mesh.rings = 16
+	var nucleus_material := StandardMaterial3D.new()
+	nucleus_material.albedo_color = Color(0.30, 0.34, 0.38)
+	nucleus_material.roughness = 0.98
+	nucleus_material.metallic = 0.04
+	nucleus_material.emission_enabled = true
+	nucleus_material.emission = Color(0.16, 0.22, 0.32)
+	nucleus_material.emission_energy_multiplier = 0.22
+	nucleus_mesh.material = nucleus_material
+	nucleus.mesh = nucleus_mesh
+	nucleus.scale = Vector3(8.0, 6.0, 7.0)
+	_comet_root.add_child(nucleus)
+
+	var coma := MeshInstance3D.new()
+	coma.name = "CometComa"
+	var coma_mesh := SphereMesh.new()
+	coma_mesh.radius = 1.0
+	coma_mesh.height = 2.0
+	coma_mesh.radial_segments = 32
+	coma_mesh.rings = 20
+	var coma_shader := Shader.new()
+	coma_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform vec4 coma_tint : source_color = vec4(0.36, 0.72, 1.0, 0.22);
+void fragment() {
+	float edge = 1.0 - smoothstep(0.08, 0.98, length((UV - vec2(0.5)) * vec2(1.0, 0.82)));
+	float turbulence = 0.78 + 0.22 * sin(UV.x * 48.0 + TIME * 0.7) * sin(UV.y * 35.0 - TIME * 0.4);
+	ALBEDO = coma_tint.rgb;
+	EMISSION = coma_tint.rgb * (0.25 + edge * turbulence * 1.8);
+	ALPHA = edge * coma_tint.a * turbulence;
+}
+"""
+	var coma_material := ShaderMaterial.new()
+	coma_material.shader = coma_shader
+	coma_material.set_shader_parameter("coma_tint", Color(0.38, 0.72, 1.0, 0.24))
+	coma_mesh.material = coma_material
+	coma.mesh = coma_mesh
+	coma.scale = Vector3(17.0, 13.0, 15.0)
+	_comet_root.add_child(coma)
+
+	var tail := MeshInstance3D.new()
+	tail.name = "CometIonTail"
+	var tail_mesh := QuadMesh.new()
+	tail_mesh.size = Vector2(34.0, 150.0)
+	var tail_shader := Shader.new()
+	tail_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform vec4 tail_tint : source_color = vec4(0.24, 0.58, 1.0, 0.22);
+void fragment() {
+	float across = abs(UV.x - 0.5) * 2.0;
+	float along = UV.y;
+	float width = 1.0 - smoothstep(0.08, 0.96, across);
+	float fade = pow(1.0 - along, 1.7) * smoothstep(0.0, 0.10, along);
+	float stream = 0.78 + 0.22 * sin(UV.x * 34.0 + UV.y * 11.0 - TIME * 0.5);
+	float alpha = width * fade * stream * tail_tint.a;
+	ALBEDO = tail_tint.rgb;
+	EMISSION = tail_tint.rgb * (0.4 + stream * 1.1);
+	ALPHA = alpha;
+}
+"""
+	var tail_material := ShaderMaterial.new()
+	tail_material.shader = tail_shader
+	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
+	tail_mesh.material = tail_material
+	tail.mesh = tail_mesh
+	tail.position = Vector3(0.0, 70.0, 2.0)
+	_comet_root.add_child(tail)
+
+
+func _build_derelict_landmark() -> void:
+	# A low-poly abandoned courier hull, broken antennae and debris cloud.
+	# All pieces are visual-only and share a camera-relative parent.
+	_derelict_root = Node3D.new()
+	_derelict_root.name = "DerelictWreckLandmark"
+	add_child(_derelict_root)
+
+	var hull_material := StandardMaterial3D.new()
+	hull_material.albedo_color = Color(0.16, 0.22, 0.29)
+	hull_material.metallic = 0.72
+	hull_material.roughness = 0.78
+	var exposed_material := StandardMaterial3D.new()
+	exposed_material.albedo_color = Color(0.42, 0.24, 0.12)
+	exposed_material.metallic = 0.48
+	exposed_material.roughness = 0.88
+	var window_material := StandardMaterial3D.new()
+	window_material.albedo_color = Color(0.10, 0.42, 0.58)
+	window_material.emission_enabled = true
+	window_material.emission = Color(0.08, 0.48, 0.82)
+	window_material.emission_energy_multiplier = 0.8
+
+	_add_wreck_box("WreckMainHull", Vector3(0.0, 0.0, 0.0), Vector3(12.0, 5.0, 34.0), hull_material)
+	_add_wreck_box("WreckForwardSpine", Vector3(0.0, 0.0, -25.0), Vector3(5.0, 3.0, 22.0), exposed_material)
+	_add_wreck_box("WreckPortWing", Vector3(-20.0, -0.8, 2.0), Vector3(29.0, 1.8, 8.0), hull_material)
+	_add_wreck_box("WreckStarboardWing", Vector3(19.0, -1.0, 7.0), Vector3(23.0, 1.5, 7.0), exposed_material)
+	_add_wreck_box("WreckBrokenPanel", Vector3(-31.0, 1.0, 9.0), Vector3(10.0, 1.0, 13.0), exposed_material)
+	_add_wreck_box("WreckBridgeGlass", Vector3(0.0, 3.0, -8.0), Vector3(6.0, 1.2, 8.0), window_material)
+
+	var antenna := MeshInstance3D.new()
+	antenna.name = "WreckAntenna"
+	var antenna_mesh := CylinderMesh.new()
+	antenna_mesh.top_radius = 0.16
+	antenna_mesh.bottom_radius = 0.28
+	antenna_mesh.height = 18.0
+	antenna_mesh.radial_segments = 8
+	antenna_mesh.material = exposed_material
+	antenna.mesh = antenna_mesh
+	antenna.position = Vector3(4.0, 10.0, 12.0)
+	antenna.rotation_degrees = Vector3(0.0, 0.0, 18.0)
+	_derelict_root.add_child(antenna)
+
+	var beacon := MeshInstance3D.new()
+	beacon.name = "WreckEmergencyBeacon"
+	var beacon_mesh := SphereMesh.new()
+	beacon_mesh.radius = 1.0
+	beacon_mesh.height = 2.0
+	beacon_mesh.radial_segments = 12
+	beacon_mesh.rings = 8
+	var beacon_material := StandardMaterial3D.new()
+	beacon_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	beacon_material.albedo_color = Color(1.0, 0.22, 0.08)
+	beacon_material.emission_enabled = true
+	beacon_material.emission = Color(1.0, 0.08, 0.025)
+	beacon_material.emission_energy_multiplier = 1.6
+	beacon_mesh.material = beacon_material
+	beacon.mesh = beacon_mesh
+	beacon.scale = Vector3.ONE * 1.4
+	beacon.position = Vector3(0.0, 7.0, -2.0)
+	_derelict_root.add_child(beacon)
+
+	var debris_mesh := SphereMesh.new()
+	debris_mesh.radius = 0.7
+	debris_mesh.height = 1.4
+	debris_mesh.radial_segments = 6
+	debris_mesh.rings = 4
+	debris_mesh.material = exposed_material
+	var debris_multi := MultiMesh.new()
+	debris_multi.transform_format = MultiMesh.TRANSFORM_3D
+	debris_multi.mesh = debris_mesh
+	debris_multi.instance_count = 96
+	var debris := MultiMeshInstance3D.new()
+	debris.name = "WreckDebrisCloud"
+	debris.multimesh = debris_multi
+	for index in range(debris_multi.instance_count):
+		var direction := _random_unit_vector()
+		var radius := _rng.randf_range(24.0, 82.0)
+		var position := direction * radius
+		var size := _rng.randf_range(0.45, 3.2)
+		var basis := Basis.from_euler(Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))).scaled(Vector3(size, size * _rng.randf_range(0.35, 1.0), size * _rng.randf_range(0.55, 1.4)))
+		debris.multimesh.set_instance_transform(index, Transform3D(basis, position))
+	_derelict_root.add_child(debris)
+
+
+func _add_wreck_box(node_name: String, position: Vector3, dimensions: Vector3, material: Material) -> void:
+	var piece := MeshInstance3D.new()
+	piece.name = node_name
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	mesh.material = material
+	piece.mesh = mesh
+	piece.position = position
+	_derelict_root.add_child(piece)
