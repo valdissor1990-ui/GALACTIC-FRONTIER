@@ -291,6 +291,46 @@ func _apply_planet_quality(segments: int) -> void:
 			sphere.rings = maxi(segments / 2, 8)
 
 
+func _setup_outer_debris() -> void:
+	var count := maxi(asteroid_count / 3, 24)
+	_spawn_rock_field("OuterDebris", count, 280.0, 90.0, 40.0, Color(0.16, 0.17, 0.2), 0.8, 4.5, 1400.0)
+
+
+func _spawn_rock_field(
+	field_name: String, count: int, radius: float, width: float, height: float,
+	albedo: Color, scale_min: float, scale_max: float, visibility_end: float
+) -> void:
+	var multi := MultiMeshInstance3D.new()
+	multi.name = field_name
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var rock := SphereMesh.new()
+	rock.radius = 1.0
+	rock.height = 2.0
+	rock.radial_segments = 7
+	rock.rings = 4
+	var material := StandardMaterial3D.new()
+	material.albedo_color = albedo
+	material.roughness = 0.95
+	material.metallic = 0.08
+	rock.material = material
+	mm.mesh = rock
+	mm.instance_count = count
+	for i in count:
+		var angle := _rng.randf() * TAU
+		var orbit_radius := radius + _rng.randf_range(-width, width)
+		var y := _rng.randf_range(-height, height)
+		var position := Vector3(cos(angle) * orbit_radius, y, sin(angle) * orbit_radius)
+		var size := _rng.randf_range(scale_min, scale_max)
+		var basis := Basis.from_euler(Vector3(
+			_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU
+		)).scaled(Vector3(size, size * _rng.randf_range(0.55, 1.25), size * _rng.randf_range(0.7, 1.15)))
+		mm.set_instance_transform(i, Transform3D(basis, position))
+	multi.multimesh = mm
+	multi.visibility_range_end = visibility_end
+	add_child(multi)
+
+
 func _setup_relay_beacon() -> void:
 	var packed := load("res://scenes/environment/silent_relay_beacon.tscn") as PackedScene
 	if packed == null:
