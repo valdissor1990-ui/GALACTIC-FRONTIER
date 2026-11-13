@@ -102,6 +102,19 @@ func purchase_ship(ship_id: String) -> bool:
 	return _save_profile()
 
 
+func spend_credits(amount: int) -> bool:
+	var cost := maxi(0, amount)
+	if credits < cost:
+		return false
+	if cost == 0:
+		return true
+	credits -= cost
+	if not _save_profile():
+		credits += cost
+		return false
+	return true
+
+
 func complete_mission(mission_id: String, reward_credits: int) -> int:
 	if mission_id.is_empty() or completed_mission_ids.has(mission_id):
 		return 0
