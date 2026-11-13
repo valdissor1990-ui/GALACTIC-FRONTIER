@@ -51,6 +51,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
     int32 WavesPerEncounter = 3;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    FName ActiveContractId = TEXT("silent_relay");
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    FText ActiveContractName = FText::FromString(TEXT("The Silent Relay"));
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    int32 MissionReward = 5000;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    float EnemyHealthMultiplier = 1.0f;
+
     UFUNCTION(BlueprintPure, Category="Mission")
     EGFMissionStage GetMissionStage() const { return Stage; }
 
