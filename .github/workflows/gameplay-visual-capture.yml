@@ -35,7 +35,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: gameplay-visual-capture-${{ github.ref }}
+  group: gameplay-visual-capture-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
