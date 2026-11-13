@@ -7,10 +7,15 @@ extends Node3D
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
+var _system_id: String = "aurelia"
+var _theme: Dictionary = {}
+var _planet_visual: MeshInstance3D
+var _planet_atmosphere: MeshInstance3D
 
 
 func _ready() -> void:
 	_rng.seed = 741_2026
+	_load_system_theme()
 	_build_world_environment()
 	_build_starfield()
 	_build_nebulae()
@@ -30,21 +35,61 @@ func _process(_delta: float) -> void:
 	# behind at the starting carrier and leave later combat shots almost black.
 	_starfield.global_position = camera.global_position
 	var camera_transform := camera.global_transform
-	var azure := get_node_or_null("AzureNebula") as Node3D
-	if azure != null:
-		azure.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
-	var violet := get_node_or_null("VioletNebula") as Node3D
-	if violet != null:
-		violet.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	var primary_nebula := get_node_or_null("PrimaryNebula") as Node3D
+	if primary_nebula != null:
+		primary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
+	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
+	if secondary_nebula != null:
+		secondary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
 
 	# Aurelia is a distant sky landmark, not a nearby world object. Keep its
 	# visual shell camera-relative; its physical collision proxy remains fixed
 	# so long-range mission shots retain a readable planetary horizon.
 	var planet_position := camera.global_position + camera.global_basis * Vector3(-160.0, 26.0, -285.0)
-	for landmark_name in ["Aurelia", "AureliaAtmosphere"]:
-		var landmark := get_node_or_null(landmark_name) as Node3D
-		if landmark != null:
-			landmark.global_position = planet_position
+	if is_instance_valid(_planet_visual):
+		_planet_visual.global_position = planet_position
+	if is_instance_valid(_planet_atmosphere):
+		_planet_atmosphere.global_position = planet_position
+
+
+
+func _load_system_theme() -> void:
+	var profile := get_node_or_null("/root/GameProfile")
+	var system: Dictionary = profile.call("get_active_system") if profile != null else {"id": "aurelia", "asteroid_density": 120}
+	_system_id = str(system.get("id", "aurelia"))
+	asteroid_count = int(system.get("asteroid_density", 120))
+	match _system_id:
+		"vesper":
+			_theme = {
+				"sky_top": Color(0.020, 0.008, 0.003), "sky_horizon": Color(0.12, 0.045, 0.020),
+				"ambient": Color(0.42, 0.24, 0.12), "key_light": Color(1.0, 0.72, 0.42),
+				"fill_light": Color(0.72, 0.28, 0.10), "nebula_a": Color(1.0, 0.38, 0.08, 0.42),
+				"nebula_b": Color(0.72, 0.14, 0.04, 0.34), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
+				"water_dark": Color(0.05, 0.03, 0.02), "water_light": Color(0.18, 0.08, 0.04),
+				"land_low": Color(0.34, 0.18, 0.08), "land_high": Color(0.58, 0.30, 0.12),
+				"snow": Color(0.82, 0.62, 0.38), "star": Color(1.0, 0.76, 0.52)
+			}
+		"kestrel":
+			_theme = {
+				"sky_top": Color(0.005, 0.012, 0.035), "sky_horizon": Color(0.025, 0.09, 0.15),
+				"ambient": Color(0.20, 0.38, 0.56), "key_light": Color(0.62, 0.85, 1.0),
+				"fill_light": Color(0.12, 0.46, 0.78), "nebula_a": Color(0.10, 0.72, 0.95, 0.36),
+				"nebula_b": Color(0.42, 0.28, 0.95, 0.30), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
+				"water_dark": Color(0.015, 0.08, 0.18), "water_light": Color(0.05, 0.22, 0.42),
+				"land_low": Color(0.22, 0.36, 0.52), "land_high": Color(0.44, 0.55, 0.65),
+				"snow": Color(0.86, 0.92, 1.0), "star": Color(0.70, 0.88, 1.0)
+			}
+		_:
+			_system_id = "aurelia"
+			_theme = {
+				"sky_top": Color(0.004, 0.009, 0.028), "sky_horizon": Color(0.025, 0.045, 0.09),
+				"ambient": Color(0.22, 0.31, 0.52), "key_light": Color(0.72, 0.82, 1.0),
+				"fill_light": Color(0.20, 0.38, 0.72), "nebula_a": Color(0.16, 0.40, 1.0, 0.38),
+				"nebula_b": Color(0.52, 0.20, 0.94, 0.32), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
+				"water_dark": Color(0.018, 0.075, 0.16), "water_light": Color(0.035, 0.19, 0.31),
+				"land_low": Color(0.18, 0.34, 0.31), "land_high": Color(0.43, 0.38, 0.25),
+				"snow": Color(0.78, 0.79, 0.72), "star": Color(0.72, 0.84, 1.0)
+			}
 
 
 func _build_world_environment() -> void:
@@ -53,15 +98,15 @@ func _build_world_environment() -> void:
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.004, 0.009, 0.028)
-	sky_material.sky_horizon_color = Color(0.025, 0.045, 0.09)
+	sky_material.sky_top_color = _theme.get("sky_top", Color(0.004, 0.009, 0.028))
+	sky_material.sky_horizon_color = _theme.get("sky_horizon", Color(0.025, 0.045, 0.09))
 	sky_material.ground_bottom_color = Color(0.002, 0.004, 0.012)
 	sky_material.ground_horizon_color = Color(0.012, 0.022, 0.05)
 	sky_material.sun_angle_max = 8.0
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.22, 0.31, 0.52)
+	environment.ambient_light_color = _theme.get("ambient", Color(0.22, 0.31, 0.52))
 	environment.ambient_light_energy = 0.78
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
@@ -82,7 +127,7 @@ func _build_world_environment() -> void:
 	var key_light := DirectionalLight3D.new()
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
-	key_light.light_color = Color(0.72, 0.82, 1.0)
+	key_light.light_color = _theme.get("key_light", Color(0.72, 0.82, 1.0))
 	key_light.light_energy = 1.65
 	key_light.shadow_enabled = true
 	key_light.directional_shadow_max_distance = 260.0
@@ -93,7 +138,7 @@ func _build_world_environment() -> void:
 	var fill_light := DirectionalLight3D.new()
 	fill_light.name = "NebulaFillLight"
 	fill_light.rotation_degrees = Vector3(-12.0, -148.0, 0.0)
-	fill_light.light_color = Color(0.20, 0.38, 0.72)
+	fill_light.light_color = _theme.get("fill_light", Color(0.20, 0.38, 0.72))
 	fill_light.light_energy = 0.34
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
@@ -108,9 +153,9 @@ func _build_starfield() -> void:
 
 	var star_material := StandardMaterial3D.new()
 	star_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	star_material.albedo_color = Color(0.72, 0.84, 1.0)
+	star_material.albedo_color = _theme.get("star", Color(0.72, 0.84, 1.0))
 	star_material.emission_enabled = true
-	star_material.emission = Color(0.56, 0.76, 1.0)
+	star_material.emission = _theme.get("star", Color(0.56, 0.76, 1.0))
 	star_material.emission_energy_multiplier = 2.25
 	star_mesh.material = star_material
 
@@ -126,17 +171,17 @@ func _build_starfield() -> void:
 
 func _build_nebulae() -> void:
 	_add_nebula(
-		"AzureNebula",
+		"PrimaryNebula",
 		Vector3(-138.0, 54.0, -465.0),
 		Vector2(310.0, 178.0),
-		Color(0.16, 0.40, 1.0, 0.38),
+		_theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)),
 		1138
 	)
 	_add_nebula(
-		"VioletNebula",
+		"SecondaryNebula",
 		Vector3(158.0, -42.0, -520.0),
 		Vector2(270.0, 152.0),
-		Color(0.52, 0.20, 0.94, 0.32),
+		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)),
 		8821
 	)
 
@@ -202,7 +247,7 @@ void fragment() {
 
 func _build_planet() -> void:
 	var planet := MeshInstance3D.new()
-	planet.name = "Aurelia"
+	planet.name = "Planet_%s" % _system_id
 	planet.position = Vector3(-160.0, 26.0, -285.0)
 	planet.scale = Vector3.ONE * 42.0
 
@@ -219,11 +264,12 @@ func _build_planet() -> void:
 	planet_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	sphere.material = planet_material
 	planet.mesh = sphere
+	_planet_visual = planet
 	add_child(planet)
 	_build_planet_collision(planet.position)
 
 	var atmosphere := MeshInstance3D.new()
-	atmosphere.name = "AureliaAtmosphere"
+	atmosphere.name = "PlanetAtmosphere_%s" % _system_id
 	atmosphere.position = planet.position
 	atmosphere.scale = Vector3.ONE * 43.2
 	var atmosphere_mesh := SphereMesh.new()
@@ -234,12 +280,13 @@ func _build_planet() -> void:
 	var atmosphere_material := StandardMaterial3D.new()
 	atmosphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	atmosphere_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	atmosphere_material.albedo_color = Color(0.12, 0.42, 0.95, 0.12)
+	atmosphere_material.albedo_color = _theme.get("atmosphere", Color(0.12, 0.42, 0.95, 0.12))
 	atmosphere_material.emission_enabled = true
 	atmosphere_material.emission = Color(0.025, 0.12, 0.42)
 	atmosphere_material.emission_energy_multiplier = 0.35
 	atmosphere_mesh.material = atmosphere_material
 	atmosphere.mesh = atmosphere_mesh
+	_planet_atmosphere = atmosphere
 	add_child(atmosphere)
 
 
@@ -255,6 +302,11 @@ func _create_planet_texture() -> Texture2D:
 	noise.fractal_gain = 0.48
 	noise.frequency = 1.15
 
+	var water_dark: Color = _theme.get("water_dark", Color(0.018, 0.075, 0.16))
+	var water_light: Color = _theme.get("water_light", Color(0.035, 0.19, 0.31))
+	var land_low: Color = _theme.get("land_low", Color(0.18, 0.34, 0.31))
+	var land_high: Color = _theme.get("land_high", Color(0.43, 0.38, 0.25))
+	var snow: Color = _theme.get("snow", Color(0.78, 0.79, 0.72))
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
 	for y in range(HEIGHT):
 		var latitude := (float(y) / float(HEIGHT - 1) - 0.5) * PI
@@ -268,13 +320,13 @@ func _create_planet_texture() -> Texture2D:
 			var value := noise.get_noise_3d(direction.x * 2.8, direction.y * 2.8, direction.z * 2.8)
 			var color: Color
 			if value < -0.18:
-				color = Color(0.018, 0.075, 0.16).lerp(Color(0.035, 0.19, 0.31), clampf((value + 1.0) / 0.82, 0.0, 1.0))
+				color = water_dark.lerp(water_light, clampf((value + 1.0) / 0.82, 0.0, 1.0))
 			elif value < 0.02:
-				color = Color(0.035, 0.19, 0.31).lerp(Color(0.18, 0.34, 0.31), (value + 0.18) / 0.20)
+				color = water_light.lerp(land_low, (value + 0.18) / 0.20)
 			elif value < 0.30:
-				color = Color(0.18, 0.34, 0.31).lerp(Color(0.43, 0.38, 0.25), (value - 0.02) / 0.28)
+				color = land_low.lerp(land_high, (value - 0.02) / 0.28)
 			else:
-				color = Color(0.43, 0.38, 0.25).lerp(Color(0.78, 0.79, 0.72), clampf((value - 0.30) / 0.45, 0.0, 1.0))
+				color = land_high.lerp(snow, clampf((value - 0.30) / 0.45, 0.0, 1.0))
 			image.set_pixel(x, y, color)
 	return ImageTexture.create_from_image(image)
 
