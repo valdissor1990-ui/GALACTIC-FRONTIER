@@ -22,8 +22,8 @@ Open `GalacticFrontier.uproject` with Unreal Engine 5.8. The C++ project must be
 1. Compile the project in Unreal Engine 5.8.
 2. Open the project in the Unreal Editor.
 3. Choose **Tools → Execute Python Script** and run `Content/Python/setup_galactic_frontier.py`.
-4. The script imports the existing ship and environment GLBs from the repository, creates `/Game/GF/Maps/L_FlightTest`, places a `PlayerStart`, and assigns the imported Player Fighter mesh as a fallback on the native pawn class. At runtime, the selected ship's catalog mesh replaces that fallback when its soft asset path resolves.
-5. Inspect scale, forward axis, pivots and imported material assignments before visual acceptance.
+4. The script imports the existing ship and environment GLBs from the repository, creates `/Game/GF/Maps/L_FlightTest`, places a `PlayerStart`, and logs every imported Static Mesh per source GLB. Files that produce multiple meshes are explicitly flagged; they must not be treated as complete ships until all nodes are assembled and inspected. The script no longer silently selects the first matching mesh as a complete ship.
+5. Inspect the import log for every GLB. Verify all mesh nodes, hierarchy/transforms, materials, scale, forward axis, pivots and collision. Multi-mesh ship assembly is a blocking task, not an accepted result.
 
 The editor script creates the initial test map; it is not a substitute for checking the imported content in the editor.
 
