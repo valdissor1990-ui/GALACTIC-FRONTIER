@@ -15,7 +15,7 @@ func _run() -> void:
 	manager.persistence_enabled = false
 	root.add_child(manager)
 	_test_start_and_validate_objectives(manager)
-	_test_gameplay_event_routing(manager)
+	_test_gameplay_event_routing()
 	_test_optional_objective(manager)
 	_test_choice_gate_and_campaign_chain(manager)
 	root.remove_child(manager)
@@ -48,8 +48,11 @@ func _test_start_and_validate_objectives(manager: CampaignManager) -> void:
 	_assert_true(manager.story_state.active_mission_id.is_empty(), "active mission clears on completion")
 
 
-func _test_gameplay_event_routing(manager: CampaignManager) -> void:
+func _test_gameplay_event_routing() -> void:
 	print("\\n[gameplay event routing]")
+	var manager := CampaignManager.new()
+	manager.persistence_enabled = false
+	root.add_child(manager)
 	_assert_true(manager.start_mission("m01").get("ok", false), "M01 starts for event routing")
 	var wrong_target := manager.report_gameplay_event("reach_target", "wrong_buoy")
 	_assert_true(wrong_target.get("matched_objectives", []).is_empty(), "wrong target does not advance goto objective")
@@ -60,6 +63,8 @@ func _test_gameplay_event_routing(manager: CampaignManager) -> void:
 	var dock_result := manager.report_gameplay_event("dock", "port_solace")
 	_assert_true(dock_result.get("mission_completed", false), "matching world events complete M01")
 	_assert_true(manager.story_state.is_mission_completed("m01"), "event-routed M01 is recorded completed")
+	root.remove_child(manager)
+	manager.free()
 
 
 func _test_optional_objective(manager: CampaignManager) -> void:
