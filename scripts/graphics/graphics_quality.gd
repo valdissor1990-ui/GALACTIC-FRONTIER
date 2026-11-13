@@ -1,11 +1,8 @@
 extends Node
-## Global graphics quality + FSR + tonemap/HDR tables.
+## Global graphics quality + FSR + tonemap/HDR + space detail tables.
 ## Autoload: GraphicsQuality
 ##
-## Tonemap ladder:
-##   Low    → Filmic  (cheapest film curve)
-##   Medium → ACES    (cinematic contrast)
-##   High   → AgX     (best hue retention on bright engines; HDR-ready)
+## Tonemap: Low Filmic | Medium ACES | High AgX
 
 enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
 
@@ -71,7 +68,7 @@ func get_tonemap_name() -> String:
 			return "Other"
 
 
-# --- FSR / 3D scale ---------------------------------------------------------
+# --- FSR --------------------------------------------------------------------
 
 func base_scale_3d() -> float:
 	match current:
@@ -123,9 +120,6 @@ func _apply_viewport_scale() -> void:
 
 
 # --- Tonemap ----------------------------------------------------------------
-# AgX (Godot 4.4+): keeps hue on bright saturated colors (engines, lasers),
-# rolls highlights to white instead of ACES hue-shift. White is fixed ~16.29
-# on older builds; 4.6+ may expose agx_white / agx_contrast.
 
 func tonemap_mode() -> int:
 	match current:
@@ -139,7 +133,6 @@ func tonemap_mode() -> int:
 
 
 func tonemap_exposure() -> float:
-	# AgX often reads slightly flatter — nudge exposure on High
 	match current:
 		Preset.LOW:
 			return 0.90
@@ -151,7 +144,6 @@ func tonemap_exposure() -> float:
 
 
 func tonemap_white() -> float:
-	# Ignored by AgX on Godot ≤4.5 (fixed 16.29). Still set for ACES/Filmic.
 	match current:
 		Preset.LOW:
 			return 6.0
@@ -163,17 +155,14 @@ func tonemap_white() -> float:
 
 
 func agx_white() -> float:
-	# Blender default; only applied if Environment has the property (4.6+)
 	return 16.29
 
 
 func agx_contrast() -> float:
-	# 1.0 = neutral AgX curve; slight punch for space silhouette
 	return 1.05
 
 
 func apply_tonemap_extras(env: Environment) -> void:
-	## Optional AgX params on newer Godot builds (safe no-op otherwise).
 	if env == null:
 		return
 	if tonemap_mode() != Environment.TONE_MAP_MODE_AGX:
@@ -193,7 +182,6 @@ func adjustment_enabled() -> bool:
 
 
 func adjustment_contrast() -> float:
-	# Slightly more grade under AgX (neutral base)
 	match current:
 		Preset.HIGH:
 			return 1.06
@@ -207,6 +195,63 @@ func adjustment_saturation() -> float:
 			return 1.08
 		_:
 			return 1.05
+
+
+# --- Sky detail (space_starfield_sky.gdshader) -------------------------------
+
+func sky_star_density() -> float:
+	match current:
+		Preset.LOW:
+			return 1.4
+		Preset.MEDIUM:
+			return 2.2
+		Preset.HIGH:
+			return 3.0
+	return 2.2
+
+
+func sky_star_brightness() -> float:
+	match current:
+		Preset.LOW:
+			return 1.05
+		Preset.MEDIUM:
+			return 1.25
+		Preset.HIGH:
+			return 1.4
+	return 1.25
+
+
+func sky_nebula_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.35
+		Preset.MEDIUM:
+			return 0.55
+		Preset.HIGH:
+			return 0.75
+	return 0.55
+
+
+func sky_dust_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.15
+		Preset.MEDIUM:
+			return 0.28
+		Preset.HIGH:
+			return 0.4
+	return 0.28
+
+
+func sky_galactic_strength() -> float:
+	match current:
+		Preset.LOW:
+			return 0.18
+		Preset.MEDIUM:
+			return 0.35
+		Preset.HIGH:
+			return 0.5
+	return 0.35
 
 
 # --- HDR glow ---------------------------------------------------------------
@@ -308,7 +353,7 @@ func apply_glow_levels(env: Environment) -> void:
 			env.glow_levels[6] = 0.15
 
 
-# --- Other ------------------------------------------------------------------
+# --- World density ----------------------------------------------------------
 
 func shadow_enabled() -> bool:
 	return current != Preset.LOW
@@ -364,14 +409,15 @@ func vignette_strength() -> float:
 
 
 func asteroid_count() -> int:
+	# Main belt only; inner + outer fields scale from this
 	match current:
 		Preset.LOW:
-			return 80
+			return 120
 		Preset.MEDIUM:
-			return 160
+			return 280
 		Preset.HIGH:
-			return 240
-	return 160
+			return 420
+	return 280
 
 
 func particle_amount_scale() -> float:
@@ -388,12 +434,12 @@ func particle_amount_scale() -> float:
 func planet_segments() -> int:
 	match current:
 		Preset.LOW:
-			return 24
+			return 28
 		Preset.MEDIUM:
-			return 40
-		Preset.HIGH:
 			return 48
-	return 40
+		Preset.HIGH:
+			return 64
+	return 48
 
 
 func _apply_to_scene_tree() -> void:
