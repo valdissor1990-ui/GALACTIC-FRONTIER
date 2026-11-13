@@ -82,6 +82,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Mission")
     float GetScanProgress() const { return FMath::Clamp(ScanProgressSeconds / FMath::Max(0.1f, ScanDurationSeconds), 0.0f, 1.0f); }
 
+    UFUNCTION(BlueprintPure, Category="Mission")
+    int32 GetCurrentWaveIndex() const { return WaveIndex; }
+
 private:
     UPROPERTY()
     TSubclassOf<AGFEnemyShip> EnemyShipClass;
