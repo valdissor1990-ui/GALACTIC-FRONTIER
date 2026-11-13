@@ -92,7 +92,8 @@ Implemented in C++ source (not yet compiled in the Unreal toolchain):
 - Hull/shield damage, shield regeneration delay and destroyed-state handling.
 - Primary energy weapon, projectile actor, hit damage and cooldown.
 - Target acquisition/clear using range and forward cone.
-- Enemy fighter pursuit and firing behavior.
+- Enemy fighter approach/strafe/retreat AI, vertical evasion, predictive lead targeting and firing behavior.
+- Ported catalogs for four flyable ships, five upgrade modules and three contracts; local profile supports ship purchase/selection, module purchase, contract unlock/selection and story flag persistence. Selected ship stats and module multipliers are applied to the player pawn.
 - Initial The Silent Relay flow: relay interaction, three waves at relay, wreck interaction, three waves at wreck, return-to-carrier completion and 5000-credit reward.
 - Local pilot SaveGame data with schema field, migration hook and backup slot.
 - Native HUD with velocity, hull, shields, boost, target and mission stage.
