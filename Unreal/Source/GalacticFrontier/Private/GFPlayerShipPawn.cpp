@@ -8,6 +8,7 @@
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
 #include "GFTargetingComponent.h"
+#include "GFShipVfxComponent.h"
 #include "GFGameCatalog.h"
 #include "GFSaveSubsystem.h"
 #include "GFPlayerProfileSave.h"
@@ -29,6 +30,7 @@ AGFPlayerShipPawn::AGFPlayerShipPawn()
     Damageable = CreateDefaultSubobject<UGFDamageableComponent>(TEXT("Damageable"));
     Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
     Targeting = CreateDefaultSubobject<UGFTargetingComponent>(TEXT("Targeting"));
+    ShipVfx = CreateDefaultSubobject<UGFShipVfxComponent>(TEXT("ShipVfx"));
 
     ChaseArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm"));
     ChaseArm->SetupAttachment(ShipMesh);
