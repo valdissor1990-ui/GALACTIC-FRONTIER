@@ -58,7 +58,7 @@ func _validate_glb(path: String) -> void:
 		_fail(path, "GLTFDocument.generate_scene returned null")
 		return
 
-	var detailed_surfaces := RUNTIME_GLTF_SCRIPT.apply_surface_finish(scene)
+	var detailed_surfaces: int = int(RUNTIME_GLTF_SCRIPT.apply_surface_finish(scene))
 	if detailed_surfaces <= 0:
 		_fail(path, "runtime surface finish did not update any PBR materials")
 		scene.free()
