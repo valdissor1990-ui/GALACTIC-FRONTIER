@@ -33,12 +33,20 @@ func _run() -> void:
 	await process_frame
 	var director := demo.get_node("DemoMissionDirector")
 	var environment := demo.get_node("SpaceEnvironment")
+	var player := demo.get_node("PlayerShip") as ShipController
 	_check(int(director.get("_waves_per_encounter")) == 4, "Vesper contract configures four waves per encounter")
 	_check(is_equal_approx(float(director.get("_enemy_health_multiplier")), 1.10), "Vesper contract applies veteran enemy durability")
 	_check(int(director.get("_mission_reward")) == 6500, "Vesper contract reward is applied to the mission")
 	_check(str(director.get("_system_name")) == "Vesper Belt", "mission director uses the Vesper system name")
 	_check(str(environment.get("_system_id")) == "vesper", "space environment selects Vesper's visual theme")
 	_check(int(environment.get("asteroid_count")) == 190, "Vesper system uses its denser asteroid field")
+	director.call("_begin_contract_epilogue")
+	_check(int(director.get("stage")) == 11, "Vesper contract adds a dedicated salvage recovery stage")
+	_check((director.get("_salvage_pods") as Array).size() == 3, "Vesper contract creates three recoverable cargo pods")
+	for _index in range(3):
+		player.global_position = director.get("_objective_position")
+		director.call("_recover_salvage")
+	_check(int(director.get("stage")) == 6, "recovering all Vesper pods unlocks carrier return")
 
 	profile.complete_mission("vesper_salvage", 6500)
 	_check(profile.accept_contract("kestrel_patrol"), "Kestrel contract unlocks after Vesper completion")
@@ -50,6 +58,13 @@ func _run() -> void:
 	_check(str(director.get("_system_name")) == "Kestrel Expanse", "mission director switches to Kestrel")
 	_check(str(environment.get("_system_id")) == "kestrel", "space environment switches to Kestrel visual theme")
 	_check(int(environment.get("asteroid_count")) == 80, "Kestrel system uses its sparse debris field")
+	director.call("_begin_contract_epilogue")
+	_check(int(director.get("stage")) == 12, "Kestrel contract adds a dedicated patrol sweep stage")
+	_check((director.get("_patrol_positions") as Array).size() == 3, "Kestrel contract defines three patrol waypoints")
+	for _index in range(3):
+		player.global_position = director.get("_objective_position")
+		director.call("_advance_patrol_waypoint")
+	_check(int(director.get("stage")) == 6, "visiting all Kestrel patrol waypoints unlocks carrier return")
 
 	demo.queue_free()
 	await process_frame
@@ -71,7 +86,7 @@ func _run() -> void:
 	save_manager.set("pending_mission_payload", pending_payload_backup)
 
 	if _failures.is_empty():
-		print("CONTRACT_VARIANTS_TEST_PASS assertions=13")
+		print("CONTRACT_VARIANTS_TEST_PASS assertions=19")
 		quit(0)
 	else:
 		for failure in _failures:
