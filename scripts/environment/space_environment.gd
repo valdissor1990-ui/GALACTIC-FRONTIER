@@ -620,22 +620,44 @@ func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: f
 
 
 func _build_cosmic_dust() -> void:
-	# One batched visual layer adds depth without hundreds of physics bodies.
-	const DUST_COUNT := 1400
+	# Layered, chromatic dust motes trace the long flight corridor. A single
+	# custom-data MultiMesh keeps this visual detail out of the physics scene.
+	const DUST_COUNT := 1800
 	var dust_mesh := SphereMesh.new()
 	dust_mesh.radius = 0.22
 	dust_mesh.height = 0.44
 	dust_mesh.radial_segments = 5
 	dust_mesh.rings = 3
-	var dust_material := StandardMaterial3D.new()
-	dust_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	dust_material.albedo_color = Color(0.34, 0.48, 0.72, 0.42)
-	dust_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	dust_material.emission_enabled = true
-	dust_material.emission = Color(0.12, 0.22, 0.42)
-	dust_material.emission_energy_multiplier = 0.42
+	var dust_shader := Shader.new()
+	dust_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+varying vec4 dust_custom;
+void vertex() {
+	dust_custom = INSTANCE_CUSTOM;
+}
+void fragment() {
+	float shimmer = 0.82 + 0.18 * sin(TIME * 0.65 + dust_custom.a * 6.28318);
+	ALBEDO = dust_custom.rgb * shimmer;
+	EMISSION = dust_custom.rgb * (0.22 + shimmer * 0.72);
+}
+"""
+	var dust_material := ShaderMaterial.new()
+	dust_material.shader = dust_shader
 	dust_mesh.material = dust_material
-	_cosmic_dust = _make_multimesh("InterplanetaryDust", dust_mesh, DUST_COUNT)
+	var dust_multimesh := MultiMesh.new()
+	dust_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	dust_multimesh.use_custom_data = true
+	dust_multimesh.mesh = dust_mesh
+	dust_multimesh.instance_count = DUST_COUNT
+	_cosmic_dust = MultiMeshInstance3D.new()
+	_cosmic_dust.name = "InterplanetaryDust"
+	_cosmic_dust.multimesh = dust_multimesh
+	var dust_palettes: Array[Color] = [
+		Color(0.28, 0.48, 0.82), Color(0.46, 0.62, 0.92),
+		Color(0.72, 0.48, 0.34), Color(0.42, 0.72, 0.72),
+		Color(0.72, 0.66, 0.52)
+	]
 	var route_points: Array[Vector3] = [Vector3(0.0, 0.0, 90.0), Vector3(0.0, 18.0, -13500.0), Vector3(520.0, -28.0, -33000.0), Vector3(0.0, 0.0, 90.0)]
 	for index in range(DUST_COUNT):
 		var segment := _rng.randi_range(0, route_points.size() - 2)
@@ -650,9 +672,18 @@ func _build_cosmic_dust() -> void:
 		var radius := _rng.randf_range(850.0, 2800.0)
 		var position := center + side * cos(angle) * radius + vertical * sin(angle) * radius
 		var size := _rng.randf_range(0.35, 1.65)
-		var basis := Basis.from_euler(Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))).scaled(Vector3.ONE * size)
+		# Flattened, irregular flakes catch light differently from spherical stars.
+		var basis := Basis.from_euler(Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))).scaled(Vector3(
+			size * _rng.randf_range(0.55, 1.25),
+			size * _rng.randf_range(0.35, 0.75),
+			size * _rng.randf_range(1.4, 3.2)
+		))
 		_cosmic_dust.multimesh.set_instance_transform(index, Transform3D(basis, position))
+		var tint: Color = dust_palettes[_rng.randi_range(0, dust_palettes.size() - 1)]
+		var brightness := _rng.randf_range(0.32, 0.82)
+		_cosmic_dust.multimesh.set_instance_custom_data(index, Color(tint.r * brightness, tint.g * brightness, tint.b * brightness, _rng.randf()))
 	add_child(_cosmic_dust)
+
 
 func _random_asteroid_position() -> Vector3:
 	var route_points: Array[Vector3] = [
