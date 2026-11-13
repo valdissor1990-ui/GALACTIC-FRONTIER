@@ -7,6 +7,7 @@ on:
       - chatgpt/ship-art-production
       - chatgpt/fullhd-visual-polish
       - chatgpt/player-fighter-hero-detail
+      - chatgpt/ship-uv-quality-fix
     paths:
       - "scripts/blender/**"
       - "tests/assets/**"
