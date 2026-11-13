@@ -16,6 +16,7 @@ class GALACTICFRONTIER_API AGFEnemyShip : public AActor
 public:
     AGFEnemyShip();
 
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
 
     UFUNCTION(BlueprintCallable, Category="Enemy|AI")
