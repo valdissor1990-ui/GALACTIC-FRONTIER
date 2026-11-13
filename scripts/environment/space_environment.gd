@@ -111,7 +111,7 @@ func _build_starfield() -> void:
 	star_material.albedo_color = Color(0.72, 0.84, 1.0)
 	star_material.emission_enabled = true
 	star_material.emission = Color(0.56, 0.76, 1.0)
-	star_material.emission_energy_multiplier = 2.1
+	star_material.emission_energy_multiplier = 2.25
 	star_mesh.material = star_material
 
 	_starfield = _make_multimesh("Starfield", star_mesh, star_count)
