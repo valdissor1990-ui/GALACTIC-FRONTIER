@@ -4,7 +4,7 @@ class_name GravityLensMass
 
 @export var lens_strength: float = 1.0
 @export var lens_radius: float = 0.22
-@export var show_debug_core: bool = true
+@export var show_debug_core: bool = false
 
 
 func _ready() -> void:
