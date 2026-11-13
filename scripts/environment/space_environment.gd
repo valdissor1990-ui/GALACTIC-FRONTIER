@@ -337,12 +337,12 @@ func _build_world_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = _theme.get("ambient", Color(0.22, 0.31, 0.52))
-	environment.ambient_light_energy = 0.88
+	environment.ambient_light_color = _theme.get("ambient", Color(0.28, 0.36, 0.54))
+	environment.ambient_light_energy = 1.0
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.68
-	environment.glow_strength = 0.86
+	environment.glow_intensity = 0.58
+	environment.glow_strength = 0.72
 	environment.ssao_enabled = true
 	environment.ssao_radius = 1.35
 	environment.ssao_intensity = 0.62
@@ -367,7 +367,7 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = _theme.get("key_light", Color(0.72, 0.82, 1.0))
-	key_light.light_energy = 1.82
+	key_light.light_energy = 2.1
 	key_light.shadow_enabled = true
 	key_light.directional_shadow_max_distance = 260.0
 	_stellar_key_light = key_light
@@ -379,7 +379,7 @@ func _build_world_environment() -> void:
 	fill_light.name = "NebulaFillLight"
 	fill_light.rotation_degrees = Vector3(-12.0, -148.0, 0.0)
 	fill_light.light_color = _theme.get("fill_light", Color(0.20, 0.38, 0.72))
-	fill_light.light_energy = 0.48
+	fill_light.light_energy = 0.9
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
 
@@ -485,14 +485,14 @@ func _build_nebulae() -> void:
 		"PrimaryNebula",
 		Vector3(-138.0, 54.0, -465.0),
 		Vector2(220.0, 126.0),
-		_theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.38)),
+		_theme.get("nebula_a", Color(0.16, 0.40, 1.0, 0.12)),
 		1138
 	)
 	_add_nebula(
 		"SecondaryNebula",
 		Vector3(430.0, -165.0, -860.0),
 		Vector2(170.0, 100.0),
-		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)),
+		_theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.09)),
 		8821
 	)
 	_add_nebula("TertiaryNebula", Vector3(-650.0, -210.0, -1180.0), Vector2(190.0, 115.0), _theme.get("nebula_b", Color(0.52, 0.20, 0.94, 0.32)) * Color(1.0, 1.0, 1.0, 0.62), 29117)
@@ -560,8 +560,8 @@ void fragment() {
 	vec3 warm_cloud = nebula_tint.rgb * vec3(1.22, 0.72, 0.48);
 	vec3 spectral_color = mix(cool_cloud, warm_cloud, spectral_mix);
 	ALBEDO = spectral_color * (0.64 + filaments * 0.32);
-	EMISSION = spectral_color * (0.025 + cloud_mass * 0.11 + filaments * 0.07);
-	ALPHA = clamp(density * nebula_tint.a, 0.0, 0.34);
+	EMISSION = spectral_color * (0.012 + cloud_mass * 0.05 + filaments * 0.03);
+	ALPHA = clamp(density * nebula_tint.a, 0.0, 0.18);
 }
 """
 	var quality := get_node_or_null("/root/GraphicsQuality")
