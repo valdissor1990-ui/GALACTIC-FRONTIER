@@ -64,6 +64,7 @@ void AGFMissionDirector::BeginPlay()
 void AGFMissionDirector::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    if (Stage == EGFMissionStage::Complete || Stage == EGFMissionStage::Failed) return;
     if (!PlayerPawn.IsValid()) PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
     if (AGFPlayerShipPawn* Player = Cast<AGFPlayerShipPawn>(PlayerPawn.Get()))
     {
