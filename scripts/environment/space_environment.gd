@@ -14,6 +14,7 @@ var _planet_atmosphere: MeshInstance3D
 var _companion_planet: MeshInstance3D
 var _companion_rings: MeshInstance3D
 var _companion_moon: MeshInstance3D
+var _cosmic_dust: MultiMeshInstance3D
 
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _ready() -> void:
 	_build_planet()
 	_build_companion_worlds()
 	_build_asteroid_field()
+	_build_cosmic_dust()
 
 
 func _process(delta: float) -> void:
@@ -63,6 +65,7 @@ func _process(delta: float) -> void:
 		_companion_rings.global_transform = Transform3D(ring_basis.scaled(Vector3.ONE * 100.0), ring_position)
 	if is_instance_valid(_companion_moon):
 		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
+		_companion_moon.rotate_y(delta * 0.012)
 
 
 
@@ -368,6 +371,9 @@ void fragment() {
 	ring.scale = Vector3.ONE * 100.0
 	_companion_rings = ring
 	add_child(ring)
+	_add_ring_detail(ring, "NacreonInnerRing", 1.06, 1.17, 0.30)
+	_add_ring_detail(ring, "NacreonOuterRing", 1.92, 2.12, 0.22)
+	_add_ring_detail(ring, "NacreonDustBand", 2.18, 2.25, 0.10)
 
 	var moon := MeshInstance3D.new()
 	moon.name = "NacreonMoon"
@@ -484,6 +490,62 @@ void fragment() {
 		_add_asteroid_collision(index, position, size)
 	add_child(field)
 
+
+func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: float, outer_radius: float, alpha: float) -> void:
+	var band := MeshInstance3D.new()
+	band.name = node_name
+	var mesh := TorusMesh.new()
+	mesh.inner_radius = inner_radius
+	mesh.outer_radius = outer_radius
+	mesh.rings = 112
+	mesh.ring_segments = 10
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var tint: Color = _theme.get("ring_tint", Color(0.68, 0.54, 0.38))
+	material.albedo_color = Color(tint.r, tint.g, tint.b, alpha)
+	material.emission_enabled = true
+	material.emission = tint * 0.12
+	material.emission_energy_multiplier = 0.12
+	mesh.material = material
+	band.mesh = mesh
+	parent.add_child(band)
+
+
+func _build_cosmic_dust() -> void:
+	# One batched visual layer adds depth without hundreds of physics bodies.
+	const DUST_COUNT := 1400
+	var dust_mesh := SphereMesh.new()
+	dust_mesh.radius = 0.22
+	dust_mesh.height = 0.44
+	dust_mesh.radial_segments = 5
+	dust_mesh.rings = 3
+	var dust_material := StandardMaterial3D.new()
+	dust_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dust_material.albedo_color = Color(0.34, 0.48, 0.72, 0.42)
+	dust_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dust_material.emission_enabled = true
+	dust_material.emission = Color(0.12, 0.22, 0.42)
+	dust_material.emission_energy_multiplier = 0.42
+	dust_mesh.material = dust_material
+	_cosmic_dust = _make_multimesh("InterplanetaryDust", dust_mesh, DUST_COUNT)
+	var route_points: Array[Vector3] = [Vector3(0.0, 0.0, 90.0), Vector3(0.0, 18.0, -13500.0), Vector3(520.0, -28.0, -33000.0), Vector3(0.0, 0.0, 90.0)]
+	for index in range(DUST_COUNT):
+		var segment := _rng.randi_range(0, route_points.size() - 2)
+		var start := route_points[segment]
+		var end := route_points[segment + 1]
+		var forward := (end - start).normalized()
+		var center := start.lerp(end, _rng.randf_range(0.02, 0.98))
+		var axis := Vector3.UP if absf(forward.dot(Vector3.UP)) < 0.92 else Vector3.RIGHT
+		var side := forward.cross(axis).normalized()
+		var vertical := forward.cross(side).normalized()
+		var angle := _rng.randf_range(0.0, TAU)
+		var radius := _rng.randf_range(850.0, 2800.0)
+		var position := center + side * cos(angle) * radius + vertical * sin(angle) * radius
+		var size := _rng.randf_range(0.35, 1.65)
+		var basis := Basis.from_euler(Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))).scaled(Vector3.ONE * size)
+		_cosmic_dust.multimesh.set_instance_transform(index, Transform3D(basis, position))
+	add_child(_cosmic_dust)
 
 func _random_asteroid_position() -> Vector3:
 	var route_points: Array[Vector3] = [
