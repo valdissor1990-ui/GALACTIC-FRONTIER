@@ -69,6 +69,6 @@ func _test_choice_gate_and_campaign_chain(manager: CampaignManager) -> void:
 	_assert_true(not manager.complete_objective("choose_share", "invalid_choice").get("ok", false), "choice objective rejects unknown choice")
 	var chosen := manager.complete_objective("choose_share", "keep_private")
 	_assert_true(chosen.get("mission_completed", false), "valid M03 choice completes mission")
-	_assert_true(manager.story_state.has_flag("kept_private"), "choice flag is persisted in story state")
-	_assert_true(manager.start_mission("m04").get("ok", false), "M04 unlocks after M03")
+	_assert_true(manager.story_state.has_flag("kept_private"), "choice flag is applied to story state")
 	_assert_true(manager.start_mission("m05").get("ok", false) == false, "M05 remains locked before M04")
+	_assert_true(manager.start_mission("m04").get("ok", false), "M04 unlocks after M03")
