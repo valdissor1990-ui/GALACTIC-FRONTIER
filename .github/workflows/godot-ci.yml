@@ -85,6 +85,9 @@ jobs:
         if: hashFiles('tests/combat/test_enemy_combat_ai.gd') != ''
         run: godot --headless --path . --script res://tests/combat/test_enemy_combat_ai.gd
 
+      - name: Verify swept collision for fast projectiles
+        run: godot --headless --path . --script res://tests/combat/test_projectile_sweep.gd
+
       - name: Run ship visual fallback regression tests
         if: hashFiles('tests/visual/test_ship_visual_fallback.gd') != ''
         run: godot --headless --path . --script res://tests/visual/test_ship_visual_fallback.gd
