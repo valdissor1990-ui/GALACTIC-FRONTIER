@@ -123,8 +123,8 @@ func _run_showcase() -> void:
 		if is_instance_valid(mission._service_layer):
 			mission._service_layer.queue_free()
 		profile.set("credits", original_credits)
-		var original_completed := profile.completed_mission_ids.duplicate()
-		var original_active_contract := profile.active_contract_id
+		var original_completed: Array[String] = profile.completed_mission_ids.duplicate()
+		var original_active_contract: String = profile.active_contract_id
 		profile.completed_mission_ids.clear()
 		profile.completed_mission_ids.append("silent_relay")
 		profile.completed_mission_ids.append("vesper_salvage")
