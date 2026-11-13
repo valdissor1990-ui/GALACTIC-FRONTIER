@@ -16,6 +16,19 @@ AGFEnemyShip::AGFEnemyShip()
     Tags.Add(TEXT("CombatTarget"));
 }
 
+void AGFEnemyShip::BeginPlay()
+{
+    Super::BeginPlay();
+    if (Damageable) Damageable->OnDestroyed.AddDynamic(this, &AGFEnemyShip::HandleDestroyed);
+}
+
+void AGFEnemyShip::HandleDestroyed()
+{
+    if (Weapon) Weapon->StopFiring();
+    SetActorTickEnabled(false);
+    SetLifeSpan(2.5f);
+}
+
 void AGFEnemyShip::SetCombatTarget(AActor* Target)
 {
     CombatTarget = Target;
