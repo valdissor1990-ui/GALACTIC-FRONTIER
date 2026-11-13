@@ -206,31 +206,48 @@ jobs:
           PY
 
       - name: Verify full mission sequence and screenshot evidence
+        shell: bash
         run: |
-          cat build/gameplay-showcase.log
-          test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
-          test -s build/screenshots/contact-sheet.png
-          test -s build/screenshots/fleet-hangar.png
-          test -s build/screenshots/carrier-services.png
-          test -s build/screenshots/contract-board.png
-          test -s build/screenshots/space-contact-sheet.png
-          test "$(find build/screenshots -maxdepth 1 -name 'space-*.png' | wc -l)" -eq 7
           python3 - <<'PY'
+          from pathlib import Path
           from PIL import Image
-          for path in ("build/screenshots/fleet-hangar.png", "build/screenshots/carrier-services.png", "build/screenshots/contract-board.png"):
-              image = Image.open(path)
-              if image.size != (1920, 1080):
-                  raise SystemExit(f"Unexpected Full HD screenshot size: {path} {image.size}")
+
+          screenshots = Path("build/screenshots")
+          gameplay = sorted(screenshots.glob("gameplay-*.png"))
+          space = sorted(screenshots.glob("space-*.png"))
+          required = [
+              "contact-sheet.png", "space-contact-sheet.png", "fleet-hangar.png",
+              "carrier-services.png", "contract-board.png"
+          ]
+          if len(gameplay) != 8:
+              raise SystemExit(f"Expected 8 gameplay frames, got {len(gameplay)}")
+          if len(space) != 7:
+              raise SystemExit(f"Expected 7 space frames, got {len(space)}")
+          for name in required:
+              path = screenshots / name
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Missing screenshot evidence: {name}")
+          for path in gameplay + space + [screenshots / "fleet-hangar.png", screenshots / "carrier-services.png", screenshots / "contract-board.png"]:
+              with Image.open(path) as image:
+                  if image.size != (1920, 1080):
+                      raise SystemExit(f"Unexpected Full HD size: {path} {image.size}")
+
+          gameplay_log = Path("build/gameplay-showcase.log").read_text(errors="replace")
+          fleet_log = Path("build/fleet-hangar.log").read_text(errors="replace")
+          for marker in [
+              "SHOWCASE_PLAYER_MODEL_MESHES=", "SHOWCASE_ENEMY_MODEL_MESHES=",
+              "SHOWCASE_PHASE=RELAY_APPROACH", "SHOWCASE_PHASE=RELAY_COMBAT",
+              "SHOWCASE_PHASE=WRECK_INVESTIGATION", "SHOWCASE_PHASE=WRECK_COMBAT",
+              "SHOWCASE_PHASE=MISSION_COMPLETE", "SHOWCASE_SEQUENCE_COMPLETE stage=7"
+          ]:
+              if marker not in gameplay_log:
+                  raise SystemExit(f"Missing gameplay QA marker: {marker}")
+          if gameplay_log.count("SHOWCASE_SCREENSHOT=") != 10:
+              raise SystemExit("Gameplay showcase did not capture all 10 frames")
+          if "FLEET_HANGAR_SHIPS_LOADED=7" not in fleet_log or "FLEET_HANGAR_COMPLETE" not in fleet_log:
+              raise SystemExit("Seven-ship hangar showcase did not complete")
+          print(f"VISUAL_QA_PASS gameplay={len(gameplay)} space={len(space)} resolution=1920x1080")
           PY
-          grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
-          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png build/screenshots/carrier-services.png build/screenshots/contract-board.png
-          grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
-          grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
-          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 10
-          for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
-            grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
-          done
-          grep -E "SHOWCASE_SEQUENCE_COMPLETE stage=7" build/gameplay-showcase.log
 
       - name: Upload Full HD gameplay screenshots and diagnostics
         if: always()
