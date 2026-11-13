@@ -27,6 +27,7 @@ var _derelict_root: Node3D
 var _orbital_station_root: Node3D
 var _traffic_roots: Array[Node3D] = []
 var _dust_count: int = 2400
+var _applied_quality_preset: int = -1
 
 
 func _ready() -> void:
@@ -58,6 +59,8 @@ func _ready() -> void:
 func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 	if quality == null:
 		return
+	var preset_id := int(quality.current)
+	var preset_changed := preset_id != _applied_quality_preset
 	var desired_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
 	if rebuild_fields and desired_stars != star_count:
 		star_count = desired_stars
@@ -88,6 +91,17 @@ func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 			_cosmic_dust.queue_free()
 		_build_cosmic_dust()
 
+	if preset_changed and rebuild_fields:
+		for node_name in ["PrimaryNebula", "SecondaryNebula", "TertiaryNebula", "FarNebula", "DistantSpiralGalaxy"]:
+			var old_visual := get_node_or_null(NodePath(node_name))
+			if old_visual != null:
+				remove_child(old_visual)
+				old_visual.queue_free()
+		_build_nebulae()
+		_build_distant_galaxy()
+	_apply_planet_quality(quality.planet_segments() * 2)
+	_applied_quality_preset = preset_id
+
 	var world_node := get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if world_node != null and world_node.environment != null:
 		var environment := world_node.environment
@@ -113,6 +127,14 @@ func apply_quality(quality: Node, rebuild_fields: bool = true) -> void:
 		_stellar_key_light.shadow_enabled = quality.shadow_enabled()
 		_stellar_key_light.directional_shadow_max_distance = quality.shadow_max_distance()
 		_stellar_key_light.directional_shadow_mode = quality.shadow_splits() as DirectionalLight3D.ShadowMode
+
+
+func _apply_planet_quality(segments: int) -> void:
+	for child in get_children():
+		if child is MeshInstance3D and child.mesh is SphereMesh:
+			var sphere := child.mesh as SphereMesh
+			sphere.radial_segments = maxi(segments, 24)
+			sphere.rings = maxi(segments / 2, 12)
 
 
 func _process(delta: float) -> void:
@@ -420,7 +442,9 @@ func _build_starfield() -> void:
 	star_material.albedo_color = _theme.get("star", Color(0.72, 0.84, 1.0))
 	star_material.emission_enabled = true
 	star_material.emission = _theme.get("star", Color(0.56, 0.76, 1.0))
-	star_material.emission_energy_multiplier = 2.25
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	var star_brightness := float(quality.sky_star_brightness()) / 1.3 if quality != null else 1.0
+	star_material.emission_energy_multiplier = 2.25 * star_brightness
 	star_mesh.material = star_material
 
 	_starfield = _make_multimesh("Starfield", star_mesh, star_count)
@@ -496,6 +520,9 @@ void fragment() {
 	ALPHA = alpha;
 }
 """
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	if quality != null:
+		tint.a *= float(quality.sky_nebula_strength()) / 0.58
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter("nebula_noise", noise_texture)
@@ -551,7 +578,9 @@ void fragment() {
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	var tint: Color = _theme.get("star", Color(0.72, 0.84, 1.0))
-	material.set_shader_parameter("galaxy_tint", Color(tint.r * 0.86, tint.g * 0.88, tint.b * 0.96, 0.34))
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	var galaxy_strength := float(quality.sky_galactic_strength()) / 0.42 if quality != null else 1.0
+	material.set_shader_parameter("galaxy_tint", Color(tint.r * 0.86, tint.g * 0.88, tint.b * 0.96, 0.34 * galaxy_strength))
 	var quad := QuadMesh.new()
 	quad.size = Vector2(340.0, 188.0)
 	quad.material = material
@@ -1148,6 +1177,8 @@ void fragment() {
 	_cosmic_dust.name = "InterplanetaryDust"
 	_cosmic_dust.multimesh = dust_multimesh
 	_cosmic_dust.custom_aabb = AABB(Vector3(-4000.0, -4000.0, -36000.0), Vector3(8000.0, 8000.0, 37000.0))
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	var dust_strength := float(quality.sky_dust_strength()) / 0.3 if quality != null else 1.0
 	var dust_palettes: Array[Color] = [
 		Color(0.28, 0.48, 0.82), Color(0.46, 0.62, 0.92),
 		Color(0.72, 0.48, 0.34), Color(0.42, 0.72, 0.72),
@@ -1175,7 +1206,7 @@ void fragment() {
 		))
 		_cosmic_dust.multimesh.set_instance_transform(index, Transform3D(basis, position))
 		var tint: Color = dust_palettes[_rng.randi_range(0, dust_palettes.size() - 1)]
-		var brightness := _rng.randf_range(0.32, 0.82)
+		var brightness := _rng.randf_range(0.32, 0.82) * dust_strength
 		_cosmic_dust.multimesh.set_instance_custom_data(index, Color(tint.r * brightness, tint.g * brightness, tint.b * brightness, _rng.randf()))
 	add_child(_cosmic_dust)
 
