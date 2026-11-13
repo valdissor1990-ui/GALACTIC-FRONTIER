@@ -95,6 +95,7 @@ def make_texture(name, kind, resolution, seed):
 def make_material(name, image, roughness=0.72, metallic=0.0):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
+    material.use_backface_culling = False
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     principled = nodes.get("Principled BSDF")
@@ -189,9 +190,6 @@ def create_space_backdrop(resolution):
     sky = bpy.context.object
     sky.name = "GF_DeepSpace_Backdrop"
     sky.data.name = "GF_DeepSpace_BackdropMesh"
-    for polygon in sky.data.polygons:
-        polygon.flip()
-    sky.data.update()
     for polygon in sky.data.polygons:
         polygon.use_smooth = True
 
