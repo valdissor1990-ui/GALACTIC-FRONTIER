@@ -279,13 +279,31 @@ def cylinder_between(name, start, end, radius, material, vertices=24, radius_end
 
 
 def add_detail_uv(mesh, scale=4.0):
-    """Write repeatable meter-scaled UVs for Godot's runtime PBR detail maps."""
+    """Create non-degenerate, face-projected UVs for exportable PBR maps.
+
+    A single XY projection collapses vertical faces and distorts cylindrical
+    fuselage surfaces. Project each polygon along its dominant normal axis;
+    this keeps hard-surface faces textured after Blender -> glTF -> Godot.
+    """
+    mesh.update()
+    existing = mesh.uv_layers.get("GF_DetailUV")
+    if existing is not None:
+        mesh.uv_layers.remove(existing)
     uv_layer = mesh.uv_layers.new(name="GF_DetailUV")
+
     for polygon in mesh.polygons:
+        normal = polygon.normal
+        dominant_axis = max(range(3), key=lambda axis: abs(normal[axis]))
         for loop_index in polygon.loop_indices:
             vertex_index = mesh.loops[loop_index].vertex_index
-            vertex = mesh.vertices[vertex_index]
-            uv_layer.data[loop_index].uv = (vertex.co.x * scale, vertex.co.y * scale)
+            vertex = mesh.vertices[vertex_index].co
+            if dominant_axis == 0:
+                u, v = vertex.y, vertex.z
+            elif dominant_axis == 1:
+                u, v = vertex.x, vertex.z
+            else:
+                u, v = vertex.x, vertex.y
+            uv_layer.data[loop_index].uv = (u * scale, v * scale)
 
 def loft_fuselage(name, sections, material, sides=12):
     vertices = []
