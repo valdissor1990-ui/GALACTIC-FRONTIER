@@ -19,15 +19,12 @@ class GALACTICFRONTIER_API UGFShipFlightComponent : public UActorComponent
 public:
     UGFShipFlightComponent();
 
-    /** Normalized local movement input: X=forward, Y=right, Z=up. */
     UFUNCTION(BlueprintCallable, Category="Flight|Input")
     void SetFlightInput(FVector LocalMovementInput);
 
-    /** Normalized pitch/yaw/roll input in the range [-1, 1]. */
     UFUNCTION(BlueprintCallable, Category="Flight|Input")
     void SetRotationInput(FVector PitchYawRollInput);
 
-    /** Mouse delta in pixels; consumed once on the next component tick. */
     UFUNCTION(BlueprintCallable, Category="Flight|Input")
     void AddMouseLookDelta(FVector2D DeltaPixels);
 
@@ -46,16 +43,20 @@ public:
     UFUNCTION(BlueprintPure, Category="Flight|State")
     float GetBoostRemaining() const { return BoostRemaining; }
 
+    /** True while boost is held and residual capacity remains. */
+    UFUNCTION(BlueprintPure, Category="Flight|State")
+    bool IsBoostActive() const { return bBoostRequested && BoostRemaining > 0.0f && !bFlightDisabled; }
+
 protected:
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="1.0"))
-    float MaxSpeed = 9500.0f; // cm/s (95 m/s source-game tuning)
+    float MaxSpeed = 9500.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="0.0"))
-    float Acceleration = 3400.0f; // cm/s^2 (34 m/s^2 source-game tuning)
+    float Acceleration = 3400.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Flight|Tuning", meta=(ClampMin="0.0"))
     float Drag = 0.85f;
