@@ -79,6 +79,13 @@ static func _finished_material(source: StandardMaterial3D) -> StandardMaterial3D
 	material.detail_albedo = _surface_albedo_noise
 	material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
 	material.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
+	# The original hand-built hull meshes predate UV authoring. Triplanar
+	# projection keeps the new detail visible on those meshes immediately,
+	# while the new UV maps provide a clean path for future baked textures.
+	if material.albedo_texture == null:
+		material.uv1_triplanar = true
+		material.uv1_triplanar_sharpness = 4.0
+		material.uv1_scale = Vector3(2.0, 2.0, 2.0)
 	if material.roughness_texture == null:
 		material.roughness_texture = _surface_roughness_noise
 		material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
