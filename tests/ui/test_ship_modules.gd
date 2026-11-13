@@ -49,9 +49,15 @@ func _run() -> void:
 	_check(is_equal_approx(player.flight_config.boost_capacity, 12.5), "boost injector increases boost capacity")
 	_check(is_equal_approx(player.flight_config.boost_recharge_rate, 2.36), "boost injector increases recharge rate")
 	_check(profile.get_installed_modules("player_fighter").size() == 4, "installed modules persist on the selected ship")
+	_check(profile.purchase_module("raider_interceptor", "ion_thrusters"), "the same module slot can be upgraded independently on another ship")
+	profile.selected_ship_id = "raider_interceptor"
+	player.refresh_profile_upgrades()
+	var raider_base_config := load("res://resources/ships/raider_interceptor.tres") as ShipFlightConfig
+	_check(is_equal_approx(player.flight_config.max_speed, raider_base_config.max_speed * 1.08), "ion thrusters increase the selected ship top speed")
+	_check(is_equal_approx(player.flight_config.acceleration, raider_base_config.acceleration * 1.12), "ion thrusters increase the selected ship acceleration")
 
 	profile.credits = 0
-	_check(not profile.purchase_module("raider_interceptor", "ion_thrusters"), "module purchase is rejected when credits are insufficient")
+	_check(not profile.purchase_module("raider_interceptor", "reinforced_hull"), "module purchase is rejected when credits are insufficient")
 	_check(profile.get_module_catalog().size() == 5, "five upgrade modules are available in the catalog")
 
 	profile.credits = int(backup["credits"])
@@ -68,7 +74,7 @@ func _run() -> void:
 	await process_frame
 
 	if _failures.is_empty():
-		print("SHIP_MODULES_TEST_PASS assertions=15")
+		print("SHIP_MODULES_TEST_PASS assertions=18")
 		quit(0)
 	else:
 		for failure in _failures:
