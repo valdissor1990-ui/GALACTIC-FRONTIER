@@ -1,0 +1,63 @@
+#include "GFSpaceHUD.h"
+
+#include "Engine/Canvas.h"
+#include "Engine/Font.h"
+#include "Engine/Engine.h"
+#include "GFPlayerShipPawn.h"
+#include "GFShipFlightComponent.h"
+#include "GFDamageableComponent.h"
+#include "GFWeaponComponent.h"
+#include "GFTargetingComponent.h"
+#include "Kismet/GameplayStatics.h"
+
+void AGFSpaceHUD::DrawTextLine(const FString& Text, const float X, const float Y, const FLinearColor& Color, const float Scale)
+{
+    if (!Canvas || !GEngine) return;
+    FCanvasTextItem Item(FVector2D(X, Y), FText::FromString(Text), GEngine->GetSmallFont(), Color);
+    Item.Scale = FVector2D(Scale, Scale);
+    Item.EnableShadow(FLinearColor::Black);
+    Canvas->DrawItem(Item);
+}
+
+void AGFSpaceHUD::DrawHUD()
+{
+    Super::DrawHUD();
+    if (!Canvas) return;
+
+    const float CenterX = Canvas->ClipX * 0.5f;
+    const float CenterY = Canvas->ClipY * 0.5f;
+    const FLinearColor Cyan(0.12f, 0.78f, 1.0f, 0.95f);
+
+    // Minimal reticle with no screen-space texture dependency.
+    DrawLine(CenterX - 12.0f, CenterY, CenterX - 4.0f, CenterY, Cyan, 1.5f);
+    DrawLine(CenterX + 4.0f, CenterY, CenterX + 12.0f, CenterY, Cyan, 1.5f);
+    DrawLine(CenterX, CenterY - 12.0f, CenterX, CenterY - 4.0f, Cyan, 1.5f);
+    DrawLine(CenterX, CenterY + 4.0f, CenterX, CenterY + 12.0f, Cyan, 1.5f);
+
+    const AGFPlayerShipPawn* Ship = Cast<AGFPlayerShipPawn>(GetOwningPawn());
+    if (!Ship) Ship = Cast<AGFPlayerShipPawn>(UGameplayStatics::GetPlayerPawn(this, 0));
+    if (!Ship) return;
+
+    const float SpeedKmh = Ship->Flight ? Ship->Flight->GetVelocity().Size() * 0.036f : 0.0f;
+    DrawTextLine(FString::Printf(TEXT("VELOCITY  %.0f km/h"), SpeedKmh), 36.0f, Canvas->ClipY - 100.0f, Cyan, 1.15f);
+
+    if (Ship->Damageable)
+    {
+        DrawTextLine(FString::Printf(TEXT("HULL      %3.0f / %3.0f"), Ship->Damageable->CurrentHull, Ship->Damageable->MaximumHull), 36.0f, Canvas->ClipY - 72.0f, FLinearColor(0.35f, 0.88f, 1.0f));
+        DrawTextLine(FString::Printf(TEXT("SHIELDS   %3.0f / %3.0f"), Ship->Damageable->CurrentShield, Ship->Damageable->MaximumShield), 36.0f, Canvas->ClipY - 46.0f, FLinearColor(0.2f, 0.65f, 1.0f));
+    }
+    if (Ship->Flight)
+    {
+        DrawTextLine(FString::Printf(TEXT("BOOST     %2.1f s"), Ship->Flight->GetBoostRemaining()), 36.0f, Canvas->ClipY - 20.0f, FLinearColor(0.35f, 1.0f, 0.8f));
+    }
+
+    if (Ship->Targeting)
+    {
+        const AActor* Target = Ship->Targeting->GetCurrentTarget();
+        const FString TargetName = IsValid(Target) ? Target->GetName() : TEXT("NO TARGET");
+        DrawTextLine(TEXT("TARGET  ") + TargetName, Canvas->ClipX - 270.0f, 36.0f, IsValid(Target) ? FLinearColor(1.0f, 0.55f, 0.25f) : Cyan, 1.1f);
+    }
+
+    DrawTextLine(TEXT("WASD MOVE  |  ARROWS ROTATE  |  SHIFT BOOST  |  SPACE BRAKE"), 36.0f, 28.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
+    DrawTextLine(TEXT("LMB FIRE  |  T LOCK  |  X CLEAR  |  V CAMERA  |  F INTERACT"), 36.0f, 48.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
+}
