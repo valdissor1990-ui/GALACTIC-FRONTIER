@@ -12,6 +12,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
+	current_scene = world
 	var target := StaticBody3D.new()
 	target.name = "ThinTarget"
 	target.collision_layer = 1
@@ -29,11 +30,10 @@ func _run() -> void:
 	world.add_child(projectile)
 	projectile.configure(Vector3.FORWARD, null, 180.0, 18.0)
 	await physics_frame
-	await physics_frame
+	await process_frame
 
-	# One 60 Hz tick travels 3 metres, crossing the entire 10 cm target.
-	projectile._physics_process(1.0 / 60.0)
-	if not projectile.is_queued_for_deletion():
+	# One real 60 Hz physics tick travels 3 metres, crossing the 10 cm target.
+	if is_instance_valid(projectile):
 		_failed = true
 		push_error("PROJECTILE_SWEEP_FAIL: fast projectile passed through thin target")
 	else:
