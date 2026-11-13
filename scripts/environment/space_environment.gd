@@ -436,7 +436,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 varying float rock_variation;
-uniform vec3 rock_tint = vec3(0.48, 0.52, 0.56);
+uniform vec4 rock_tint = vec4(0.48, 0.52, 0.56, 1.0);
 
 void vertex() {
 	vec3 p = VERTEX;
@@ -451,7 +451,7 @@ void vertex() {
 void fragment() {
 	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
 	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
-	ALBEDO = rock_tint * value;
+	ALBEDO = rock_tint.rgb * value;
 	METALLIC = 0.12;
 	ROUGHNESS = 0.94;
 }
