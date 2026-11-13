@@ -810,15 +810,45 @@ func _create_planet_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
+func _load_nasa_asteroid_mesh() -> Mesh:
+	var source := load("res://assets/models/environment/1999_rq36_asteroid.glb") as PackedScene
+	if source == null:
+		push_warning("NASA asteroid GLB could not be loaded; using procedural asteroid fallback")
+		return null
+	var instance := source.instantiate()
+	var mesh := _find_first_mesh(instance)
+	instance.free()
+	if mesh == null:
+		push_warning("NASA asteroid GLB contains no MeshInstance3D; using procedural fallback")
+	return mesh
+
+
+func _find_first_mesh(node: Node) -> Mesh:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			return mesh_instance.mesh
+	for child in node.get_children():
+		var found := _find_first_mesh(child)
+		if found != null:
+			return found
+	return null
+
+
 func _build_asteroid_field() -> void:
 	# A denser base sphere plus deterministic vertex displacement avoids the
 	# smooth blue-marble look of the first capture and gives each instance a
 	# fractured, rocky silhouette without spawning hundreds of separate nodes.
-	var asteroid_mesh := SphereMesh.new()
-	asteroid_mesh.radius = 1.0
-	asteroid_mesh.height = 2.0
-	asteroid_mesh.radial_segments = 20
-	asteroid_mesh.rings = 12
+	var asteroid_mesh: Mesh = _load_nasa_asteroid_mesh()
+	if asteroid_mesh == null:
+		# Keep the procedural fallback available on platforms where the imported
+		# NASA GLB is unavailable; normal project builds use the real scanned mesh.
+		var fallback_mesh := SphereMesh.new()
+		fallback_mesh.radius = 1.0
+		fallback_mesh.height = 2.0
+		fallback_mesh.radial_segments = 20
+		fallback_mesh.rings = 12
+		asteroid_mesh = fallback_mesh
 	var asteroid_shader := Shader.new()
 	asteroid_shader.code = """
 shader_type spatial;
@@ -853,7 +883,8 @@ void fragment() {
 	var asteroid_material := ShaderMaterial.new()
 	asteroid_material.shader = asteroid_shader
 	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
-	asteroid_mesh.material = asteroid_material
+	for surface_index in range(asteroid_mesh.get_surface_count()):
+		asteroid_mesh.surface_set_material(surface_index, asteroid_material)
 
 	const RELAY_CLUSTER_COUNT := 28
 	var total_asteroid_count := asteroid_count + RELAY_CLUSTER_COUNT
