@@ -1,12 +1,13 @@
 extends Node3D
 class_name OpenSpaceBackdrop
 ## Builds a denser open-space read without external textures.
-## Star sky + key/fill lights + planets + MultiMesh asteroid belt.
+## Star sky + key/fill lights + planets + MultiMesh asteroid belt + Relay landmark.
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
 @export var belt_width: float = 55.0
 @export var belt_height: float = 18.0
+@export var spawn_relay_beacon: bool = true
 
 var _rng := RandomNumberGenerator.new()
 
@@ -17,6 +18,8 @@ func _ready() -> void:
 	_setup_lights()
 	_setup_planets()
 	_setup_asteroid_belt()
+	if spawn_relay_beacon:
+		_setup_relay_beacon()
 
 
 func _setup_sky_environment() -> void:
@@ -59,7 +62,6 @@ func _setup_sky_environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.06
 	env.adjustment_saturation = 1.08
-	# SSAO helps station/ship contact later; mild for open space
 	env.ssao_enabled = true
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 1.4
@@ -133,7 +135,6 @@ func _add_planet(
 	mat.emission = emission
 	mat.emission_energy_multiplier = 0.35
 	mi.set_surface_override_material(0, mat)
-	# Far planets never need tight cull margins
 	mi.visibility_range_end = 2000.0
 	add_child(mi)
 
@@ -154,7 +155,6 @@ func _setup_asteroid_belt() -> void:
 	mat.albedo_color = Color(0.22, 0.2, 0.18)
 	mat.roughness = 0.95
 	mat.metallic = 0.08
-	# Assign material via mesh surface — MultiMesh uses mesh materials
 	rock.material = mat
 	for i in asteroid_count:
 		var angle := _rng.randf() * TAU
@@ -171,3 +171,14 @@ func _setup_asteroid_belt() -> void:
 	multi.multimesh = mm
 	multi.visibility_range_end = 900.0
 	add_child(multi)
+
+
+func _setup_relay_beacon() -> void:
+	var packed := load("res://scenes/environment/silent_relay_beacon.tscn") as PackedScene
+	if packed == null:
+		return
+	var beacon := packed.instantiate() as Node3D
+	beacon.name = "SilentRelayBeacon"
+	beacon.position = Vector3(40, 12, -95)
+	beacon.scale = Vector3(1.4, 1.4, 1.4)
+	add_child(beacon)
