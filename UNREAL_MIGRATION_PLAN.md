@@ -83,6 +83,25 @@ The authoritative story and mission documents remain in `docs/CANON_STORY_UNIFIE
 - A successful static scan presented as a successful build.
 - Removing Godot before the Unreal build is accepted.
 
-## Current status
+## Current status — implementation in progress
 
-Only the migration branch and initial Unreal project scaffold are being established. The game has not yet been ported or built in Unreal.
+Implemented in C++ source (not yet compiled in the Unreal toolchain):
+- Project/game mode scaffold and Windows-oriented project configuration.
+- Player ship Pawn with chase/cockpit cameras and keyboard/mouse bindings.
+- Inertial flight, acceleration, braking, boost reserve/recharge, angular inertia, mouse look and collision sweep movement.
+- Hull/shield damage, shield regeneration delay and destroyed-state handling.
+- Primary energy weapon, projectile actor, hit damage and cooldown.
+- Target acquisition/clear using range and forward cone.
+- Enemy fighter pursuit and firing behavior.
+- Initial The Silent Relay flow: relay interaction, three waves at relay, wreck interaction, three waves at wreck, return-to-carrier completion and 5000-credit reward.
+- Local pilot SaveGame data with schema field, migration hook and backup slot.
+- Native HUD with velocity, hull, shields, boost, target and mission stage.
+- Editor Python setup script imports the existing ship/environment GLBs, creates a flight-test map, assigns the existing Player Fighter Mk.I and sets up an initial hostile and mission director.
+
+Not yet verified:
+- C++ compilation against the installed Unreal Engine 5.8 toolchain.
+- GLB import output, scale, axis, pivots, materials and collision in the editor.
+- Runtime possession, flight feel, weapon hits, enemy balance, mission completion and save recovery.
+- Windows packaged build.
+
+The migration is not accepted yet. Do not remove Godot source or merge to main.
