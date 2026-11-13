@@ -37,6 +37,7 @@ on:
       - chatgpt/m01-m05-story-integration
       - chatgpt/campaign-story-integration
       - chatgpt/space-visual-art-pass
+      - chatgpt/grok-completion-full-2026-11
   workflow_dispatch:
 
 permissions:

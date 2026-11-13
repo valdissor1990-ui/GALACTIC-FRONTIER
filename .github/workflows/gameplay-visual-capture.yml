@@ -24,6 +24,7 @@ on:
       - chatgpt/campaign-objectives
       - chatgpt/campaign-story-integration
       - chatgpt/space-visual-art-pass
+      - chatgpt/grok-completion-full-2026-11
     paths:
       - "scenes/**"
       - "scripts/**"
