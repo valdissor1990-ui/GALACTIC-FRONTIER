@@ -1,6 +1,6 @@
 extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
-## Uses generated geometry and textures only; no network or third-party assets.
+## Uses deterministic procedural layers plus curated NASA and CC0 environment assets.
 
 @export_range(300, 4000, 100) var star_count: int = 3800
 @export_range(40, 220, 10) var asteroid_count: int = 160

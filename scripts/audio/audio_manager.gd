@@ -1,14 +1,15 @@
 extends Node
-## Original procedural audio for engine ambience, energy fire and impacts.
-## All waveforms are synthesized locally; no external or copyrighted audio assets.
+## Procedural engine/fallback audio plus optional CC0 authored sci-fi transients.
 
 const SAMPLE_RATE := 11025
 const ENGINE_SECONDS := 2.0
 
-var engine_stream: AudioStream
-var weapon_stream: AudioStream
+var engine_stream: AudioStreamWAV
+var weapon_stream: AudioStreamWAV
+var impact_stream: AudioStreamWAV
+var weapon_asset_stream: AudioStream
 var heavy_weapon_stream: AudioStream
-var impact_stream: AudioStream
+var explosion_asset_stream: AudioStream
 var metal_impact_stream: AudioStream
 var shield_stream: AudioStream
 
@@ -17,11 +18,13 @@ func _ready() -> void:
 	# Keep the speed-responsive engine loop procedural; Kenney's short OGGs
 	# provide authored transient sounds, with local synthesis as a safe fallback.
 	engine_stream = _build_engine_loop()
-	weapon_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_small.ogg", _build_weapon_fire())
-	heavy_weapon_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_large.ogg", _build_weapon_fire())
-	impact_stream = _load_optional_audio("res://assets/audio/sfx/kenney_explosion_crunch.ogg", _build_impact())
-	metal_impact_stream = _load_optional_audio("res://assets/audio/sfx/kenney_impact_metal.ogg", _build_impact())
-	shield_stream = _load_optional_audio("res://assets/audio/sfx/kenney_force_field.ogg", _build_impact())
+	weapon_stream = _build_weapon_fire()
+	impact_stream = _build_impact()
+	weapon_asset_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_small.ogg", weapon_stream)
+	heavy_weapon_stream = _load_optional_audio("res://assets/audio/sfx/kenney_laser_large.ogg", weapon_stream)
+	explosion_asset_stream = _load_optional_audio("res://assets/audio/sfx/kenney_explosion_crunch.ogg", impact_stream)
+	metal_impact_stream = _load_optional_audio("res://assets/audio/sfx/kenney_impact_metal.ogg", impact_stream)
+	shield_stream = _load_optional_audio("res://assets/audio/sfx/kenney_force_field.ogg", impact_stream)
 
 
 func _load_optional_audio(path: String, fallback: AudioStream) -> AudioStream:
