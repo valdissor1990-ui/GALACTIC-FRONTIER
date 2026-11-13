@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/flight/ship_controller.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/flight/camera_rig.gd" id="2"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://scripts/vfx/screen_post_fx.gd" id="16"]
 [ext_resource type="Script" path="res://scripts/vfx/gravitational_lens_fx.gd" id="17"]
 [ext_resource type="Script" path="res://scripts/environment/sector_detail_streamer.gd" id="18"]
+[ext_resource type="Script" path="res://scripts/vfx/local_space_dust.gd" id="19"]
 
 [sub_resource type="ShaderMaterial" id="Material_hull"]
 render_priority = 0
@@ -107,6 +108,11 @@ material = SubResource("Material_spark")
 [node name="SectorDetailStreamer" type="Node3D" parent="."]
 script = ExtResource("18")
 track_path = NodePath("../PlayerShip")
+
+[node name="LocalSpaceDust" type="GPUParticles3D" parent="."]
+script = ExtResource("19")
+track_path = NodePath("../PlayerShip")
+base_amount = 72
 
 [node name="PlayerShip" type="CharacterBody3D" parent="."]
 script = ExtResource("1")
