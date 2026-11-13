@@ -26,10 +26,16 @@ var _comet_root: Node3D
 var _derelict_root: Node3D
 var _orbital_station_root: Node3D
 var _traffic_roots: Array[Node3D] = []
+var _dust_count: int = 2400
 
 
 func _ready() -> void:
 	_rng.seed = 741_2026
+	var quality := get_node_or_null("/root/GraphicsQuality")
+	if quality != null:
+		star_count = roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
+		asteroid_count = quality.asteroid_count()
+		_dust_count = maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
 	_load_system_theme()
 	_build_world_environment()
 	_build_stellar_primary()
@@ -45,6 +51,68 @@ func _ready() -> void:
 	_build_derelict_landmark()
 	_build_orbital_station_landmark()
 	_build_distant_traffic()
+	if quality != null:
+		apply_quality(quality)
+
+
+func apply_quality(quality: Node) -> void:
+	if quality == null:
+		return
+	var desired_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
+	if desired_stars != star_count:
+		star_count = desired_stars
+		if is_instance_valid(_starfield):
+			remove_child(_starfield)
+			_starfield.queue_free()
+		_build_starfield()
+
+	var desired_asteroids: int = quality.asteroid_count()
+	if desired_asteroids != asteroid_count:
+		asteroid_count = desired_asteroids
+		for node_name in ["AsteroidField", "KenneyMeteorVariants"]:
+			var old_field := get_node_or_null(node_name)
+			if old_field != null:
+				remove_child(old_field)
+				old_field.queue_free()
+		for child in get_children():
+			if child.name.begins_with("AsteroidCollision_"):
+				remove_child(child)
+				child.queue_free()
+		_build_asteroid_field()
+
+	var desired_dust := maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
+	if desired_dust != _dust_count:
+		_dust_count = desired_dust
+		if is_instance_valid(_cosmic_dust):
+			remove_child(_cosmic_dust)
+			_cosmic_dust.queue_free()
+		_build_cosmic_dust()
+
+	var world_node := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if world_node != null and world_node.environment != null:
+		var environment := world_node.environment
+		environment.tonemap_mode = quality.tonemap_mode()
+		environment.tonemap_exposure = quality.tonemap_exposure()
+		environment.tonemap_white = quality.tonemap_white()
+		environment.glow_enabled = quality.glow_enabled()
+		environment.glow_intensity = quality.glow_intensity()
+		environment.glow_bloom = quality.glow_bloom()
+		environment.glow_hdr_threshold = quality.glow_hdr_threshold()
+		environment.glow_hdr_scale = quality.glow_hdr_scale()
+		environment.glow_hdr_luminance_cap = quality.glow_hdr_luminance_cap()
+		environment.glow_strength = quality.glow_strength()
+		environment.ssao_enabled = quality.ssao_enabled()
+		environment.adjustment_enabled = quality.adjustment_enabled()
+		if environment.adjustment_enabled:
+			environment.adjustment_contrast = quality.adjustment_contrast()
+			environment.adjustment_saturation = quality.adjustment_saturation()
+		quality.apply_tonemap_extras(environment)
+		quality.apply_glow_levels(environment)
+
+	if is_instance_valid(_stellar_key_light):
+		_stellar_key_light.shadow_enabled = quality.shadow_enabled()
+		_stellar_key_light.directional_shadow_max_distance = quality.shadow_max_distance()
+		_stellar_key_light.directional_shadow_mode = quality.shadow_splits() as DirectionalLight3D.ShadowMode
 
 
 func _process(delta: float) -> void:
@@ -1043,7 +1111,7 @@ func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: f
 func _build_cosmic_dust() -> void:
 	# Layered, chromatic dust motes trace the long flight corridor. A single
 	# custom-data MultiMesh keeps this visual detail out of the physics scene.
-	const DUST_COUNT := 2400
+	var dust_count := _dust_count
 	var dust_mesh := SphereMesh.new()
 	dust_mesh.radius = 0.22
 	dust_mesh.height = 0.44
@@ -1071,7 +1139,7 @@ void fragment() {
 	dust_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	dust_multimesh.use_custom_data = true
 	dust_multimesh.mesh = dust_mesh
-	dust_multimesh.instance_count = DUST_COUNT
+	dust_multimesh.instance_count = dust_count
 	_cosmic_dust = MultiMeshInstance3D.new()
 	_cosmic_dust.name = "InterplanetaryDust"
 	_cosmic_dust.multimesh = dust_multimesh
@@ -1082,7 +1150,7 @@ void fragment() {
 		Color(0.72, 0.66, 0.52)
 	]
 	var route_points: Array[Vector3] = [Vector3(0.0, 0.0, 90.0), Vector3(0.0, 18.0, -13500.0), Vector3(520.0, -28.0, -33000.0), Vector3(0.0, 0.0, 90.0)]
-	for index in range(DUST_COUNT):
+	for index in range(dust_count):
 		var segment := _rng.randi_range(0, route_points.size() - 2)
 		var start := route_points[segment]
 		var end := route_points[segment + 1]
