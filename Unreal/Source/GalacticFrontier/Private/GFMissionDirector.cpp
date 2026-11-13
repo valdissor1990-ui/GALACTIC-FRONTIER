@@ -129,7 +129,7 @@ void AGFMissionDirector::HandleInteract()
         return;
     }
 
-    if (Stage == EGFMissionStage::ReturnHome && FVector::Dist(PlayerLocation, FVector::ZeroVector) <= InteractionRange)
+    if (Stage == EGFMissionStage::ReturnHome && FVector::Dist(PlayerLocation, CarrierPosition) <= InteractionRange)
     {
         Stage = EGFMissionStage::Complete;
         if (UGameInstance* GI = GetGameInstance())
@@ -203,7 +203,7 @@ void AGFMissionDirector::AdvanceAfterEncounter()
         Stage = EGFMissionStage::ReturnHome;
         if (WreckMarker) WreckMarker->SetVisibility(false, true);
         if (RelayMarker) RelayMarker->SetVisibility(true, true);
-        UpdateObjectiveMarker(RelayMarker, FVector::ZeroVector);
+        UpdateObjectiveMarker(RelayMarker, CarrierPosition);
         UE_LOG(LogTemp, Display, TEXT("GF Mission: Return to the carrier and press F to complete the contract."));
     }
 }
