@@ -4,11 +4,12 @@ extends Node
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/combat/enemy_fighter_visual.tscn")
 const TARGET_MARKER_SCRIPT: Script = preload("res://scripts/ui/target_marker.gd")
+const DOCKING_RULES_SCRIPT: Script = preload("res://scripts/flight/docking_rules.gd")
 const RELAY_POSITION := Vector3(0.0, 18.0, -13500.0)
 const WRECK_POSITION := Vector3(520.0, -28.0, -33000.0)
 const HOME_POSITION := Vector3(0.0, 0.0, 90.0)
 
-enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED }
+enum MissionStage { OUTBOUND, SCAN_RELAY, DEFEND_RELAY, INVESTIGATE_WRECK, SCAN_WRECK, DEFEND_WRECK, RETURN_HOME, COMPLETE, FAILED, DOCKING, DOCKED }
 
 @onready var world: Node3D = get_parent()
 @onready var player: ShipController = world.get_node("PlayerShip") as ShipController
@@ -23,6 +24,11 @@ var _scan_hold: float = 0.0
 var _objective_position: Vector3 = RELAY_POSITION
 var _beacon: Node3D
 var _station: Node3D
+var _dock_position: Vector3 = HOME_POSITION + Vector3(0.0, 0.0, -36.0)
+var _service_layer: CanvasLayer
+var _service_status_label: Label
+var _service_stats_label: Label
+var _service_buttons: Dictionary = {}
 var _mission_label: Label
 var _objective_label: Label
 var _radio_label: Label
@@ -70,7 +76,7 @@ func _process(delta: float) -> void:
 		_station.rotate_z(delta * 0.012)
 	if is_instance_valid(_beacon):
 		_beacon.rotate_z(delta * 0.32)
-	if stage == MissionStage.COMPLETE or stage == MissionStage.FAILED:
+	if stage == MissionStage.COMPLETE or stage == MissionStage.FAILED or stage == MissionStage.DOCKED:
 		_update_hud()
 		return
 	mission_seconds += delta
@@ -102,6 +108,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_load_checkpoint()
 		get_viewport().set_input_as_handled()
 		return
+	if key_event.keycode == KEY_E and stage == MissionStage.DOCKING:
+		_attempt_docking()
+		get_viewport().set_input_as_handled()
+		return
 	if key_event.keycode != KEY_F and not event.is_action_pressed("scan"):
 		return
 	if stage == MissionStage.SCAN_RELAY and _distance_to_objective() <= 95.0:
@@ -127,19 +137,15 @@ func _update_mission(delta: float) -> void:
 				_set_radio("ORBITAL CONTROL", "The wreck is broadcasting a data pulse. Scan it with F.")
 		MissionStage.RETURN_HOME:
 			if _distance_to_objective() <= 120.0:
-				stage = MissionStage.COMPLETE
-				_set_radio("ORBITAL CONTROL", "Docking corridor clear. Data recovered. Mission complete.")
-				print("MISSION_COMPLETE seconds=", mission_seconds)
-				if get_tree().get_first_node_in_group("qa_demo_driver") == null:
-					var profile := get_node_or_null("/root/GameProfile")
-					if profile != null:
-						mission_reward_credits = int(profile.call("complete_mission", "silent_relay", 5000))
-				else:
-					print("MISSION_REWARD_QA_SUPPRESSED")
-				var save_manager := _get_save_manager()
-				if save_manager != null:
-					save_manager.call("delete_slot", "silent_relay")
-				_show_mission_result(true)
+				stage = MissionStage.DOCKING
+				_objective_position = _dock_position
+				_move_beacon(_dock_position, Color(0.18, 1.0, 0.72))
+				_set_radio("CARRIER CONTROL", "Docking approach acquired. Reduce speed below 18 m/s, align with the blue port and press E.")
+				print("DOCKING_APPROACH_READY")
+				if get_tree().get_first_node_in_group("qa_demo_driver") != null:
+					_complete_docking(true)
+		MissionStage.DOCKING:
+			pass
 
 func _complete_relay_scan() -> void:
 	stage = MissionStage.DEFEND_RELAY
@@ -224,6 +230,8 @@ func _update_hud() -> void:
 		MissionStage.SCAN_WRECK: objective = "SCAN DATA CORE  [F]"
 		MissionStage.DEFEND_WRECK: objective = "DEFEND RECOVERED DATA  |  WAVE %d/3  |  HOSTILES %d" % [wave_index, enemies_remaining]
 		MissionStage.RETURN_HOME: objective = "RETURN TO THE ORBITAL CARRIER"
+		MissionStage.DOCKING: objective = "DOCK WITH THE CARRIER  [E]"
+		MissionStage.DOCKED: objective = "CARRIER MAINTENANCE SERVICES"
 		MissionStage.COMPLETE: objective = "MISSION COMPLETE"
 		MissionStage.FAILED: objective = "MISSION FAILED"
 	_objective_label.text = objective
@@ -239,7 +247,13 @@ func _update_hud() -> void:
 		completed_waves = 3 + wave_index - 1
 	elif stage == MissionStage.RETURN_HOME or stage == MissionStage.COMPLETE:
 		completed_waves = 6
-	_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [completed_waves, total_waves]
+	if stage == MissionStage.DOCKING:
+		var alignment := (-player.global_transform.basis.z).normalized().dot(Vector3.BACK)
+		_progress_label.text = "DOCKING APPROACH  |  SPEED %0.0f / 18 m/s  |  ALIGN %0.0f%%  |  PRESS E" % [player.velocity.length(), clampf(alignment, -1.0, 1.0) * 100.0]
+	elif stage == MissionStage.DOCKED:
+		_progress_label.text = "CARRIER SERVICES  |  HULL REPAIR  •  SHIELD RECHARGE  •  BOOST REFILL  •  WEAPON RECALIBRATION"
+	else:
+		_progress_label.text = "OPERATION SILENT RELAY   |   %d / %d WAVES   |   WASD / MOUSE  •  LMB FIRE  •  T LOCK  •  F SCAN  •  C CAMERA" % [completed_waves, total_waves]
 
 
 func _build_mission_hud() -> void:
@@ -401,6 +415,269 @@ func _build_station() -> void:
 	station_light.light_energy = 3.5
 	station_light.omni_range = 90.0
 	_station.add_child(station_light)
+
+	# Forward-facing carrier docking collar. The player approaches from -Z,
+	# enters the lit collar, aligns with +Z and confirms the clamps with E.
+	var docking_bay := Node3D.new()
+	docking_bay.name = "DockingBay"
+	docking_bay.position = Vector3(0.0, 0.0, -36.0)
+	_station.add_child(docking_bay)
+	var bay_floor := MeshInstance3D.new()
+	var bay_floor_mesh := BoxMesh.new()
+	bay_floor_mesh.size = Vector3(18.0, 0.8, 24.0)
+	bay_floor.mesh = bay_floor_mesh
+	bay_floor.position = Vector3(0.0, -5.0, 4.0)
+	bay_floor.material_override = armor
+	docking_bay.add_child(bay_floor)
+	var collar := MeshInstance3D.new()
+	var collar_mesh := TorusMesh.new()
+	collar_mesh.inner_radius = 8.0
+	collar_mesh.outer_radius = 9.2
+	collar_mesh.rings = 64
+	collar_mesh.ring_segments = 16
+	collar.mesh = collar_mesh
+	collar.material_override = accent
+	docking_bay.add_child(collar)
+	for side in [-1.0, 1.0]:
+		var rail := MeshInstance3D.new()
+		var rail_mesh := BoxMesh.new()
+		rail_mesh.size = Vector3(1.0, 1.2, 20.0)
+		rail.mesh = rail_mesh
+		rail.position = Vector3(side * 10.0, -2.2, 4.0)
+		rail.material_override = armor
+		docking_bay.add_child(rail)
+		var guide_light := OmniLight3D.new()
+		guide_light.position = Vector3(side * 7.0, 1.0, 1.0)
+		guide_light.light_color = Color(0.08, 0.95, 0.72)
+		guide_light.light_energy = 1.4
+		guide_light.omni_range = 18.0
+		docking_bay.add_child(guide_light)
+	_dock_position = _station.global_position + docking_bay.position
+
+
+func _attempt_docking() -> bool:
+	if stage != MissionStage.DOCKING or not is_instance_valid(player):
+		return false
+	var ship_forward := -player.global_transform.basis.z
+	var distance := player.global_position.distance_to(_dock_position)
+	var speed := player.velocity.length()
+	if not DOCKING_RULES_SCRIPT.can_dock(distance, speed, ship_forward, Vector3.BACK):
+		_set_radio("DOCKING CONTROL", "Docking denied. Port %0.0f m • speed %0.0f/%0.0f m/s • align nose with the green collar." % [distance, speed, DOCKING_RULES_SCRIPT.MAX_DOCK_SPEED])
+		return false
+	_complete_docking(false)
+	return true
+
+
+func _complete_docking(qa_mode: bool = false) -> void:
+	if not is_instance_valid(player):
+		return
+	stage = MissionStage.DOCKED
+	player.global_position = _dock_position
+	player.global_rotation = Vector3(0.0, PI, 0.0)
+	player.velocity = Vector3.ZERO
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	var weapon := player.get_node_or_null("WeaponSystem")
+	if weapon != null:
+		weapon.set_process(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+	if qa_mode or get_tree().get_first_node_in_group("qa_demo_driver") != null:
+		stage = MissionStage.COMPLETE
+		_set_radio("CARRIER CONTROL", "Automated docking sequence verified. Mission complete.")
+		print("MISSION_DOCKING_QA_PASS")
+		_show_mission_result(true)
+		return
+
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile != null:
+		mission_reward_credits = int(profile.call("complete_mission", "silent_relay", 5000))
+	var save_manager := _get_save_manager()
+	if save_manager != null:
+		save_manager.call("delete_slot", "silent_relay")
+	_set_radio("CARRIER CONTROL", "Docking clamps engaged. Carrier maintenance services are online.")
+	_build_docking_services()
+	print("DOCKING_COMPLETE reward=", mission_reward_credits)
+
+
+func _build_docking_services() -> void:
+	_service_layer = CanvasLayer.new()
+	_service_layer.name = "CarrierServices"
+	_service_layer.layer = 24
+	_service_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	world.add_child(_service_layer)
+	var shade := ColorRect.new()
+	shade.color = Color(0.004, 0.012, 0.026, 0.78)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_service_layer.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_service_layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560.0, 520.0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.012, 0.035, 0.062, 0.98)
+	style.border_color = Color(0.08, 0.82, 0.72, 0.95)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 26
+	style.content_margin_right = 26
+	style.content_margin_top = 22
+	style.content_margin_bottom = 22
+	panel.add_theme_stylebox_override("panel", style)
+	center.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 10)
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = "ORBITAL CARRIER  /  MAINTENANCE BAY"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.38, 0.94, 0.86))
+	column.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "DOCKING COMPLETE  •  SERVICE YOUR CRAFT BEFORE THE NEXT SORTIE"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 11)
+	subtitle.add_theme_color_override("font_color", Color(0.58, 0.72, 0.82))
+	column.add_child(subtitle)
+	_service_stats_label = Label.new()
+	_service_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_service_stats_label.add_theme_color_override("font_color", Color(0.84, 0.92, 0.98))
+	column.add_child(_service_stats_label)
+	var separator := HSeparator.new()
+	column.add_child(separator)
+	_service_status_label = Label.new()
+	_service_status_label.text = "Select a maintenance operation. Costs are deducted from pilot credits."
+	_service_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_service_status_label.add_theme_color_override("font_color", Color(0.58, 0.78, 0.86))
+	column.add_child(_service_status_label)
+
+	_service_buttons.clear()
+	_add_service_button(column, "hull", "REPAIR HULL", _service_hull)
+	_add_service_button(column, "shields", "RECHARGE SHIELDS", _service_shields)
+	_add_service_button(column, "boost", "REFILL BOOST CELLS", _service_boost)
+	_add_service_button(column, "weapons", "REARM WEAPON CAPACITORS", _service_weapons)
+	var debrief := Button.new()
+	debrief.text = "COMPLETE DEBRIEF"
+	debrief.custom_minimum_size.y = 46.0
+	debrief.pressed.connect(_finish_docking_services)
+	column.add_child(debrief)
+	_refresh_docking_services()
+
+
+func _add_service_button(parent: VBoxContainer, key: String, label: String, callback: Callable) -> void:
+	var button := Button.new()
+	button.name = "Service_" + key
+	button.text = label
+	button.custom_minimum_size.y = 42.0
+	button.pressed.connect(callback)
+	parent.add_child(button)
+	_service_buttons[key] = button
+
+
+func _service_cost(missing_amount: float, rate: float) -> int:
+	return maxi(0, int(ceil(maxf(0.0, missing_amount) * rate)))
+
+
+func _refresh_docking_services() -> void:
+	if not is_instance_valid(player) or not is_instance_valid(_service_stats_label):
+		return
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	var weapon := player.get_node_or_null("WeaponSystem") as WeaponSystem
+	var profile := get_node_or_null("/root/GameProfile")
+	var credits := int(profile.call("get_credits")) if profile != null else 0
+	var hull_cost := _service_cost(damageable.max_hull - damageable.current_hull, 4.0) if damageable != null else 0
+	var shield_cost := _service_cost(damageable.max_shield - damageable.current_shield, 2.0) if damageable != null else 0
+	var boost_cost := _service_cost(player.flight_config.boost_capacity - player.boost_amount, 25.0) if player.flight_config != null else 0
+	_service_stats_label.text = "HULL  %0.0f/%0.0f     SHIELD  %0.0f/%0.0f     BOOST  %0.0f/%0.0f     CREDITS  %d" % [
+		damageable.current_hull if damageable != null else 0.0,
+		damageable.max_hull if damageable != null else 0.0,
+		damageable.current_shield if damageable != null else 0.0,
+		damageable.max_shield if damageable != null else 0.0,
+		player.boost_amount,
+		player.flight_config.boost_capacity if player.flight_config != null else 0.0,
+		credits
+	]
+	_set_service_button("hull", "REPAIR HULL  •  %d CR" % hull_cost, hull_cost, hull_cost > 0)
+	_set_service_button("shields", "RECHARGE SHIELDS  •  %d CR" % shield_cost, shield_cost, shield_cost > 0)
+	_set_service_button("boost", "REFILL BOOST CELLS  •  %d CR" % boost_cost, boost_cost, boost_cost > 0)
+	_set_service_button("weapons", "REARM WEAPON CAPACITORS  •  150 CR", 150, weapon != null)
+
+
+func _set_service_button(key: String, label: String, cost: int, needed: bool) -> void:
+	var button := _service_buttons.get(key) as Button
+	if button == null:
+		return
+	button.text = label
+	var profile := get_node_or_null("/root/GameProfile")
+	var credits := int(profile.call("get_credits")) if profile != null else 0
+	button.disabled = not needed or credits < cost
+
+
+func _pay_for_service(cost: int, service_name: String) -> bool:
+	var profile := get_node_or_null("/root/GameProfile")
+	if profile == null or not bool(profile.call("spend_credits", cost)):
+		if is_instance_valid(_service_status_label):
+			_service_status_label.text = "INSUFFICIENT CREDITS — %s was not performed." % service_name
+		return false
+	return true
+
+
+func _service_hull() -> void:
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	if damageable == null:
+		return
+	var cost := _service_cost(damageable.max_hull - damageable.current_hull, 4.0)
+	if cost <= 0 or not _pay_for_service(cost, "HULL REPAIR"):
+		return
+	damageable.current_hull = damageable.max_hull
+	damageable.hull_changed.emit(damageable.current_hull, damageable.max_hull)
+	_service_status_label.text = "HULL REPAIRED — structural integrity restored to 100%."
+	_refresh_docking_services()
+
+
+func _service_shields() -> void:
+	var damageable := player.get_node_or_null("Damageable") as Damageable
+	if damageable == null:
+		return
+	var cost := _service_cost(damageable.max_shield - damageable.current_shield, 2.0)
+	if cost <= 0 or not _pay_for_service(cost, "SHIELD RECHARGE"):
+		return
+	damageable.current_shield = damageable.max_shield
+	damageable.shield_changed.emit(damageable.current_shield, damageable.max_shield)
+	_service_status_label.text = "SHIELDS RECHARGED — defensive grid at full capacity."
+	_refresh_docking_services()
+
+
+func _service_boost() -> void:
+	if player.flight_config == null:
+		return
+	var cost := _service_cost(player.flight_config.boost_capacity - player.boost_amount, 25.0)
+	if cost <= 0 or not _pay_for_service(cost, "BOOST REFILL"):
+		return
+	player.boost_amount = player.flight_config.boost_capacity
+	_service_status_label.text = "BOOST CELLS REFILLED — full acceleration reserve available."
+	_refresh_docking_services()
+
+
+func _service_weapons() -> void:
+	var weapon := player.get_node_or_null("WeaponSystem") as WeaponSystem
+	if weapon == null or not _pay_for_service(150, "WEAPON RECALIBRATION"):
+		return
+	weapon.rearm()
+	_service_status_label.text = "WEAPONS RECALIBRATED — capacitor cycle reset."
+	_refresh_docking_services()
+
+
+func _finish_docking_services() -> void:
+	if is_instance_valid(_service_layer):
+		_service_layer.queue_free()
+	stage = MissionStage.COMPLETE
+	_set_radio("CARRIER CONTROL", "Maintenance logged. Debrief complete. Mission successful.")
+	print("MISSION_COMPLETE seconds=", mission_seconds, " reward=", mission_reward_credits)
+	_show_mission_result(true)
+
 
 func _save_checkpoint(reason: String = "manual") -> bool:
 	if not is_instance_valid(player):
