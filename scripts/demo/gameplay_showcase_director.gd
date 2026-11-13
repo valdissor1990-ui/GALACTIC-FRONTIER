@@ -112,6 +112,11 @@ func _run_showcase() -> void:
 	if profile != null:
 		var original_credits := int(profile.call("get_credits"))
 		profile.set("credits", maxi(original_credits, 10000))
+		var damageable := player.get_node_or_null("Damageable") as Damageable
+		if damageable != null:
+			damageable.current_hull = damageable.max_hull * 0.62
+			damageable.current_shield = damageable.max_shield * 0.35
+		player.boost_amount = player.flight_config.boost_capacity * 0.2
 		mission._build_docking_services()
 		await get_tree().create_timer(0.25).timeout
 		await _capture_screenshot("carrier-services.png")
