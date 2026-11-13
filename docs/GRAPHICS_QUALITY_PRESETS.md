@@ -10,6 +10,8 @@
 | Setting | Low | Medium | High |
 |---|---:|---:|---:|
 | Base 3D scale | 0.59 | 0.77 | 1.0 |
+| 3D MSAA | Off | 2× | 4× |
+| Anisotropic filtering | 4× | 8× | 16× |
 | Upscale mode | Bilinear | FSR 1.0 | FSR 1.0 |
 | Shadows | Off | 160 m / 1 split | 280 m / 2 splits |
 | SSAO | Off | Off | On |
@@ -35,6 +37,7 @@ Effective scale is clamped to 0.4–1.25. Current max multiplier is 1.0, so the 
 - ScreenPostFx enables the cinematic overlay.
 - GravitationalLensFx controls lens enablement, strength, chroma and ring boost.
 - WorldEnvironment and key light receive tonemapping, glow, SSAO and shadow settings.
+- The root viewport receives preset-based 3D MSAA (Off/2×/4×) and anisotropic texture filtering (4×/8×/16×). MSAA is used instead of TAA to avoid temporal ghosting on fast-moving ships and particle effects.
 
 ## API
 
