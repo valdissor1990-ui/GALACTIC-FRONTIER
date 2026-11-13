@@ -113,6 +113,9 @@ jobs:
       - name: Persistent player ship selection integration test
         run: godot --headless --path . --script res://tests/ui/test_player_ship_selection.gd -- --test-mode
 
+      - name: Persistent ship module and stat integration test
+        run: godot --headless --path . --script res://tests/ui/test_ship_modules.gd -- --test-mode
+
       - name: Main menu fleet hangar navigation integration test
         run: godot --headless --path . --script res://tests/ui/test_main_menu_hangar_navigation.gd
 
