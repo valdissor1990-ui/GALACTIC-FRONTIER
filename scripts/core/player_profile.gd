@@ -102,7 +102,7 @@ func _load_profile() -> void:
 	if saved_modules is Dictionary:
 		for ship_key in saved_modules.keys():
 			var ship_id := str(ship_key)
-			if not FLYABLE_SHIPS.has(ship_id) or not saved_modules[ship_key] is Array:
+			if not FLYABLE_SHIPS.has(ship_id) or not (saved_modules[ship_key] is Array):
 				continue
 			var accepted: Array[String] = []
 			var occupied_slots: Array[String] = []
