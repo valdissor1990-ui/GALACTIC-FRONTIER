@@ -20,7 +20,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: ship-art-production-global
+  # Isolate independent PR branches. A single global group lets newer queued
+  # branches cancel older pending fleet builds before they can validate.
+  group: ship-art-production-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
