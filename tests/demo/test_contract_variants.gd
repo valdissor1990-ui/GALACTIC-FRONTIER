@@ -51,6 +51,7 @@ func _run() -> void:
 	profile.complete_mission("vesper_salvage", 6500)
 	_check(profile.accept_contract("kestrel_patrol"), "Kestrel contract unlocks after Vesper completion")
 	director.call("_load_active_contract")
+	director.call("_build_contract_objectives")
 	environment.call("_load_system_theme")
 	_check(int(director.get("_waves_per_encounter")) == 5, "Kestrel contract configures five waves per encounter")
 	_check(is_equal_approx(float(director.get("_enemy_health_multiplier")), 1.25), "Kestrel contract applies elite enemy durability")
