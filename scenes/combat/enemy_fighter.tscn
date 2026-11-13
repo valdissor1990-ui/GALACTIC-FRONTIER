@@ -1,8 +1,10 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/enemy_combat_ai.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/damageable.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/combat/projectile.tscn" id="3"]
+[ext_resource type="Shader" path="res://assets/shaders/hull_fresnel.gdshader" id="4"]
+[ext_resource type="Script" path="res://scripts/vfx/hit_flash_fx.gd" id="5"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_body"]
 radius = 1.1
@@ -16,18 +18,35 @@ size = Vector3(2.8, 0.1, 0.9)
 [sub_resource type="BoxMesh" id="BoxMesh_engine"]
 size = Vector3(0.28, 0.28, 0.7)
 
-[sub_resource type="StandardMaterial3D" id="Material_enemy"]
-albedo_color = Color(0.42, 0.12, 0.1, 1)
-metallic = 0.65
-roughness = 0.35
+[sub_resource type="ShaderMaterial" id="Material_enemy"]
+render_priority = 0
+shader = ExtResource("4")
+shader_parameter/albedo_color = Color(0.38, 0.1, 0.09, 1)
+shader_parameter/metallic = 0.72
+shader_parameter/roughness = 0.36
+shader_parameter/rim_color = Color(1.0, 0.35, 0.12, 1)
+shader_parameter/rim_power = 2.8
+shader_parameter/rim_strength = 1.1
+shader_parameter/panel_scale = 11.0
+shader_parameter/panel_contrast = 0.28
+shader_parameter/hit_flash = 0.0
+shader_parameter/hit_color = Color(1.0, 0.5, 0.15, 1)
+shader_parameter/heat = 0.15
 
-[sub_resource type="StandardMaterial3D" id="Material_accent"]
-albedo_color = Color(0.9, 0.35, 0.12, 1)
-metallic = 0.4
-roughness = 0.3
-emission_enabled = true
-emission = Color(0.55, 0.12, 0.02, 1)
-emission_energy_multiplier = 1.2
+[sub_resource type="ShaderMaterial" id="Material_accent"]
+render_priority = 0
+shader = ExtResource("4")
+shader_parameter/albedo_color = Color(0.75, 0.22, 0.08, 1)
+shader_parameter/metallic = 0.45
+shader_parameter/roughness = 0.3
+shader_parameter/rim_color = Color(1.0, 0.45, 0.1, 1)
+shader_parameter/rim_power = 2.2
+shader_parameter/rim_strength = 1.5
+shader_parameter/panel_scale = 7.0
+shader_parameter/panel_contrast = 0.18
+shader_parameter/hit_flash = 0.0
+shader_parameter/hit_color = Color(1.0, 0.55, 0.2, 1)
+shader_parameter/heat = 0.45
 
 [node name="EnemyFighter" type="CharacterBody3D" groups=["combat_targets"]]
 script = ExtResource("1")
@@ -63,6 +82,11 @@ max_hull = 80.0
 max_shield = 40.0
 shield_regen_per_second = 5.0
 shield_regen_delay = 3.5
+
+[node name="HitFlashFx" type="Node" parent="."]
+script = ExtResource("5")
+damageable_path = NodePath("../Damageable")
+visual_root_path = NodePath("../Visual")
 
 [node name="Muzzle" type="Marker3D" parent="."]
 position = Vector3(0, 0, -1.6)
