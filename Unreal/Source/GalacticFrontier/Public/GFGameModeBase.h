@@ -4,10 +4,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "GFGameModeBase.generated.h"
 
-/**
- * Project game mode entry point.
- * Gameplay systems are ported incrementally from the Godot reference project.
- */
+class AGFMissionDirector;
+
 UCLASS()
 class GALACTICFRONTIER_API AGFGameModeBase : public AGameModeBase
 {
@@ -15,4 +13,12 @@ class GALACTICFRONTIER_API AGFGameModeBase : public AGameModeBase
 
 public:
     AGFGameModeBase();
+
+    virtual void BeginPlay() override;
+
+    UPROPERTY(EditDefaultsOnly, Category="Mission")
+    bool bAutoSpawnMissionDirector = true;
+
+    UPROPERTY(EditDefaultsOnly, Category="Mission")
+    TSubclassOf<AGFMissionDirector> MissionDirectorClass;
 };
