@@ -18,12 +18,15 @@ var _companion_rings: MeshInstance3D
 var _companion_moon: MeshInstance3D
 var _cosmic_dust: MultiMeshInstance3D
 var _distant_galaxy: MeshInstance3D
+var _stellar_primary: MeshInstance3D
+var _stellar_corona: MeshInstance3D
 
 
 func _ready() -> void:
 	_rng.seed = 741_2026
 	_load_system_theme()
 	_build_world_environment()
+	_build_stellar_primary()
 	_build_starfield()
 	_build_star_clusters()
 	_build_nebulae()
@@ -48,6 +51,12 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_star_clusters):
 		_star_clusters.global_position = camera.global_position
 	var camera_transform := camera.global_transform
+	var star_transform := camera_transform * Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
+	if is_instance_valid(_stellar_primary):
+		_stellar_primary.global_transform = star_transform
+		_stellar_primary.rotate_y(delta * 0.0018)
+	if is_instance_valid(_stellar_corona):
+		_stellar_corona.global_transform = star_transform
 	var primary_nebula := get_node_or_null("PrimaryNebula") as Node3D
 	if primary_nebula != null:
 		primary_nebula.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
@@ -176,6 +185,75 @@ func _build_world_environment() -> void:
 	fill_light.light_energy = 0.34
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
+
+
+func _build_stellar_primary() -> void:
+	# A visible system star anchors the sky and gives the flight scene a strong
+	# light source landmark, with a turbulent plasma surface and soft corona.
+	var star_mesh := SphereMesh.new()
+	star_mesh.radius = 1.0
+	star_mesh.height = 2.0
+	star_mesh.radial_segments = 96
+	star_mesh.rings = 64
+	var star_shader := Shader.new()
+	star_shader.code = """
+shader_type spatial;
+render_mode unshaded;
+uniform vec4 star_low : source_color = vec4(0.72, 0.12, 0.025, 1.0);
+uniform vec4 star_high : source_color = vec4(1.0, 0.78, 0.28, 1.0);
+void fragment() {
+	vec2 p = UV * vec2(58.0, 30.0);
+	float convection = sin(p.x * 0.72 + sin(p.y * 0.83 + TIME * 0.11) * 2.8 + TIME * 0.16)
+		* cos(p.y * 0.91 - TIME * 0.08);
+	float granulation = sin(UV.x * 173.0 + sin(UV.y * 91.0 + TIME * 0.07) * 3.0)
+		* sin(UV.y * 137.0 - TIME * 0.09) * 0.18;
+	float plasma = clamp(0.52 + convection * 0.30 + granulation, 0.0, 1.0);
+	vec3 color = mix(star_low.rgb, star_high.rgb, smoothstep(0.12, 0.88, plasma));
+	ALBEDO = color;
+	EMISSION = color * (1.8 + plasma * 2.2);
+}
+"""
+	var star_material := ShaderMaterial.new()
+	star_material.shader = star_shader
+	var hot_color: Color = _theme.get("key_light", Color(0.72, 0.82, 1.0))
+	var cool_color := hot_color.lerp(Color(0.82, 0.12, 0.025), 0.42)
+	star_material.set_shader_parameter("star_low", cool_color)
+	star_material.set_shader_parameter("star_high", hot_color.lerp(Color.WHITE, 0.38))
+	star_mesh.material = star_material
+	_stellar_primary = MeshInstance3D.new()
+	_stellar_primary.name = "StellarPrimary"
+	_stellar_primary.mesh = star_mesh
+	_stellar_primary.scale = Vector3.ONE * 72.0
+	add_child(_stellar_primary)
+
+	var corona_mesh := SphereMesh.new()
+	corona_mesh.radius = 1.0
+	corona_mesh.height = 2.0
+	corona_mesh.radial_segments = 64
+	corona_mesh.rings = 32
+	var corona_shader := Shader.new()
+	corona_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+uniform vec4 corona_tint : source_color = vec4(1.0, 0.52, 0.18, 0.30);
+void fragment() {
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float rim = pow(1.0 - facing, 2.35);
+	float waves = 0.86 + 0.14 * sin(UV.x * 34.0 + TIME * 0.12 + sin(UV.y * 18.0));
+	ALBEDO = corona_tint.rgb;
+	EMISSION = corona_tint.rgb * (0.28 + rim * 1.7) * waves;
+	ALPHA = rim * corona_tint.a;
+}
+"""
+	var corona_material := ShaderMaterial.new()
+	corona_material.shader = corona_shader
+	corona_material.set_shader_parameter("corona_tint", Color(hot_color.r, hot_color.g, hot_color.b, 0.30))
+	corona_mesh.material = corona_material
+	_stellar_corona = MeshInstance3D.new()
+	_stellar_corona.name = "StellarCorona"
+	_stellar_corona.mesh = corona_mesh
+	_stellar_corona.scale = Vector3.ONE * 92.0
+	add_child(_stellar_corona)
 
 
 func _build_starfield() -> void:
