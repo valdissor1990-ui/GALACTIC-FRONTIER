@@ -77,16 +77,24 @@ func _build_showroom() -> void:
 	var fill_light := OmniLight3D.new()
 	fill_light.position = Vector3(6.0, 3.0, 7.0)
 	fill_light.light_color = Color(0.12, 0.55, 1.0)
-	fill_light.light_energy = 3.2
+	fill_light.light_energy = 2.4
 	fill_light.omni_range = 28.0
 	world.add_child(fill_light)
 
 	var rim_light := OmniLight3D.new()
 	rim_light.position = Vector3(-7.0, 2.0, -5.0)
 	rim_light.light_color = Color(0.48, 0.24, 1.0)
-	rim_light.light_energy = 2.6
+	rim_light.light_energy = 1.9
 	rim_light.omni_range = 24.0
 	world.add_child(rim_light)
+
+	var warm_key := OmniLight3D.new()
+	warm_key.name = "HangarWarmEdge"
+	warm_key.position = Vector3(8.0, 1.5, -7.0)
+	warm_key.light_color = Color(1.0, 0.48, 0.24)
+	warm_key.light_energy = 1.25
+	warm_key.omni_range = 19.0
+	world.add_child(warm_key)
 
 	var platform := MeshInstance3D.new()
 	platform.name = "DisplayPlinth"
