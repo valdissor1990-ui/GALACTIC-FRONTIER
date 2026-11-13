@@ -39,6 +39,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Weapon")
     FVector MuzzleOffset = FVector(180.0f, 0.0f, 0.0f);
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Weapon|VFX")
+    bool bPlayMuzzleVfx = true;
+
 private:
     void FireTimerTick();
     FTimerHandle FireTimer;
