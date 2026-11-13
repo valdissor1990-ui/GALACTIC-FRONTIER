@@ -18,8 +18,16 @@ func _run() -> void:
 	await physics_frame
 	var obstacles := get_nodes_in_group("space_obstacles")
 	_check(obstacles.size() >= 100, "planet and asteroid collision proxies must be registered")
+	var quality := root.get_node_or_null("GraphicsQuality")
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
+	if quality != null:
+		var expected_stars := roundi(3800.0 * float(quality.sky_star_density()) / 2.35)
+		var starfield := environment.get_node_or_null("Starfield") as MultiMeshInstance3D
+		_check(starfield != null and starfield.multimesh.instance_count == expected_stars, "starfield instance count follows the active quality preset")
+		_check(asteroid_field != null and asteroid_field.multimesh.instance_count == quality.asteroid_count() + 28, "asteroid count follows the active quality preset")
+		var quality_planet := environment.get_node_or_null("NacreonGasGiant") as MeshInstance3D
+		_check(quality_planet != null and (quality_planet.mesh as SphereMesh).radial_segments == quality.planet_segments() * 2, "planet tessellation follows the active quality preset")
 	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
 	_check(asteroid_field != null and asteroid_field.custom_aabb.size.z >= 36000.0, "asteroid MultiMesh bounds cover the full 33 km route for correct frustum culling")
 	if asteroid_field != null:
@@ -64,7 +72,6 @@ func _run() -> void:
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
-	var quality := root.get_node_or_null("GraphicsQuality")
 	var expected_dust_count := 2400
 	if quality != null:
 		expected_dust_count = maxi(roundi(2400.0 * float(quality.particle_amount_scale())), 500)
