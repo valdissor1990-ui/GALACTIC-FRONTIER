@@ -37,6 +37,15 @@ func _process(_delta: float) -> void:
 	if violet != null:
 		violet.global_transform = camera_transform * Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
 
+	# Aurelia is a distant sky landmark, not a nearby world object. Keep its
+	# visual shell and collision proxy together relative to the active camera
+	# so long-range mission shots retain a readable planetary horizon.
+	var planet_position := camera.global_position + camera.global_basis * Vector3(-160.0, 26.0, -285.0)
+	for landmark_name in ["Aurelia", "AureliaAtmosphere", "AureliaCollision"]:
+		var landmark := get_node_or_null(landmark_name) as Node3D
+		if landmark != null:
+			landmark.global_position = planet_position
+
 
 func _build_world_environment() -> void:
 	var world := WorldEnvironment.new()
@@ -76,7 +85,18 @@ func _build_world_environment() -> void:
 	key_light.light_color = Color(0.72, 0.82, 1.0)
 	key_light.light_energy = 1.65
 	key_light.shadow_enabled = true
+	key_light.directional_shadow_max_distance = 260.0
 	add_child(key_light)
+
+	# Low-energy blue fill preserves hull readability on the shadow side while
+	# keeping the scene recognizably lit by a single stellar key source.
+	var fill_light := DirectionalLight3D.new()
+	fill_light.name = "NebulaFillLight"
+	fill_light.rotation_degrees = Vector3(-12.0, -148.0, 0.0)
+	fill_light.light_color = Color(0.20, 0.38, 0.72)
+	fill_light.light_energy = 0.34
+	fill_light.shadow_enabled = false
+	add_child(fill_light)
 
 
 func _build_starfield() -> void:
