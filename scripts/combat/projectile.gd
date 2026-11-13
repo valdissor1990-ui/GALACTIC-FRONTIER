@@ -25,10 +25,55 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	global_position += _direction * speed * delta
+	var motion := _direction * speed * delta
+	if _sweep_for_impact(motion):
+		_remaining_lifetime -= delta
+		if _remaining_lifetime <= 0.0 and is_inside_tree():
+			queue_free()
+		return
+	global_position += motion
 	_remaining_lifetime -= delta
 	if _remaining_lifetime <= 0.0:
 		queue_free()
+
+
+func _sweep_for_impact(motion: Vector3) -> bool:
+	if motion.length_squared() <= 0.000001 or not is_inside_tree():
+		return false
+	var collision_shape := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if collision_shape == null or collision_shape.shape == null:
+		return false
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = collision_shape.shape
+	query.transform = global_transform
+	query.motion = motion
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	var excluded: Array[RID] = [get_rid()]
+	if _source is CollisionObject3D:
+		excluded.append((_source as CollisionObject3D).get_rid())
+	query.exclude = excluded
+
+	var fractions := space.cast_motion(query)
+	if fractions.size() < 2 or fractions[0] >= 1.0:
+		return false
+
+	var contact := space.get_rest_info(query)
+	var collider: Variant = contact.get("collider") if not contact.is_empty() else null
+	if not collider is Node3D:
+		# A ray fallback still guarantees a hit when the swept shape reports a
+		# safe fraction but the backend cannot provide rest information.
+		var ray := PhysicsRayQueryParameters3D.create(global_position, global_position + motion, collision_mask, excluded)
+		ray.collide_with_areas = false
+		var ray_hit := space.intersect_ray(ray)
+		collider = ray_hit.get("collider") if not ray_hit.is_empty() else null
+	if collider is Node3D:
+		global_position += motion * clampf(float(fractions[0]), 0.0, 1.0)
+		_on_body_entered(collider as Node3D)
+		return true
+	return false
 
 
 func _create_trail() -> void:
