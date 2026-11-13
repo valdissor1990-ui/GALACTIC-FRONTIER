@@ -43,8 +43,8 @@ rotation_degrees = Vector3(-18, 0, 0)
 fov = 66.0
 
 [node name="CockpitCamera" parent="PlayerShip/CameraRig"]
-position = Vector3(0, 0.38, -0.65)
-fov = 82.0
+position = Vector3(0, 0.20, -1.05)
+fov = 76.0
 
 [node name="CombatEncounterController" parent="." index="6"]
 enemy_scene = ExtResource("4")
