@@ -862,6 +862,7 @@ render_mode unshaded;
 uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
 uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
 uniform vec4 band_highlight = vec4(0.76, 0.62, 0.46, 1.0);
+uniform sampler2D gas_albedo_texture : source_color;
 uniform int noise_octaves = 4;
 
 float hash21(vec2 p) {
@@ -916,6 +917,8 @@ void fragment() {
 	float fine_bands = sin((latitude + warp * 2.0) * 238.0) * 0.12;
 	float cloud = smoothstep(-0.25, 0.72, broad_bands + fine_bands + (storm_noise - 0.5) * 0.24);
 	vec3 band_color = mix(band_dark.rgb, band_light.rgb, cloud);
+	vec3 authored_surface = texture(gas_albedo_texture, UV).rgb;
+	band_color = mix(authored_surface, band_color, 0.24);
 	float storm_distance = length(vec2((UV.x - 0.63) * 1.8, UV.y - 0.43));
 	float storm_edge = 1.0 - smoothstep(0.025, 0.105, storm_distance);
 	float storm_angle = atan(UV.y - 0.43, (UV.x - 0.63) * 1.8);
@@ -937,15 +940,10 @@ void fragment() {
 	var graphics_quality := get_node_or_null("/root/GraphicsQuality")
 	if graphics_quality != null:
 		fallback_giant_material.set_shader_parameter("noise_octaves", graphics_quality.procedural_noise_octaves())
-	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
-	# banding and storm detail; keep the procedural shader as an offline fallback.
+	# Preserve the authored 2K Jupiter map while layering procedural cloud bands,
+	# warped storm structure and ridged filaments over it in the same shader.
 	var gas_giant_texture: Texture2D = JUPITER_SURFACE_TEXTURE
-	if gas_giant_texture != null:
-		var textured_giant := StandardMaterial3D.new()
-		textured_giant.albedo_texture = gas_giant_texture
-		textured_giant.roughness = 0.94
-		textured_giant.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		giant_material = textured_giant
+	fallback_giant_material.set_shader_parameter("gas_albedo_texture", gas_giant_texture)
 	giant_mesh.material = giant_material
 	giant.mesh = giant_mesh
 	giant.scale = Vector3.ONE * 82.0
