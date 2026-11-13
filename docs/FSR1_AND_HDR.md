@@ -54,8 +54,8 @@ We use **ACES tonemap** (film contrast, desaturates extreme brights). ACES outpu
 ### Tonemap
 | Param | Low | Medium | High | Role |
 |-------|-----|--------|------|------|
-| exposure | 0.92 | 0.95 | 1.00 | Pre-tonemap brightness |
-| white | 5.5 | 6.5 | 8.0 | Headroom before clip |
+| exposure | 0.90 | 0.94 | 1.05 | Pre-tonemap brightness |
+| white | 6.0 | 7.5 | 16.29 | Headroom before clip |
 
 ### Glow / bloom HDR
 Glow appears when pixels exceed **HDR threshold** (relative to tonemap white), or when **bloom > 0** pulls dimmer areas in.
@@ -72,10 +72,10 @@ Glow appears when pixels exceed **HDR threshold** (relative to tonemap white), o
 Blend mode: **Softlight**. Levels 2–6 weighted for soft engine/projectile halos.
 
 ### Applied by
-`OpenSpaceBackdrop.apply_quality()` ← `GraphicsQuality` tables.
+`GraphicsQuality` autoload applies the active preset to `SpaceEnvironment.apply_quality()`, the screen post layer and ship exhaust VFX. Starfield, asteroid/collision and dust instance counts are rebuilt when a preset changes.
 
 ### Not display-HDR
 True OS HDR output (HDR10) needs separate project/window setup and different tonemapper (e.g. AgX/Reinhard). Current stack targets **SDR monitors with HDR-lit content** (engines brighter than mid-grey).
 
-## NOT RUN
-Validate plume bloom and FSR edge quality in `test_flight.tscn` on target GPU.
+## Validation status
+Godot CI checks the graphics preset table, imports both flight scenes and exports the Windows build. Visual edge quality, frame pacing and plume bloom still require interactive review and profiling on the target PC.
