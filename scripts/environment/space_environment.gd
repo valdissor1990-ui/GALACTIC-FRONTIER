@@ -509,6 +509,7 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
 
 uniform vec4 nebula_tint : source_color = vec4(0.2, 0.4, 1.0, 0.16);
 uniform float nebula_seed = 1.0;
+uniform int noise_octaves = 4;
 
 float hash21(vec2 p) {
 	p += nebula_seed * vec2(17.17, 31.73);
@@ -528,12 +529,34 @@ float noise21(vec2 p) {
 float fbm(vec2 p) {
 	float value = 0.0;
 	float amplitude = 0.5;
+	float total_amplitude = 0.0;
 	for (int octave = 0; octave < 5; octave++) {
+		if (octave >= noise_octaves) {
+			break;
+		}
 		value += noise21(p) * amplitude;
+		total_amplitude += amplitude;
 		p = p * 2.03 + vec2(13.7, 7.1);
 		amplitude *= 0.5;
 	}
-	return value;
+	return value / max(total_amplitude, 0.001);
+}
+
+float ridged_fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	float total_amplitude = 0.0;
+	for (int octave = 0; octave < 5; octave++) {
+		if (octave >= noise_octaves) {
+			break;
+		}
+		float ridge = 1.0 - abs(noise21(p) * 2.0 - 1.0);
+		value += ridge * ridge * amplitude;
+		total_amplitude += amplitude;
+		p = p * 2.03 + vec2(9.2, 21.7);
+		amplitude *= 0.5;
+	}
+	return value / max(total_amplitude, 0.001);
 }
 
 void fragment() {
@@ -546,8 +569,8 @@ void fragment() {
 	float micro = fbm(warped_uv * vec2(21.0, 15.0) + drift * 1.4 + vec2(0.17, 0.63));
 	float cloud = broad * 0.58 + detail * 0.29 + micro * 0.13;
 	float cloud_mass = smoothstep(0.43, 0.73, cloud);
-	float ridge_signal = 1.0 - abs(detail * 2.0 - 1.0);
-	float filaments = smoothstep(0.48, 0.91, ridge_signal) * 0.30;
+	float ridge_signal = ridged_fbm(warped_uv * vec2(12.0, 8.5) + drift * 0.35);
+	float filaments = smoothstep(0.46, 0.82, ridge_signal) * 0.34;
 	float wisps = smoothstep(0.62, 0.86, detail) * 0.13
 		+ smoothstep(0.72, 0.94, micro) * 0.09;
 	float dust_lanes = smoothstep(0.54, 0.76, broad);
@@ -571,6 +594,8 @@ void fragment() {
 	material.shader = shader
 	material.set_shader_parameter("nebula_tint", tint)
 	material.set_shader_parameter("nebula_seed", float(seed_value))
+	if quality != null:
+		material.set_shader_parameter("noise_octaves", quality.procedural_noise_octaves())
 
 	var quad := QuadMesh.new()
 	quad.size = dimensions
