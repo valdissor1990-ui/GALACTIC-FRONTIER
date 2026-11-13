@@ -214,7 +214,7 @@ jobs:
 
           screenshots = Path("build/screenshots")
           gameplay = sorted(screenshots.glob("gameplay-*.png"))
-          space = sorted(screenshots.glob("space-*.png"))
+          space = sorted(path for path in screenshots.glob("space-*.png") if path.name != "space-contact-sheet.png")
           required = [
               "contact-sheet.png", "space-contact-sheet.png", "fleet-hangar.png",
               "carrier-services.png", "contract-board.png"
