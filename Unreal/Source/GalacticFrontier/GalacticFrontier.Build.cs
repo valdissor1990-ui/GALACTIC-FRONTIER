@@ -12,7 +12,9 @@ public class GalacticFrontier : ModuleRules
             "Engine",
             "InputCore",
             "EnhancedInput",
-            "GameplayTags"
+            "GameplayTags",
+            "Niagara",
+            "NiagaraCore"
         });
         PrivateDependencyModuleNames.AddRange(new string[]
         {
