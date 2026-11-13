@@ -126,7 +126,7 @@ jobs:
               cat build/fleet-hangar.log
               exit 1
             fi
-            if ! grep -q "Vulkan API" build/fleet-hangar.log || ! grep -q "Forward+" build/fleet-hangar.log; then
+            if ! grep -Eq "Vulkan [0-9]" build/fleet-hangar.log || ! grep -q "Forward+" build/fleet-hangar.log; then
               echo "Hangar capture did not use the required Forward+ Vulkan renderer."
               cat build/fleet-hangar.log
               exit 1
