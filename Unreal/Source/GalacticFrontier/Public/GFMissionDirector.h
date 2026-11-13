@@ -40,10 +40,10 @@ public:
     TObjectPtr<UStaticMesh> ObjectiveMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
-    FVector RelayPosition = FVector(0.0, 1800.0, -135000.0);
+    FVector RelayPosition = FVector(0.0, 1800.0, -1350000.0);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
-    FVector WreckPosition = FVector(52000.0, -2800.0, -330000.0);
+    FVector WreckPosition = FVector(52000.0, -2800.0, -3300000.0);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
     float InteractionRange = 9500.0f;
