@@ -1,14 +1,11 @@
 extends RefCounted
 class_name StoryState
-## Plain-data story progress. Safe for SaveManager payload under mission_flags / completed_missions.
+## Plain-data campaign progress. Compatible with SaveManager payloads.
 
 const FLAG_TRUE := 1
 const FLAG_FALSE := 0
 
-var flags: Dictionary = {}
-var completed_missions: Array[String] = []
-var active_mission_id: String = ""
-var relationship: Dictionary = {
+const DEFAULT_RELATIONSHIPS := {
 	"sera_quinn": 0,
 	"jex_morra": 0,
 	"kade_vorn": 0,
@@ -19,8 +16,15 @@ var relationship: Dictionary = {
 	"free_colonies": 0,
 }
 
+var flags: Dictionary = {}
+var completed_missions: Array[String] = []
+var active_mission_id: String = ""
+var relationship: Dictionary = DEFAULT_RELATIONSHIPS.duplicate(true)
+
 
 func set_flag(flag_id: String, value: bool = true) -> void:
+	if flag_id.is_empty():
+		return
 	flags[flag_id] = FLAG_TRUE if value else FLAG_FALSE
 
 
@@ -32,11 +36,13 @@ func clear_flag(flag_id: String) -> void:
 	flags[flag_id] = FLAG_FALSE
 
 
-func complete_mission(mission_id: String) -> void:
-	if mission_id not in completed_missions:
-		completed_missions.append(mission_id)
+func complete_mission(mission_id: String) -> bool:
+	if mission_id.is_empty() or is_mission_completed(mission_id):
+		return false
+	completed_missions.append(mission_id)
 	if active_mission_id == mission_id:
 		active_mission_id = ""
+	return true
 
 
 func is_mission_completed(mission_id: String) -> bool:
@@ -44,7 +50,9 @@ func is_mission_completed(mission_id: String) -> bool:
 
 
 func adjust_relationship(key: String, delta: int) -> void:
-	var current: int = int(relationship.get(key, 0))
+	if key.is_empty():
+		return
+	var current := int(relationship.get(key, 0))
 	relationship[key] = clampi(current + delta, -100, 100)
 
 
@@ -63,17 +71,27 @@ func to_save_dict() -> Dictionary:
 
 func from_save_dict(data: Dictionary) -> void:
 	flags.clear()
-	var loaded_flags: Variant = data.get("mission_flags", {})
-	if typeof(loaded_flags) == TYPE_DICTIONARY:
-		for k in loaded_flags.keys():
-			flags[str(k)] = int(loaded_flags[k])
 	completed_missions.clear()
+	active_mission_id = ""
+	relationship = DEFAULT_RELATIONSHIPS.duplicate(true)
+
+	var loaded_flags: Variant = data.get("mission_flags", {})
+	if loaded_flags is Dictionary:
+		for key in loaded_flags:
+			flags[str(key)] = int(loaded_flags[key])
+
 	var loaded_completed: Variant = data.get("completed_missions", [])
-	if typeof(loaded_completed) == TYPE_ARRAY:
+	if loaded_completed is Array:
 		for item in loaded_completed:
-			completed_missions.append(str(item))
+			var mission_id := str(item)
+			if not mission_id.is_empty() and mission_id not in completed_missions:
+				completed_missions.append(mission_id)
+
 	active_mission_id = str(data.get("active_mission_id", ""))
-	var loaded_rel: Variant = data.get("relationship", {})
-	if typeof(loaded_rel) == TYPE_DICTIONARY:
-		for k in loaded_rel.keys():
-			relationship[str(k)] = int(loaded_rel[k])
+	if active_mission_id in completed_missions:
+		active_mission_id = ""
+
+	var loaded_relationships: Variant = data.get("relationship", {})
+	if loaded_relationships is Dictionary:
+		for key in loaded_relationships:
+			relationship[str(key)] = clampi(int(loaded_relationships[key]), -100, 100)
