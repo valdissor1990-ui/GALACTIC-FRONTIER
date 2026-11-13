@@ -1,6 +1,7 @@
 extends Node3D
 class_name OpenSpaceBackdrop
-## Open-space visual stack. Tonemap: Filmic (Low) / ACES (Med+High).
+## Open-space visual stack.
+## Tonemap: Filmic (Low) / ACES (Medium) / AgX (High).
 
 @export var asteroid_count: int = 220
 @export var belt_radius: float = 140.0
@@ -39,6 +40,8 @@ func apply_quality(gq: Node) -> void:
 		env.tonemap_mode = gq.tonemap_mode()
 		env.tonemap_exposure = gq.tonemap_exposure()
 		env.tonemap_white = gq.tonemap_white()
+		if gq.has_method("apply_tonemap_extras"):
+			gq.apply_tonemap_extras(env)
 		env.adjustment_enabled = gq.adjustment_enabled()
 		if env.adjustment_enabled:
 			env.adjustment_contrast = gq.adjustment_contrast()
@@ -95,6 +98,8 @@ func _setup_sky_environment() -> void:
 	env.tonemap_mode = gq.tonemap_mode() if gq else Environment.TONE_MAP_MODE_ACES
 	env.tonemap_exposure = gq.tonemap_exposure() if gq else 0.94
 	env.tonemap_white = gq.tonemap_white() if gq else 7.5
+	if gq and gq.has_method("apply_tonemap_extras"):
+		gq.apply_tonemap_extras(env)
 
 	env.glow_enabled = true
 	if gq and gq.has_method("apply_glow_levels"):
@@ -114,8 +119,8 @@ func _setup_sky_environment() -> void:
 
 	env.adjustment_enabled = gq.adjustment_enabled() if gq else true
 	if env.adjustment_enabled:
-		env.adjustment_contrast = 1.04
-		env.adjustment_saturation = 1.05
+		env.adjustment_contrast = gq.adjustment_contrast() if gq else 1.04
+		env.adjustment_saturation = gq.adjustment_saturation() if gq else 1.05
 	env.ssr_enabled = false
 	env.ssao_enabled = enable_ssao
 	if enable_ssao:
