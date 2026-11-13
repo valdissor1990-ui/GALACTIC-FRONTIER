@@ -332,8 +332,14 @@ void fragment() {
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	star_mesh.material = material
-	_star_clusters = _make_multimesh("ChromaticStarClusters", star_mesh, CLUSTER_COUNT * STARS_PER_CLUSTER)
-	_star_clusters.multimesh.use_custom_data = true
+	var cluster_multimesh := MultiMesh.new()
+	cluster_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	cluster_multimesh.use_custom_data = true
+	cluster_multimesh.mesh = star_mesh
+	cluster_multimesh.instance_count = CLUSTER_COUNT * STARS_PER_CLUSTER
+	_star_clusters = MultiMeshInstance3D.new()
+	_star_clusters.name = "ChromaticStarClusters"
+	_star_clusters.multimesh = cluster_multimesh
 	var cluster_directions: Array[Vector3] = [Vector3(-0.72, 0.28, -0.63), Vector3(0.56, 0.48, -0.67), Vector3(-0.12, -0.62, -0.77), Vector3(0.82, -0.18, -0.54), Vector3(-0.88, -0.22, -0.41), Vector3(0.18, 0.82, -0.54)]
 	var palettes: Array[Color] = [Color(0.58, 0.76, 1.0), Color(1.0, 0.76, 0.52), Color(0.72, 0.62, 1.0), Color(0.56, 0.94, 0.88), Color(1.0, 0.88, 0.72), Color(0.72, 0.82, 1.0)]
 	for cluster_index in range(CLUSTER_COUNT):
