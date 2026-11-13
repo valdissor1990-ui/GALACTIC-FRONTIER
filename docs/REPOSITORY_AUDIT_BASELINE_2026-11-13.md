@@ -104,3 +104,53 @@ README прямо перечисляет как ещё не реализован
 - Visual review: NOT DONE.
 - Full Windows interactive QA: NOT DONE.
 - Open-world systems: NOT DONE / PARTIAL — master plan описывает их как цель, README подтверждает отсутствие ряда ключевых систем.
+
+
+## 8. Первый фактический визуальный осмотр семи кораблей
+
+Проверен ZIP-артефакт GitHub Actions run 43473442128: `GALACTIC-FRONTIER-seven-ship-fleet`.
+- В отчёте Blender validator: 7/7 кораблей PASS.
+- Blender: 4.5.16 LTS.
+- Для Player Fighter GLB: 146,348 треугольников, 14 mesh objects, 7 материалов, bounds совпадают с Blender source.
+- Для остальных GLB: Enemy Fighter 57,672 triangles; Heavy Fighter 15,208; Bomber 37,368; Cargo Hauler 20,924; Frigate 37,956; Cruiser 77,900.
+- В отчёте по всем семи кораблям: один GF_ root, UV layer присутствует на каждом mesh object, bounds Blender/GLB совпадают, non-finite geometry не обнаружена.
+- Эти результаты подтверждают геометрическую сборку и экспорт конкретного run, но не доказывают визуальное качество или корректность импорта текущего HEAD.
+
+### Результат осмотра preview PNG
+
+Все семь preview изображений открыты и просмотрены. Художественная приёмка пока FAIL / PARTIAL:
+- Player Fighter: силуэт читается, но крылья остаются большими плоскими панелями, центральный корпус и мотогондолы выглядят упрощённо и блочно; кабина тёмная, внутреннее рабочее место пилота не читается.
+- Enemy Fighter и Heavy Fighter визуально недостаточно отличаются от Player Fighter по общему delta-wing языку; роли должны считываться сильнее.
+- Bomber: подвесы заметны, но бомбардировочная система и створки бомбоотсека не читаются как сложный функциональный узел.
+- Cargo Hauler: грузовые модули выглядят как прямоугольные блоки поверх корпуса; нужен промышленный каркас, крепления и читаемые грузовые секции.
+- Frigate: пока воспринимается как удлинённый истребитель; не хватает архитектуры палуб, мостика, ангаров и турельных батарей.
+- Cruiser: крупный корпус есть, но он выглядит слишком тёмным и блочным; не хватает многоуровневой архитектуры, окон/световых полос, ангаров, командной надстройки и масштабных деталей.
+- Весь флот показан в одном трёхчетвертном ракурсе на корабль. Для приёмки необходимы front/side/top/rear/rear-three-quarter и macro close-up.
+- Студийные превью не доказывают качество в реальном игровом освещении, hangar и flight camera.
+
+### Решения по визуальной доработке
+
+1. Player Fighter — продолжить геометрию кабины и двигателя, не ограничиваться маркировкой и панельными полосами. Для этого создан PR #94: кресло, ремни, консоли, дисплеи, органы управления, воздухозаборники, сопловые приводы и крепёж.
+2. Для UV/PBR добавлена отдельная проверка проекций: PR #93 исправляет XY-only UV, которые схлопывали вертикальные поверхности, и валидирует вырожденные/non-finite UV faces.
+3. После Player Fighter провести отдельную геометрическую детализацию остальных шести классов с сохранением их уникальной роли.
+4. В следующем визуальном QA генерировать набор ракурсов, а не один красивый render.
+
+Ссылки:
+- Артефакт run 43473442128: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43473442128
+- PR #93 UV: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/pull/93
+- PR #94 cockpit/engine: https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/pull/94
+
+## 9. Дополнительная карта интеграции веток
+
+Сравнение refs показало:
+- `main` → `chatgpt/ten-minute-vertical-slice`: diverged, 232 commits ahead / 14 behind.
+- `main` → `chatgpt/phase2-combat-integration`: diverged, 86 ahead / 14 behind.
+- `main` → `chatgpt/space-visual-art-pass`: diverged, 283 ahead / 14 behind.
+- `main` → `chatgpt/grok-completion-full-2026-11`: diverged, 424 ahead / 14 behind.
+- `main` → `chatgpt/player-fighter-hero-detail`: diverged, 295 ahead / 14 behind.
+- PR #89 (grok-completion-2026-11 → main) reports mergeable=false.
+- PR #17 (ship-visual-fallback → ship-art-production) reports mergeable=false.
+- PR #87 and #88 report mergeable=true but target the ten-minute vertical-slice branch, not main.
+- PR #90 and #91 both target space-visual-art-pass; PR #90 has 140 commits on top of that base, PR #91 has 12. PR #93 and #94 are stacked ship-quality follow-ups.
+
+Это означает, что проект нуждается в управляемом integration train. Сначала выбрать один рабочий baseline (вероятно ten-minute vertical slice + reviewed space art + verified campaign fixes), затем переносить изменения по тематическим пакетам. Нельзя делать merge всех веток или считать самый большой commit count признаком самого правильного состояния.
