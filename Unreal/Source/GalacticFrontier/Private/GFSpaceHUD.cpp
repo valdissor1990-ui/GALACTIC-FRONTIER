@@ -2,15 +2,18 @@
 
 #include "Engine/Canvas.h"
 #include "CanvasItem.h"
-#include "Engine/Font.h"
 #include "Engine/Engine.h"
 #include "GFPlayerShipPawn.h"
 #include "GFShipFlightComponent.h"
 #include "GFDamageableComponent.h"
-#include "GFWeaponComponent.h"
 #include "GFTargetingComponent.h"
 #include "GFMissionDirector.h"
+#include "GFPlayerController.h"
+#include "GFSaveSubsystem.h"
+#include "GFPlayerProfileSave.h"
+#include "GFGraphicsSettings.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/GameInstance.h"
 
 void AGFSpaceHUD::DrawTextLine(const FString& Text, const float X, const float Y, const FLinearColor& Color, const float Scale)
 {
@@ -30,11 +33,20 @@ void AGFSpaceHUD::DrawHUD()
     const float CenterY = Canvas->ClipY * 0.5f;
     const FLinearColor Cyan(0.12f, 0.78f, 1.0f, 0.95f);
 
-    // Minimal reticle with no screen-space texture dependency.
     DrawLine(CenterX - 12.0f, CenterY, CenterX - 4.0f, CenterY, Cyan, 1.5f);
     DrawLine(CenterX + 4.0f, CenterY, CenterX + 12.0f, CenterY, Cyan, 1.5f);
     DrawLine(CenterX, CenterY - 12.0f, CenterX, CenterY - 4.0f, Cyan, 1.5f);
     DrawLine(CenterX, CenterY + 4.0f, CenterX, CenterY + 12.0f, Cyan, 1.5f);
+
+    if (const AGFPlayerController* PC = Cast<AGFPlayerController>(GetOwningPlayerController()))
+    {
+        if (PC->IsGamePausedByPlayer())
+        {
+            DrawTextLine(TEXT("PAUSED"), CenterX - 40.0f, CenterY - 40.0f, FLinearColor::White, 1.6f);
+            DrawTextLine(TEXT("ESC resume  |  F10 graphics"), CenterX - 110.0f, CenterY - 10.0f, FLinearColor(0.8f, 0.85f, 0.9f), 1.0f);
+            return;
+        }
+    }
 
     const AGFPlayerShipPawn* Ship = Cast<AGFPlayerShipPawn>(GetOwningPawn());
     if (!Ship) Ship = Cast<AGFPlayerShipPawn>(UGameplayStatics::GetPlayerPawn(this, 0));
@@ -60,6 +72,22 @@ void AGFSpaceHUD::DrawHUD()
         DrawTextLine(TEXT("TARGET  ") + TargetName, Canvas->ClipX - 270.0f, 36.0f, IsValid(Target) ? FLinearColor(1.0f, 0.55f, 0.25f) : Cyan, 1.1f);
     }
 
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (const UGFSaveSubsystem* Saves = GI->GetSubsystem<UGFSaveSubsystem>())
+        {
+            if (const UGFPlayerProfileSave* Profile = Saves->GetProfile())
+            {
+                DrawTextLine(FString::Printf(TEXT("CREDITS  %d"), Profile->Credits), 36.0f, 72.0f, FLinearColor(0.95f, 0.85f, 0.35f), 1.0f);
+            }
+        }
+        if (const UGFGraphicsSettings* Graphics = GI->GetSubsystem<UGFGraphicsSettings>())
+        {
+            DrawTextLine(FString::Printf(TEXT("GFX  %s  (F10)"), *Graphics->GetPresetDisplayName().ToString()),
+                36.0f, 94.0f, FLinearColor(0.7f, 0.75f, 0.85f), 0.95f);
+        }
+    }
+
     TArray<AActor*> MissionActors;
     UGameplayStatics::GetAllActorsOfClass(this, AGFMissionDirector::StaticClass(), MissionActors);
     if (MissionActors.Num() > 0)
@@ -83,11 +111,12 @@ void AGFSpaceHUD::DrawHUD()
             }
             if (Mission->GetEnemiesRemaining() > 0)
             {
-                DrawTextLine(FString::Printf(TEXT("HOSTILES  %d"), Mission->GetEnemiesRemaining()), Canvas->ClipX - 270.0f, 96.0f, FLinearColor(1.0f, 0.4f, 0.2f), 1.0f);
+                DrawTextLine(FString::Printf(TEXT("HOSTILES  %d  WAVE %d"), Mission->GetEnemiesRemaining(), Mission->GetCurrentWaveIndex()),
+                    Canvas->ClipX - 270.0f, 96.0f, FLinearColor(1.0f, 0.4f, 0.2f), 1.0f);
             }
         }
     }
 
     DrawTextLine(TEXT("WASD MOVE  |  ARROWS ROTATE  |  SHIFT BOOST  |  SPACE BRAKE"), 36.0f, 28.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
-    DrawTextLine(TEXT("LMB FIRE  |  T LOCK  |  X CLEAR  |  V CAMERA  |  F INTERACT"), 36.0f, 48.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
+    DrawTextLine(TEXT("LMB FIRE  |  T LOCK  |  X CLEAR  |  V CAMERA  |  F INTERACT  |  ESC PAUSE"), 36.0f, 48.0f, FLinearColor(0.65f, 0.78f, 0.86f), 0.9f);
 }
