@@ -1,6 +1,9 @@
 extends Node
-## Global graphics quality + FSR 1.0 scale + ACES tonemap / HDR glow tables.
+## Global graphics quality + FSR + tonemap/HDR tables.
 ## Autoload: GraphicsQuality
+##
+## Tonemap cost (Godot Forward+, relative): Linear < Reinhard < Filmic < ACES ≈ AgX(opt).
+## Low uses Filmic (~free win vs ACES). Medium/High keep ACES look.
 
 enum Preset { LOW = 0, MEDIUM = 1, HIGH = 2 }
 
@@ -54,7 +57,7 @@ func get_preset_name() -> String:
 	return "Medium"
 
 
-# --- FSR 1.0 / 3D scale -----------------------------------------------------
+# --- FSR / 3D scale ---------------------------------------------------------
 
 func base_scale_3d() -> float:
 	match current:
@@ -71,11 +74,8 @@ func scaling_3d_mode() -> int:
 	match current:
 		Preset.LOW:
 			return 0
-		Preset.MEDIUM:
+		_:
 			return 1
-		Preset.HIGH:
-			return 1
-	return 0
 
 
 func fsr_sharpness() -> float:
@@ -108,20 +108,23 @@ func _apply_viewport_scale() -> void:
 		vp.fsr_sharpness = fsr_sharpness()
 
 
-# --- ACES tonemap -------------------------------------------------------------
-# TONE_MAP_MODE_ACES: filmic contrast, desaturates extreme brights.
-# Godot multiplies linear values by ~1.8 before the ACES curve.
-# For open space: slightly lower exposure keeps void dark; higher white
-# preserves cyan engine plumes without early clipping.
+# --- Tonemap (perf-aware) ---------------------------------------------------
+# Cost order (approx ms @4K ref scene): Linear 0.82 | Reinhard 0.93 |
+# Filmic 1.00 | ACES 1.07 | AgX-opt ~1.05. Delta ACES−Filmic is small but
+# free on Low when stacked with fewer glow mips + no color adjustment.
 
 func tonemap_mode() -> int:
-	return Environment.TONE_MAP_MODE_ACES
+	match current:
+		Preset.LOW:
+			return Environment.TONE_MAP_MODE_FILMIC
+		_:
+			return Environment.TONE_MAP_MODE_ACES
 
 
 func tonemap_exposure() -> float:
 	match current:
 		Preset.LOW:
-			return 0.88
+			return 0.90
 		Preset.MEDIUM:
 			return 0.94
 		Preset.HIGH:
@@ -140,6 +143,19 @@ func tonemap_white() -> float:
 	return 7.5
 
 
+func adjustment_enabled() -> bool:
+	# Extra fullscreen grade; skip on Low
+	return current != Preset.LOW
+
+
+func adjustment_contrast() -> float:
+	return 1.04
+
+
+func adjustment_saturation() -> float:
+	return 1.05
+
+
 # --- HDR glow ---------------------------------------------------------------
 
 func glow_enabled() -> bool:
@@ -149,7 +165,7 @@ func glow_enabled() -> bool:
 func glow_intensity() -> float:
 	match current:
 		Preset.LOW:
-			return 0.32
+			return 0.28
 		Preset.MEDIUM:
 			return 0.5
 		Preset.HIGH:
@@ -160,7 +176,7 @@ func glow_intensity() -> float:
 func glow_bloom() -> float:
 	match current:
 		Preset.LOW:
-			return 0.12
+			return 0.10
 		Preset.MEDIUM:
 			return 0.22
 		Preset.HIGH:
@@ -182,7 +198,7 @@ func glow_hdr_threshold() -> float:
 func glow_hdr_scale() -> float:
 	match current:
 		Preset.LOW:
-			return 1.6
+			return 1.5
 		Preset.MEDIUM:
 			return 2.0
 		Preset.HIGH:
@@ -193,7 +209,7 @@ func glow_hdr_scale() -> float:
 func glow_hdr_luminance_cap() -> float:
 	match current:
 		Preset.LOW:
-			return 8.0
+			return 6.0
 		Preset.MEDIUM:
 			return 12.0
 		Preset.HIGH:
@@ -204,7 +220,7 @@ func glow_hdr_luminance_cap() -> float:
 func glow_strength() -> float:
 	match current:
 		Preset.LOW:
-			return 0.95
+			return 0.9
 		Preset.MEDIUM:
 			return 1.05
 		Preset.HIGH:
@@ -212,7 +228,35 @@ func glow_strength() -> float:
 	return 1.05
 
 
-# --- Other features ---------------------------------------------------------
+## Fewer active glow mip levels on Low → less blur bandwidth
+func apply_glow_levels(env: Environment) -> void:
+	if env == null:
+		return
+	match current:
+		Preset.LOW:
+			env.glow_levels[1] = 0.0
+			env.glow_levels[2] = 0.7
+			env.glow_levels[3] = 0.9
+			env.glow_levels[4] = 0.35
+			env.glow_levels[5] = 0.0
+			env.glow_levels[6] = 0.0
+		Preset.MEDIUM:
+			env.glow_levels[1] = 0.0
+			env.glow_levels[2] = 0.6
+			env.glow_levels[3] = 1.0
+			env.glow_levels[4] = 0.7
+			env.glow_levels[5] = 0.35
+			env.glow_levels[6] = 0.0
+		Preset.HIGH:
+			env.glow_levels[1] = 0.0
+			env.glow_levels[2] = 0.6
+			env.glow_levels[3] = 1.0
+			env.glow_levels[4] = 0.7
+			env.glow_levels[5] = 0.35
+			env.glow_levels[6] = 0.15
+
+
+# --- Other ------------------------------------------------------------------
 
 func shadow_enabled() -> bool:
 	return current != Preset.LOW
