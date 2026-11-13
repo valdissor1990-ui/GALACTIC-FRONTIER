@@ -73,7 +73,7 @@ jobs:
           mkdir -p build/screenshots
           xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/gameplay_showcase.tscn > build/gameplay-showcase.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
@@ -103,7 +103,7 @@ jobs:
           set -euo pipefail
           xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
             set -euo pipefail
-            godot --path . --windowed --resolution 1920x1080 --rendering-method gl_compatibility --rendering-driver opengl3 res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/fleet_hangar_showcase.tscn > build/fleet-hangar.log 2>&1 &
             game_pid=$!
             trap "kill $game_pid 2>/dev/null || true" EXIT
             ready=0
