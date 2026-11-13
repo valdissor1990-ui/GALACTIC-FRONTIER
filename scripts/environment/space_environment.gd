@@ -204,7 +204,8 @@ func _load_system_theme() -> void:
 func _build_world_environment() -> void:
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_SKY
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color(0.002, 0.004, 0.012)
 	var sky := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
 	sky_material.sky_top_color = _theme.get("sky_top", Color(0.004, 0.009, 0.028))
@@ -634,7 +635,7 @@ func _build_companion_worlds() -> void:
 	var giant_shader := Shader.new()
 	giant_shader.code = """
 shader_type spatial;
-render_mode diffuse_burley, specular_schlick_ggx;
+render_mode unshaded;
 
 uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
 uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
@@ -669,65 +670,22 @@ void fragment() {
 	_companion_planet = giant
 	add_child(giant)
 
-	var giant_atmosphere := MeshInstance3D.new()
-	giant_atmosphere.name = "NacreonAtmosphere"
-	var giant_atmosphere_mesh := SphereMesh.new()
-	giant_atmosphere_mesh.radius = 1.0
-	giant_atmosphere_mesh.height = 2.0
-	giant_atmosphere_mesh.radial_segments = 80
-	giant_atmosphere_mesh.rings = 40
-	var giant_atmosphere_shader := Shader.new()
-	giant_atmosphere_shader.code = """
-shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 atmosphere_tint : source_color = vec4(0.42, 0.66, 1.0, 0.20);
-void fragment() {
-	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
-	float rim = pow(1.0 - facing, 2.45);
-	ALBEDO = atmosphere_tint.rgb;
-	EMISSION = atmosphere_tint.rgb * (0.24 + rim * 0.9);
-	ALPHA = rim * atmosphere_tint.a;
-}
-"""
-	var giant_atmosphere_material := ShaderMaterial.new()
-	giant_atmosphere_material.shader = giant_atmosphere_shader
-	giant_atmosphere_material.set_shader_parameter("atmosphere_tint", Color(0.42, 0.66, 1.0, 0.20))
-	giant_atmosphere_mesh.material = giant_atmosphere_material
-	giant_atmosphere.mesh = giant_atmosphere_mesh
-	giant_atmosphere.scale = Vector3.ONE * 1.035
-	giant.add_child(giant_atmosphere)
-
 	var ring := MeshInstance3D.new()
 	ring.name = "NacreonRings"
-	var ring_mesh := QuadMesh.new()
-	ring_mesh.size = Vector2(3.6, 3.6)
-	var ring_shader := Shader.new()
-	ring_shader.code = """
-shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_alpha_prepass, cull_disabled;
-uniform vec4 ring_tint : source_color = vec4(0.68, 0.54, 0.38, 1.0);
-void fragment() {
-	vec2 centered = (UV - vec2(0.5)) * 2.0;
-	float radius = length(centered);
-	if (radius < 0.34 || radius > 0.985) {
-		discard;
-	}
-	float radial = (radius - 0.34) / 0.645;
-	float broad_bands = sin(radial * 184.0 + sin(radial * 31.0) * 1.35);
-	float fine_bands = sin(radial * 710.0 + sin(radial * 97.0)) * 0.22;
-	float gaps = smoothstep(-0.12, 0.22, broad_bands + fine_bands);
-	float variation = 0.72 + 0.28 * sin(radial * 47.0);
-	vec3 color = ring_tint.rgb * variation * mix(0.58, 1.18, gaps);
-	float edge_fade = 1.0 - smoothstep(0.91, 0.99, radius);
-	ALBEDO = color;
-	EMISSION = color * 0.16;
-	ALPHA = mix(0.12, 0.66, gaps) * edge_fade;
-}
-"""
-	var ring_material := ShaderMaterial.new()
-	ring_material.shader = ring_shader
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 1.48
+	ring_mesh.outer_radius = 1.66
+	ring_mesh.rings = 128
+	ring_mesh.ring_segments = 18
+	var ring_material := StandardMaterial3D.new()
+	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	var ring_tint: Color = _theme.get("ring_tint", Color(0.68, 0.54, 0.38))
-	ring_material.set_shader_parameter("ring_tint", ring_tint)
+	ring_material.albedo_color = Color(ring_tint.r, ring_tint.g, ring_tint.b, 0.42)
+	ring_material.emission_enabled = true
+	ring_material.emission = ring_tint * 0.12
+	ring_material.emission_energy_multiplier = 0.16
+	ring_material.roughness = 0.9
 	ring_mesh.material = ring_material
 	ring.mesh = ring_mesh
 	ring.scale = Vector3.ONE * 100.0
@@ -869,7 +827,7 @@ void vertex() {
 
 void fragment() {
 	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
-	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
+	float value = clamp(0.42 + rock_variation * 0.30 + strata, 0.24, 0.78);
 	vec3 mineral_tint = mix(vec3(0.72), vec3(1.18), asteroid_custom.rgb);
 	ALBEDO = rock_tint.rgb * value * mineral_tint;
 	METALLIC = 0.08 + asteroid_custom.g * 0.16;
@@ -1108,12 +1066,12 @@ func _build_comet_landmark() -> void:
 	nucleus_mesh.radial_segments = 24
 	nucleus_mesh.rings = 16
 	var nucleus_material := StandardMaterial3D.new()
-	nucleus_material.albedo_color = Color(0.30, 0.34, 0.38)
+	nucleus_material.albedo_color = Color(0.46, 0.50, 0.54)
 	nucleus_material.roughness = 0.98
 	nucleus_material.metallic = 0.04
 	nucleus_material.emission_enabled = true
-	nucleus_material.emission = Color(0.16, 0.22, 0.32)
-	nucleus_material.emission_energy_multiplier = 0.22
+	nucleus_material.emission = Color(0.28, 0.34, 0.44)
+	nucleus_material.emission_energy_multiplier = 0.34
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
 	nucleus.scale = Vector3(8.0, 6.0, 7.0)
@@ -1144,13 +1102,13 @@ void fragment() {
 	coma_material.set_shader_parameter("coma_tint", Color(0.38, 0.72, 1.0, 0.24))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
-	coma.scale = Vector3(17.0, 13.0, 15.0)
+	coma.scale = Vector3(14.0, 11.0, 12.0)
 	_comet_root.add_child(coma)
 
 	var tail := MeshInstance3D.new()
 	tail.name = "CometIonTail"
 	var tail_mesh := QuadMesh.new()
-	tail_mesh.size = Vector2(34.0, 150.0)
+	tail_mesh.size = Vector2(42.0, 220.0)
 	var tail_shader := Shader.new()
 	tail_shader.code = """
 shader_type spatial;
@@ -1173,7 +1131,7 @@ void fragment() {
 	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
 	tail_mesh.material = tail_material
 	tail.mesh = tail_mesh
-	tail.position = Vector3(0.0, 70.0, 2.0)
+	tail.position = Vector3(0.0, 105.0, 2.0)
 	_comet_root.add_child(tail)
 
 
@@ -1185,9 +1143,9 @@ func _build_derelict_landmark() -> void:
 	add_child(_derelict_root)
 
 	var hull_material := StandardMaterial3D.new()
-	hull_material.albedo_color = Color(0.16, 0.22, 0.29)
-	hull_material.metallic = 0.72
-	hull_material.roughness = 0.78
+	hull_material.albedo_color = Color(0.25, 0.32, 0.40)
+	hull_material.metallic = 0.58
+	hull_material.roughness = 0.72
 	var exposed_material := StandardMaterial3D.new()
 	exposed_material.albedo_color = Color(0.42, 0.24, 0.12)
 	exposed_material.metallic = 0.48
