@@ -4,10 +4,12 @@ Scope: static review of the Unreal migration branch `chatgpt/unreal-migration-ue
 
 ## Confirmed state from the current setup script
 
-- The Editor script imports GLBs from `assets/models/ships` and `assets/models/environment`.
+- The Editor script now runs a deterministic sequential queue: `assets/models/ships` → `assets/models/environment` → `assets/models/space` → `assets/models/planets`. Each synchronous import task is inventoried before the next model starts; failures are recorded and do not silently stop the remaining queue.
+- A Blender generator (`scripts/blender/build_space_environment.py`) authors a deep-space starfield/nebula backdrop and four planet GLBs (ocean, desert, ice and ringed gas giant). A Windows launcher (`tools/build_unreal_assets.bat`) runs the generator and then starts Unreal Editor with the import script. This is source implementation only; the launcher and Blender/Unreal execution have not been run in this environment.
+- The pipeline writes `Unreal/Saved/GFAssetManifests/asset_pipeline_report.json` with each model's source, import destination, imported objects, StaticMesh paths and status.
 - It records imported object paths and lists StaticMesh assets per GLB.
 - It now parses each source GLB JSON chunk before import, walks the selected scene hierarchy, composes each mesh node's world matrix from all parent transforms, records node-to-mesh references and primitive material names, and writes a JSON manifest under `Saved/GFAssetManifests`. A nested-rotation/translation self-check runs before the import workflow. Matrices remain in glTF source coordinates and units; they are deliberately not passed to Unreal components until coordinate/unit conversion is validated against actual Interchange imports.
-- It explicitly warns when a source GLB produces multiple StaticMesh assets; this is inventory/diagnostic behavior, not ship assembly.
+- It explicitly warns when a source GLB produces multiple StaticMesh assets; this remains inventory/diagnostic behavior, not ship assembly.
 - It creates `/Game/GF/Maps/L_FlightTest`, lighting, a PlayerStart and a GFMissionDirector.
 - It attempts to assign an enemy mesh only when the imported-path token lookup yields exactly one StaticMesh.
 - It logs a Player Fighter candidate but does not assign that mesh to the player pawn.
