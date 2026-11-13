@@ -1,5 +1,6 @@
 #include "GFGameModeBase.h"
 #include "GFPlayerShipPawn.h"
+#include "GFPlayerController.h"
 #include "GFSpaceHUD.h"
 #include "GFMissionDirector.h"
 #include "EngineUtils.h"
@@ -7,6 +8,7 @@
 AGFGameModeBase::AGFGameModeBase()
 {
     DefaultPawnClass = AGFPlayerShipPawn::StaticClass();
+    PlayerControllerClass = AGFPlayerController::StaticClass();
     HUDClass = AGFSpaceHUD::StaticClass();
     MissionDirectorClass = AGFMissionDirector::StaticClass();
 }
