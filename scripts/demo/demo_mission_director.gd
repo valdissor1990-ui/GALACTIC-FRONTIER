@@ -44,6 +44,8 @@ var _patrol_index: int = 0
 var _mission_label: Label
 var _objective_label: Label
 var _radio_label: Label
+var _dialogue_layer: CanvasLayer
+var _dialogue_column: VBoxContainer
 var _distance_label: Label
 var _timer_label: Label
 var _progress_label: Label
@@ -61,6 +63,7 @@ func _ready() -> void:
 
 func _initialize_mission() -> void:
 	_load_active_contract()
+	_begin_story_campaign_if_available()
 	if encounter != null:
 		encounter.set_process(false)
 		encounter.set_physics_process(false)
@@ -68,7 +71,15 @@ func _initialize_mission() -> void:
 	_build_navigation_beacon(RELAY_POSITION, Color(0.08, 0.78, 1.0))
 	_build_contract_objectives()
 	_build_mission_hud()
-	_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
+	if _is_story_mission_active("m01"):
+		var intro := DialogueM01M05.get_node("m01_quinn_intro")
+		var line: Dictionary = intro.get("text", {})
+		_set_radio("SERA QUINN", str(line.get("en", "Contract accepted. Approach the relay beacon and scan its core.")))
+		_report_story_event("talk")
+		_report_story_event("undock")
+		call_deferred("_show_story_dialogue", "m01_quinn_intro")
+	else:
+		_set_radio("CONTRACT NETWORK", "%s accepted in %s. Approach the relay beacon and scan its core." % [_contract_name, _system_name])
 	print("MISSION_READY: ", _contract_name, " | SYSTEM: ", _system_name, " | WAVES: ", _waves_per_encounter * 2)
 	var save_manager := _get_save_manager()
 	var pending_payload: Variant = save_manager.get("pending_mission_payload") if save_manager != null else {}
@@ -79,6 +90,40 @@ func _initialize_mission() -> void:
 		_save_checkpoint("mission start")
 
 
+
+
+
+func _begin_story_campaign_if_available() -> void:
+	if _contract_id != "silent_relay" or get_tree().get_first_node_in_group("qa_demo_driver") != null:
+		return
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign == null:
+		return
+	var state: Variant = campaign.get("story_state")
+	if state == null:
+		return
+	if str(state.get("active_mission_id")) == "":
+		campaign.call("start_mission", "m01")
+
+
+func _is_story_mission_active(mission_id: String) -> bool:
+	if get_tree().get_first_node_in_group("qa_demo_driver") != null:
+		return false
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign == null:
+		return false
+	var state: Variant = campaign.get("story_state")
+	return state != null and str(state.get("active_mission_id")) == mission_id
+
+
+func _report_story_event(event_type: String, target_id: String = "") -> void:
+	if not _is_story_mission_active("m01"):
+		return
+	var campaign := get_node_or_null("/root/Campaign")
+	if campaign != null:
+		var result: Dictionary = campaign.call("report_gameplay_event", event_type, target_id)
+		if not result.get("ok", false):
+			push_warning("Story event was not accepted: " + str(result.get("error", "unknown")))
 
 func _load_active_contract() -> void:
 	var profile := get_node_or_null("/root/GameProfile")
@@ -155,6 +200,7 @@ func _update_mission(delta: float) -> void:
 	match stage:
 		MissionStage.OUTBOUND:
 			if _distance_to_objective() <= 95.0:
+				_report_story_event("reach_target", "aurelia_a3")
 				stage = MissionStage.SCAN_RELAY
 				_set_radio("ORBITAL CONTROL", "Relay beacon acquired. Hold position and scan the core with F.")
 		MissionStage.DEFEND_RELAY, MissionStage.DEFEND_WRECK:
@@ -286,6 +332,7 @@ func _begin_return_home(message: String) -> void:
 
 
 func _complete_relay_scan() -> void:
+	_report_story_event("scan", "aurelia_a3")
 	stage = MissionStage.DEFEND_RELAY
 	wave_index = 0
 	_set_radio("UNKNOWN TRANSMISSION", "Signal lock detected. Hostile craft inbound.")
@@ -446,6 +493,79 @@ func _build_mission_hud() -> void:
 	_progress_label.add_theme_font_size_override("font_size", 11)
 	_progress_label.add_theme_color_override("font_color", Color(0.42, 0.58, 0.72))
 	column.add_child(_progress_label)
+
+
+
+func _show_story_dialogue(node_id: String) -> void:
+	var dialogue: Dictionary = DialogueM01M05.get_node(node_id)
+	if dialogue.is_empty():
+		_close_story_dialogue()
+		return
+	if not is_instance_valid(_dialogue_layer):
+		_dialogue_layer = CanvasLayer.new()
+		_dialogue_layer.name = "StoryDialogue"
+		_dialogue_layer.layer = 16
+		_dialogue_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+		world.add_child(_dialogue_layer)
+		var shade := ColorRect.new()
+		shade.color = Color(0.003, 0.012, 0.025, 0.72)
+		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_dialogue_layer.add_child(shade)
+		var center := CenterContainer.new()
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_dialogue_layer.add_child(center)
+		var panel := PanelContainer.new()
+		panel.custom_minimum_size = Vector2(560.0, 260.0)
+		center.add_child(panel)
+		_dialogue_column = VBoxContainer.new()
+		_dialogue_column.add_theme_constant_override("separation", 12)
+		panel.add_child(_dialogue_column)
+	else:
+		for child in _dialogue_column.get_children():
+			child.queue_free()
+	var speaker := Label.new()
+	speaker.text = str(dialogue.get("speaker", "COMMS")).replace("_", " ").to_upper()
+	speaker.add_theme_color_override("font_color", Color(0.24, 0.78, 1.0))
+	speaker.add_theme_font_size_override("font_size", 18)
+	_dialogue_column.add_child(speaker)
+	var text_data: Dictionary = dialogue.get("text", {})
+	var language := "ru" if OS.get_locale().begins_with("ru") else "en"
+	var message := Label.new()
+	message.text = str(text_data.get(language, text_data.get("en", "")))
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.custom_minimum_size = Vector2(500.0, 76.0)
+	message.add_theme_font_size_override("font_size", 17)
+	_dialogue_column.add_child(message)
+	var choices: Array = dialogue.get("choices", [])
+	if choices.is_empty():
+		var close_button := Button.new()
+		close_button.text = "ПРОДОЛЖИТЬ" if language == "ru" else "CONTINUE"
+		close_button.custom_minimum_size.y = 42.0
+		close_button.pressed.connect(_close_story_dialogue)
+		_dialogue_column.add_child(close_button)
+		return
+	for choice_variant in choices:
+		var choice: Dictionary = choice_variant
+		var choice_text: Dictionary = choice.get("text", {})
+		var button := Button.new()
+		button.text = str(choice_text.get(language, choice_text.get("en", choice.get("id", ""))))
+		button.custom_minimum_size.y = 38.0
+		var next_node := str(choice.get("next", ""))
+		button.pressed.connect(func() -> void:
+			if next_node.is_empty():
+				_close_story_dialogue()
+			else:
+				_show_story_dialogue(next_node)
+		)
+		_dialogue_column.add_child(button)
+
+
+func _close_story_dialogue() -> void:
+	if is_instance_valid(_dialogue_layer):
+		_dialogue_layer.queue_free()
+	_dialogue_layer = null
+	_dialogue_column = null
+
 
 func _set_radio(source: String, message: String) -> void:
 	if is_instance_valid(_radio_label):
@@ -625,6 +745,7 @@ func _complete_docking(qa_mode: bool = false) -> void:
 		_show_mission_result(true)
 		return
 
+	_report_story_event("dock", "port_solace")
 	var profile := get_node_or_null("/root/GameProfile")
 	if profile != null:
 		mission_reward_credits = int(profile.call("complete_mission", _contract_id, _mission_reward))
@@ -636,19 +757,7 @@ func _complete_docking(qa_mode: bool = false) -> void:
 	print("DOCKING_COMPLETE reward=", mission_reward_credits)
 
 
-## Suppress flight-only CanvasLayers while the modal carrier service screen is open.
-func _hide_flight_hud_for_overlay() -> void:
-	# Keep the maintenance panel readable: flight telemetry and mission panels
-	# are no longer actionable after the docking sequence has completed.
-	for layer_name in ["HUD", "CombatHUD", "MissionHUD"]:
-		var layer := world.get_node_or_null(layer_name) as CanvasLayer
-		if layer != null:
-			layer.visible = false
-
-
 func _build_docking_services() -> void:
-	# The service modal owns the screen until debrief returns to mission results.
-	_hide_flight_hud_for_overlay()
 	_service_layer = CanvasLayer.new()
 	_service_layer.name = "CarrierServices"
 	_service_layer.layer = 24

@@ -13,6 +13,14 @@ on:
       - chatgpt/mission-save-integration
       - chatgpt/campaign-objectives
       - chatgpt/campaign-story-integration
+      - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
+      - chatgpt/dialogue-choice-overlay-m01
+      - chatgpt/campaign-runtime-manager
+      - chatgpt/campaign-gameplay-event-routing
+      - chatgpt/demo-campaign-m01-wiring
+      - chatgpt/dialogue-choice-overlay-m01
       - chatgpt/cockpit-camera-polish
       - chatgpt/fullhd-showcase-qa
   pull_request:
@@ -100,6 +108,9 @@ jobs:
 
       - name: Run M01-M05 story progression, dialogue and save tests
         run: godot --headless --path . --script res://tests/story/test_m01_m05_story.gd
+
+      - name: Run M01-M05 runtime campaign integration tests
+        run: godot --headless --path . --script res://tests/story/test_campaign_runtime.gd -- --test-mode
 
       - name: Run local save system regression tests
         run: godot --headless --path . --script res://tests/save/test_save_manager.gd
