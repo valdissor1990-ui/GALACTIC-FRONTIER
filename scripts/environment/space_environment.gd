@@ -188,8 +188,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.020, 0.008, 0.003), "sky_horizon": Color(0.12, 0.045, 0.020),
 				"ambient": Color(0.42, 0.24, 0.12), "key_light": Color(1.0, 0.72, 0.42),
-				"fill_light": Color(0.72, 0.28, 0.10), "nebula_a": Color(1.0, 0.38, 0.08, 0.42),
-				"nebula_b": Color(0.72, 0.14, 0.04, 0.34), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
+				"fill_light": Color(0.72, 0.28, 0.10), "nebula_a": Color(1.0, 0.38, 0.08, 0.18),
+				"nebula_b": Color(0.72, 0.14, 0.04, 0.14), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
 				"water_dark": Color(0.05, 0.03, 0.02), "water_light": Color(0.18, 0.08, 0.04),
 				"land_low": Color(0.34, 0.18, 0.08), "land_high": Color(0.58, 0.30, 0.12),
 				"snow": Color(0.82, 0.62, 0.38), "star": Color(1.0, 0.76, 0.52), "asteroid_tint": Color(0.48, 0.31, 0.22), "gas_dark": Color(0.18, 0.07, 0.035), "gas_light": Color(0.48, 0.20, 0.09), "gas_highlight": Color(0.75, 0.46, 0.24), "ring_tint": Color(0.90, 0.52, 0.24)
@@ -198,8 +198,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.005, 0.012, 0.035), "sky_horizon": Color(0.025, 0.09, 0.15),
 				"ambient": Color(0.20, 0.38, 0.56), "key_light": Color(0.62, 0.85, 1.0),
-				"fill_light": Color(0.12, 0.46, 0.78), "nebula_a": Color(0.10, 0.72, 0.95, 0.36),
-				"nebula_b": Color(0.42, 0.28, 0.95, 0.30), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
+				"fill_light": Color(0.12, 0.46, 0.78), "nebula_a": Color(0.10, 0.72, 0.95, 0.16),
+				"nebula_b": Color(0.42, 0.28, 0.95, 0.12), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
 				"water_dark": Color(0.015, 0.08, 0.18), "water_light": Color(0.05, 0.22, 0.42),
 				"land_low": Color(0.22, 0.36, 0.52), "land_high": Color(0.44, 0.55, 0.65),
 				"snow": Color(0.86, 0.92, 1.0), "star": Color(0.70, 0.88, 1.0), "asteroid_tint": Color(0.34, 0.48, 0.62), "gas_dark": Color(0.055, 0.12, 0.20), "gas_light": Color(0.20, 0.38, 0.52), "gas_highlight": Color(0.58, 0.76, 0.90), "ring_tint": Color(0.48, 0.75, 0.95)
@@ -209,8 +209,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.004, 0.009, 0.028), "sky_horizon": Color(0.025, 0.045, 0.09),
 				"ambient": Color(0.22, 0.31, 0.52), "key_light": Color(0.72, 0.82, 1.0),
-				"fill_light": Color(0.20, 0.38, 0.72), "nebula_a": Color(0.16, 0.40, 1.0, 0.38),
-				"nebula_b": Color(0.52, 0.20, 0.94, 0.32), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
+				"fill_light": Color(0.20, 0.38, 0.72), "nebula_a": Color(0.16, 0.40, 1.0, 0.16),
+				"nebula_b": Color(0.52, 0.20, 0.94, 0.12), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
 				"water_dark": Color(0.018, 0.075, 0.16), "water_light": Color(0.035, 0.19, 0.31),
 				"land_low": Color(0.18, 0.34, 0.31), "land_high": Color(0.43, 0.38, 0.25),
 				"snow": Color(0.78, 0.79, 0.72), "star": Color(0.72, 0.84, 1.0), "asteroid_tint": Color(0.48, 0.52, 0.56), "gas_dark": Color(0.19, 0.105, 0.075), "gas_light": Color(0.58, 0.39, 0.27), "gas_highlight": Color(0.76, 0.62, 0.46), "ring_tint": Color(0.68, 0.54, 0.38)
@@ -451,29 +451,41 @@ func _build_distant_galaxy() -> void:
 	shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 galaxy_tint : source_color = vec4(0.46, 0.58, 1.0, 0.52);
+uniform vec4 galaxy_tint : source_color = vec4(0.62, 0.68, 0.82, 0.34);
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float noise21(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
 void fragment() {
 	vec2 p = (UV - vec2(0.5)) * vec2(2.0, 1.35);
 	float radius = length(p);
-	float angle = atan(p.y, p.x);
-	float spiral = sin(angle * 3.0 + radius * 25.0 + sin(angle * 2.0) * 1.2);
-	float arms = exp(-abs(spiral) * 3.4) * exp(-radius * 2.8);
-	float core = exp(-radius * 13.0) * 1.25;
-	float dust_lane = smoothstep(0.08, 0.42, abs(spiral + 0.18)) * arms;
-	float grain = sin(UV.x * 391.0 + sin(UV.y * 277.0) * 4.0) * sin(UV.y * 317.0) * 0.06;
-	float edge = 1.0 - smoothstep(0.42, 0.98, radius);
-	float intensity = max(0.0, arms * 0.68 + core - dust_lane * 0.22 + grain) * edge;
+	float disk = exp(-pow(abs(p.y) * 4.2, 1.35)) * exp(-radius * 1.55);
+	float clouds = noise21(UV * vec2(32.0, 18.0)) * 0.52
+		+ noise21(UV * vec2(78.0, 43.0)) * 0.30
+		+ noise21(UV * vec2(154.0, 86.0)) * 0.18;
+	float dust_lane = smoothstep(0.42, 0.72, clouds) * 0.34;
+	float core = exp(-radius * 8.0) * 0.72;
+	float edge = 1.0 - smoothstep(0.46, 1.0, radius);
+	float intensity = max(0.0, disk * (0.34 + clouds * 0.92 - dust_lane) + core) * edge;
 	ALBEDO = galaxy_tint.rgb;
-	EMISSION = galaxy_tint.rgb * (0.25 + intensity * 2.1);
-	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.42);
+	EMISSION = galaxy_tint.rgb * (0.10 + intensity * 1.05);
+	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.22);
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	var tint: Color = _theme.get("star", Color(0.72, 0.84, 1.0))
-	material.set_shader_parameter("galaxy_tint", Color(tint.r, tint.g, tint.b, 0.62))
+	material.set_shader_parameter("galaxy_tint", Color(tint.r * 0.86, tint.g * 0.88, tint.b * 0.96, 0.34))
 	var quad := QuadMesh.new()
-	quad.size = Vector2(260.0, 168.0)
+	quad.size = Vector2(340.0, 188.0)
 	quad.material = material
 	_distant_galaxy = MeshInstance3D.new()
 	_distant_galaxy.name = "DistantSpiralGalaxy"
@@ -712,15 +724,15 @@ void fragment() {
 		discard;
 	}
 	float radial = (radius - 0.48) / 0.505;
-	float broad = sin(radial * 188.0 + sin(radial * 29.0) * 1.2);
-	float fine = sin(radial * 760.0 + sin(radial * 91.0)) * 0.24;
-	float bands = smoothstep(-0.12, 0.24, broad + fine);
-	float variation = 0.72 + 0.28 * sin(radial * 43.0);
-	vec3 color = ring_tint.rgb * variation * mix(0.56, 1.22, bands);
+	float broad = sin(radial * 54.0 + sin(radial * 11.0) * 0.55);
+	float fine = sin(radial * 214.0 + sin(radial * 37.0)) * 0.12;
+	float bands = smoothstep(-0.18, 0.38, broad + fine);
+	float variation = 0.88 + 0.12 * sin(radial * 17.0);
+	vec3 color = ring_tint.rgb * variation * mix(0.68, 1.12, bands);
 	float edge_fade = 1.0 - smoothstep(0.94, 0.99, radius);
 	ALBEDO = color;
-	EMISSION = color * 0.10;
-	ALPHA = mix(0.12, 0.72, bands) * edge_fade;
+	EMISSION = color * 0.035;
+	ALPHA = mix(0.045, 0.30, bands) * edge_fade;
 }
 """
 	var ring_material := ShaderMaterial.new()
@@ -732,9 +744,8 @@ void fragment() {
 	ring.scale = Vector3.ONE * 100.0
 	_companion_rings = ring
 	add_child(ring)
-	_add_ring_detail(ring, "NacreonInnerRing", 1.06, 1.17, 0.30)
-	_add_ring_detail(ring, "NacreonOuterRing", 1.92, 2.12, 0.22)
-	_add_ring_detail(ring, "NacreonDustBand", 2.18, 2.25, 0.10)
+	# The broad translucent shader carries the ring structure; extra torus outlines
+	# made the planet look like a wireframe icon instead of a natural ring system.
 
 	var moon := MeshInstance3D.new()
 	moon.name = "NacreonMoon"
@@ -1252,12 +1263,12 @@ void fragment() {
 	var tail := MeshInstance3D.new()
 	tail.name = "CometIonTail"
 	var tail_mesh := QuadMesh.new()
-	tail_mesh.size = Vector2(100.0, 640.0)
+	tail_mesh.size = Vector2(54.0, 310.0)
 	var tail_shader := Shader.new()
 	tail_shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 tail_tint : source_color = vec4(0.24, 0.58, 1.0, 0.22);
+uniform vec4 tail_tint : source_color = vec4(0.46, 0.68, 0.88, 0.075);
 void fragment() {
 	float across = abs(UV.x - 0.5) * 2.0;
 	float along = UV.y;
@@ -1272,11 +1283,11 @@ void fragment() {
 """
 	var tail_material := ShaderMaterial.new()
 	tail_material.shader = tail_shader
-	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
+	tail_material.set_shader_parameter("tail_tint", Color(0.46, 0.68, 0.88, 0.075))
 	tail_mesh.material = tail_material
 	tail.mesh = tail_mesh
-	tail.position = Vector3(0.0, 320.0, 2.0)
-	tail.rotation_degrees = Vector3(0.0, 0.0, 24.0)
+	tail.position = Vector3(0.0, 155.0, 2.0)
+	tail.rotation_degrees = Vector3(0.0, 0.0, 12.0)
 	_comet_root.add_child(tail)
 
 
