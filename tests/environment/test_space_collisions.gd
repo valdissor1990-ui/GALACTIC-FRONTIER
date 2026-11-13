@@ -21,6 +21,7 @@ func _run() -> void:
 	var asteroid_field := environment.get_node_or_null("AsteroidField") as MultiMeshInstance3D
 	_check(asteroid_field != null, "the procedural asteroid belt must use one batched MultiMesh")
 	_check(asteroid_field != null and asteroid_field.multimesh.use_custom_data, "asteroid instances carry individual shape seeds and mineral tint data")
+	_check(asteroid_field != null and asteroid_field.custom_aabb.size.z >= 36000.0, "asteroid MultiMesh bounds cover the full 33 km route for correct frustum culling")
 	if asteroid_field != null:
 		var relay_sector_count := 0
 		var outer_sector_count := 0
@@ -63,7 +64,7 @@ func _run() -> void:
 	var ring_root := environment.get_node_or_null("NacreonRings") as MeshInstance3D
 	_check(ring_root != null and ring_root.has_node("NacreonInnerRing") and ring_root.has_node("NacreonOuterRing") and ring_root.has_node("NacreonDustBand"), "planetary rings include separate inner, outer and diffuse dust bands")
 	var dust_field := environment.get_node_or_null("InterplanetaryDust") as MultiMeshInstance3D
-	_check(dust_field != null and dust_field.multimesh.instance_count == 1800, "1800 interplanetary dust flakes are populated in one batched MultiMesh")
+	_check(dust_field != null and dust_field.multimesh.instance_count == 2400, "2400 interplanetary dust flakes are populated in one batched MultiMesh")
 	_check(dust_field != null and dust_field.multimesh.use_custom_data, "interplanetary dust uses per-instance spectral tint and shimmer data")
 	_check(dust_field != null and dust_field.multimesh.mesh.material is ShaderMaterial, "interplanetary dust uses one shared shader material rather than per-particle nodes")
 	var sky_camera := Camera3D.new()

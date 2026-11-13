@@ -1,9 +1,10 @@
 extends Node3D
 ## Deterministic, lightweight space backdrop for the first visual flight slice.
-## Uses generated geometry and textures only; no network or third-party assets.
+## Uses deterministic procedural layers plus curated NASA and CC0 environment assets.
 
-@export_range(300, 4000, 100) var star_count: int = 3200
-@export_range(40, 220, 10) var asteroid_count: int = 120
+@export_range(300, 4000, 100) var star_count: int = 3800
+@export_range(40, 220, 10) var asteroid_count: int = 160
+@export var showcase_mode: bool = false
 
 var _rng := RandomNumberGenerator.new()
 var _starfield: MultiMeshInstance3D
@@ -23,6 +24,8 @@ var _stellar_corona: MeshInstance3D
 var _stellar_key_light: DirectionalLight3D
 var _comet_root: Node3D
 var _derelict_root: Node3D
+var _orbital_station_root: Node3D
+var _traffic_roots: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -40,6 +43,8 @@ func _ready() -> void:
 	_build_cosmic_dust()
 	_build_comet_landmark()
 	_build_derelict_landmark()
+	_build_orbital_station_landmark()
+	_build_distant_traffic()
 
 
 func _process(delta: float) -> void:
@@ -47,6 +52,9 @@ func _process(delta: float) -> void:
 		return
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
+		return
+	if showcase_mode:
+		_update_showcase_landmarks()
 		return
 
 	# Keep the distant sky landmarks around the active ship. The mission spans
@@ -96,7 +104,7 @@ func _process(delta: float) -> void:
 		_companion_planet.rotate_y(delta * 0.003)
 	if is_instance_valid(_companion_rings):
 		var ring_position := camera.global_position + camera.global_basis * Vector3(430.0, -92.0, -1320.0)
-		var ring_basis := camera.global_basis * Basis(Vector3.RIGHT, deg_to_rad(68.0))
+		var ring_basis := camera.global_basis * Basis(Vector3.RIGHT, deg_to_rad(32.0))
 		_companion_rings.global_transform = Transform3D(ring_basis.scaled(Vector3.ONE * 100.0), ring_position)
 	if is_instance_valid(_companion_moon):
 		_companion_moon.global_position = camera.global_position + camera.global_basis * Vector3(620.0, -12.0, -1430.0)
@@ -107,6 +115,66 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_derelict_root):
 		var derelict_transform := camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
 		_derelict_root.global_transform = derelict_transform
+	if is_instance_valid(_orbital_station_root):
+		_orbital_station_root.global_transform = camera_transform * Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
+	var traffic_offsets: Array[Vector3] = [Vector3(310.0, 82.0, -760.0), Vector3(-420.0, -165.0, -1120.0), Vector3(165.0, 245.0, -1480.0)]
+	var traffic_rotations: Array[float] = [12.0, -36.0, 74.0]
+	for index in range(mini(_traffic_roots.size(), traffic_offsets.size())):
+		_traffic_roots[index].global_transform = camera_transform * Transform3D(Basis(Vector3.UP, deg_to_rad(traffic_rotations[index])), traffic_offsets[index])
+
+
+func _update_showcase_landmarks() -> void:
+	# Fixed world-space placement is used only by the screenshot showcase.
+	# Normal gameplay remains camera-relative so the long mission route keeps
+	# its sky landmarks in view without adding world-scale streaming complexity.
+	if is_instance_valid(_starfield):
+		_starfield.global_position = Vector3.ZERO
+	if is_instance_valid(_star_clusters):
+		_star_clusters.global_position = Vector3.ZERO
+	if is_instance_valid(_stellar_primary):
+		_stellar_primary.global_transform = Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
+	if is_instance_valid(_stellar_corona):
+		_stellar_corona.global_transform = Transform3D(Basis.IDENTITY, Vector3(-620.0, 285.0, -3200.0))
+	if is_instance_valid(_stellar_key_light):
+		var incoming_light := Vector3(620.0, -285.0, 3200.0).normalized()
+		_stellar_key_light.global_basis = Basis.looking_at(incoming_light, Vector3.UP)
+	var primary_nebula := get_node_or_null("PrimaryNebula") as Node3D
+	if primary_nebula != null:
+		primary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(-138.0, 54.0, -465.0))
+	var secondary_nebula := get_node_or_null("SecondaryNebula") as Node3D
+	if secondary_nebula != null:
+		secondary_nebula.global_transform = Transform3D(Basis.IDENTITY, Vector3(158.0, -42.0, -520.0))
+	var tertiary_nebula := get_node_or_null("TertiaryNebula") as Node3D
+	if tertiary_nebula != null:
+		tertiary_nebula.global_transform = Transform3D(Basis(Vector3.FORWARD, deg_to_rad(18.0)), Vector3(-265.0, -112.0, -760.0))
+	var far_nebula := get_node_or_null("FarNebula") as Node3D
+	if far_nebula != null:
+		far_nebula.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(24.0)), Vector3(285.0, 185.0, -1120.0))
+	if is_instance_valid(_distant_galaxy):
+		_distant_galaxy.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-18.0)), Vector3(35.0, 148.0, -920.0))
+	if is_instance_valid(_planet_visual):
+		_planet_visual.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_planet_atmosphere):
+		_planet_atmosphere.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_planet_clouds):
+		_planet_clouds.global_position = Vector3(-160.0, 26.0, -285.0)
+	if is_instance_valid(_companion_planet):
+		_companion_planet.global_position = Vector3(430.0, -92.0, -1320.0)
+	if is_instance_valid(_companion_rings):
+		var ring_basis := Basis(Vector3.RIGHT, deg_to_rad(68.0)).scaled(Vector3.ONE * 100.0)
+		_companion_rings.global_transform = Transform3D(ring_basis, Vector3(430.0, -92.0, -1320.0))
+	if is_instance_valid(_companion_moon):
+		_companion_moon.global_position = Vector3(620.0, -12.0, -1430.0)
+	if is_instance_valid(_comet_root):
+		_comet_root.global_transform = Transform3D(Basis(Vector3(0.2, 0.8, 0.1).normalized(), 0.0), Vector3(-520.0, 205.0, -1880.0))
+	if is_instance_valid(_derelict_root):
+		_derelict_root.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(-24.0)), Vector3(285.0, -118.0, -690.0))
+	if is_instance_valid(_orbital_station_root):
+		_orbital_station_root.global_transform = Transform3D(Basis(Vector3(0.18, 0.92, -0.12).normalized(), deg_to_rad(8.0)), Vector3(-560.0, 185.0, -2140.0))
+	var traffic_offsets: Array[Vector3] = [Vector3(310.0, 82.0, -760.0), Vector3(-420.0, -165.0, -1120.0), Vector3(165.0, 245.0, -1480.0)]
+	var traffic_rotations: Array[float] = [12.0, -36.0, 74.0]
+	for index in range(mini(_traffic_roots.size(), traffic_offsets.size())):
+		_traffic_roots[index].global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(traffic_rotations[index])), traffic_offsets[index])
 
 
 
@@ -120,8 +188,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.020, 0.008, 0.003), "sky_horizon": Color(0.12, 0.045, 0.020),
 				"ambient": Color(0.42, 0.24, 0.12), "key_light": Color(1.0, 0.72, 0.42),
-				"fill_light": Color(0.72, 0.28, 0.10), "nebula_a": Color(1.0, 0.38, 0.08, 0.42),
-				"nebula_b": Color(0.72, 0.14, 0.04, 0.34), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
+				"fill_light": Color(0.72, 0.28, 0.10), "nebula_a": Color(1.0, 0.38, 0.08, 0.18),
+				"nebula_b": Color(0.72, 0.14, 0.04, 0.14), "atmosphere": Color(0.95, 0.36, 0.10, 0.14),
 				"water_dark": Color(0.05, 0.03, 0.02), "water_light": Color(0.18, 0.08, 0.04),
 				"land_low": Color(0.34, 0.18, 0.08), "land_high": Color(0.58, 0.30, 0.12),
 				"snow": Color(0.82, 0.62, 0.38), "star": Color(1.0, 0.76, 0.52), "asteroid_tint": Color(0.48, 0.31, 0.22), "gas_dark": Color(0.18, 0.07, 0.035), "gas_light": Color(0.48, 0.20, 0.09), "gas_highlight": Color(0.75, 0.46, 0.24), "ring_tint": Color(0.90, 0.52, 0.24)
@@ -130,8 +198,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.005, 0.012, 0.035), "sky_horizon": Color(0.025, 0.09, 0.15),
 				"ambient": Color(0.20, 0.38, 0.56), "key_light": Color(0.62, 0.85, 1.0),
-				"fill_light": Color(0.12, 0.46, 0.78), "nebula_a": Color(0.10, 0.72, 0.95, 0.36),
-				"nebula_b": Color(0.42, 0.28, 0.95, 0.30), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
+				"fill_light": Color(0.12, 0.46, 0.78), "nebula_a": Color(0.10, 0.72, 0.95, 0.16),
+				"nebula_b": Color(0.42, 0.28, 0.95, 0.12), "atmosphere": Color(0.12, 0.62, 1.0, 0.16),
 				"water_dark": Color(0.015, 0.08, 0.18), "water_light": Color(0.05, 0.22, 0.42),
 				"land_low": Color(0.22, 0.36, 0.52), "land_high": Color(0.44, 0.55, 0.65),
 				"snow": Color(0.86, 0.92, 1.0), "star": Color(0.70, 0.88, 1.0), "asteroid_tint": Color(0.34, 0.48, 0.62), "gas_dark": Color(0.055, 0.12, 0.20), "gas_light": Color(0.20, 0.38, 0.52), "gas_highlight": Color(0.58, 0.76, 0.90), "ring_tint": Color(0.48, 0.75, 0.95)
@@ -141,8 +209,8 @@ func _load_system_theme() -> void:
 			_theme = {
 				"sky_top": Color(0.004, 0.009, 0.028), "sky_horizon": Color(0.025, 0.045, 0.09),
 				"ambient": Color(0.22, 0.31, 0.52), "key_light": Color(0.72, 0.82, 1.0),
-				"fill_light": Color(0.20, 0.38, 0.72), "nebula_a": Color(0.16, 0.40, 1.0, 0.38),
-				"nebula_b": Color(0.52, 0.20, 0.94, 0.32), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
+				"fill_light": Color(0.20, 0.38, 0.72), "nebula_a": Color(0.16, 0.40, 1.0, 0.16),
+				"nebula_b": Color(0.52, 0.20, 0.94, 0.12), "atmosphere": Color(0.12, 0.42, 0.95, 0.12),
 				"water_dark": Color(0.018, 0.075, 0.16), "water_light": Color(0.035, 0.19, 0.31),
 				"land_low": Color(0.18, 0.34, 0.31), "land_high": Color(0.43, 0.38, 0.25),
 				"snow": Color(0.78, 0.79, 0.72), "star": Color(0.72, 0.84, 1.0), "asteroid_tint": Color(0.48, 0.52, 0.56), "gas_dark": Color(0.19, 0.105, 0.075), "gas_light": Color(0.58, 0.39, 0.27), "gas_highlight": Color(0.76, 0.62, 0.46), "ring_tint": Color(0.68, 0.54, 0.38)
@@ -152,23 +220,24 @@ func _load_system_theme() -> void:
 func _build_world_environment() -> void:
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_SKY
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color(0.002, 0.004, 0.012)
 	var sky := Sky.new()
 	var sky_material := ProceduralSkyMaterial.new()
 	sky_material.sky_top_color = _theme.get("sky_top", Color(0.004, 0.009, 0.028))
 	sky_material.sky_horizon_color = _theme.get("sky_horizon", Color(0.025, 0.045, 0.09))
-	sky_material.ground_bottom_color = Color(0.002, 0.004, 0.012)
-	sky_material.ground_horizon_color = Color(0.012, 0.022, 0.05)
+	sky_material.ground_bottom_color = sky_material.sky_top_color
+	sky_material.ground_horizon_color = sky_material.sky_horizon_color
 	sky_material.sun_angle_max = 8.0
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = _theme.get("ambient", Color(0.22, 0.31, 0.52))
-	environment.ambient_light_energy = 0.78
+	environment.ambient_light_energy = 0.88
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.55
-	environment.glow_strength = 0.8
+	environment.glow_intensity = 0.68
+	environment.glow_strength = 0.86
 	environment.ssao_enabled = true
 	environment.ssao_radius = 1.35
 	environment.ssao_intensity = 0.62
@@ -185,7 +254,7 @@ func _build_world_environment() -> void:
 	key_light.name = "StellarKeyLight"
 	key_light.rotation_degrees = Vector3(-24.0, 32.0, 0.0)
 	key_light.light_color = _theme.get("key_light", Color(0.72, 0.82, 1.0))
-	key_light.light_energy = 1.65
+	key_light.light_energy = 1.82
 	key_light.shadow_enabled = true
 	key_light.directional_shadow_max_distance = 260.0
 	_stellar_key_light = key_light
@@ -197,7 +266,7 @@ func _build_world_environment() -> void:
 	fill_light.name = "NebulaFillLight"
 	fill_light.rotation_degrees = Vector3(-12.0, -148.0, 0.0)
 	fill_light.light_color = _theme.get("fill_light", Color(0.20, 0.38, 0.72))
-	fill_light.light_energy = 0.34
+	fill_light.light_energy = 0.48
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
 
@@ -327,8 +396,8 @@ func _add_nebula(node_name: String, position: Vector3, dimensions: Vector2, tint
 
 	var noise_texture := NoiseTexture2D.new()
 	noise_texture.noise = noise
-	noise_texture.width = 512
-	noise_texture.height = 512
+	noise_texture.width = 768
+	noise_texture.height = 768
 	noise_texture.seamless = true
 	noise_texture.generate_mipmaps = true
 
@@ -346,9 +415,11 @@ void fragment() {
 	vec2 uv_b = UV * vec2(4.1, 3.2) - drift * 0.7 + vec2(0.23, 0.41);
 	float broad = texture(nebula_noise, uv_a).r;
 	float detail = texture(nebula_noise, uv_b).r;
-	float cloud = broad * 0.72 + detail * 0.28;
-	float filaments = smoothstep(0.36, 0.74, cloud);
-	float wisps = smoothstep(0.49, 0.82, detail) * 0.22;
+	float micro = texture(nebula_noise, UV * vec2(8.2, 6.5) + drift * 1.7 + vec2(0.17, 0.63)).r;
+	float cloud = broad * 0.60 + detail * 0.27 + micro * 0.13;
+	float ridges = 1.0 - abs(cloud * 2.0 - 1.0);
+	float filaments = smoothstep(0.34, 0.72, cloud) * (0.78 + ridges * 0.34);
+	float wisps = smoothstep(0.49, 0.82, detail) * 0.22 + smoothstep(0.72, 0.91, micro) * 0.12;
 	vec2 centered = UV * 2.0 - 1.0;
 	float edge_fade = 1.0 - smoothstep(0.42, 1.0, length(centered));
 	float alpha = clamp((filaments + wisps) * nebula_tint.a * edge_fade, 0.0, 0.36);
@@ -380,29 +451,41 @@ func _build_distant_galaxy() -> void:
 	shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 galaxy_tint : source_color = vec4(0.46, 0.58, 1.0, 0.52);
+uniform vec4 galaxy_tint : source_color = vec4(0.62, 0.68, 0.82, 0.34);
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float noise21(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+		mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
 void fragment() {
 	vec2 p = (UV - vec2(0.5)) * vec2(2.0, 1.35);
 	float radius = length(p);
-	float angle = atan(p.y, p.x);
-	float spiral = sin(angle * 3.0 + radius * 25.0 + sin(angle * 2.0) * 1.2);
-	float arms = exp(-abs(spiral) * 3.4) * exp(-radius * 2.8);
-	float core = exp(-radius * 13.0) * 1.25;
-	float dust_lane = smoothstep(0.08, 0.42, abs(spiral + 0.18)) * arms;
-	float grain = sin(UV.x * 391.0 + sin(UV.y * 277.0) * 4.0) * sin(UV.y * 317.0) * 0.06;
-	float edge = 1.0 - smoothstep(0.42, 0.98, radius);
-	float intensity = max(0.0, arms * 0.68 + core - dust_lane * 0.22 + grain) * edge;
+	float disk = exp(-pow(abs(p.y) * 4.2, 1.35)) * exp(-radius * 1.55);
+	float clouds = noise21(UV * vec2(32.0, 18.0)) * 0.52
+		+ noise21(UV * vec2(78.0, 43.0)) * 0.30
+		+ noise21(UV * vec2(154.0, 86.0)) * 0.18;
+	float dust_lane = smoothstep(0.42, 0.72, clouds) * 0.34;
+	float core = exp(-radius * 8.0) * 0.72;
+	float edge = 1.0 - smoothstep(0.46, 1.0, radius);
+	float intensity = max(0.0, disk * (0.34 + clouds * 0.92 - dust_lane) + core) * edge;
 	ALBEDO = galaxy_tint.rgb;
-	EMISSION = galaxy_tint.rgb * (0.25 + intensity * 2.1);
-	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.42);
+	EMISSION = galaxy_tint.rgb * (0.10 + intensity * 1.05);
+	ALPHA = clamp(intensity * galaxy_tint.a, 0.0, 0.22);
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	var tint: Color = _theme.get("star", Color(0.72, 0.84, 1.0))
-	material.set_shader_parameter("galaxy_tint", Color(tint.r, tint.g, tint.b, 0.62))
+	material.set_shader_parameter("galaxy_tint", Color(tint.r * 0.86, tint.g * 0.88, tint.b * 0.96, 0.34))
 	var quad := QuadMesh.new()
-	quad.size = Vector2(260.0, 168.0)
+	quad.size = Vector2(340.0, 188.0)
 	quad.material = material
 	_distant_galaxy = MeshInstance3D.new()
 	_distant_galaxy.name = "DistantSpiralGalaxy"
@@ -580,7 +663,7 @@ func _build_companion_worlds() -> void:
 	var giant_shader := Shader.new()
 	giant_shader.code = """
 shader_type spatial;
-render_mode diffuse_burley, specular_schlick_ggx;
+render_mode unshaded;
 
 uniform vec4 band_dark = vec4(0.19, 0.105, 0.075, 1.0);
 uniform vec4 band_light = vec4(0.58, 0.39, 0.27, 1.0);
@@ -599,15 +682,26 @@ void fragment() {
 	vec3 storm_color = mix(band_highlight.rgb, band_dark.rgb, smoothstep(-0.4, 0.65, storm_swirl));
 	band_color = mix(band_color, storm_color, storm_edge * 0.82);
 	ALBEDO = mix(band_color, band_highlight.rgb, smoothstep(0.68, 0.96, broad_bands) * 0.28);
+	EMISSION = band_color * 0.24;
 	ROUGHNESS = 0.91;
 	METALLIC = 0.0;
 }
 """
-	var giant_material := ShaderMaterial.new()
-	giant_material.shader = giant_shader
-	giant_material.set_shader_parameter("band_dark", _theme.get("gas_dark", Color(0.19, 0.105, 0.075)))
-	giant_material.set_shader_parameter("band_light", _theme.get("gas_light", Color(0.58, 0.39, 0.27)))
-	giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
+	var giant_material: Material = ShaderMaterial.new()
+	var fallback_giant_material := giant_material as ShaderMaterial
+	fallback_giant_material.shader = giant_shader
+	fallback_giant_material.set_shader_parameter("band_dark", _theme.get("gas_dark", Color(0.19, 0.105, 0.075)))
+	fallback_giant_material.set_shader_parameter("band_light", _theme.get("gas_light", Color(0.58, 0.39, 0.27)))
+	fallback_giant_material.set_shader_parameter("band_highlight", _theme.get("gas_highlight", Color(0.76, 0.62, 0.46)))
+	# Prefer the authored 2K Jupiter map (CC BY 4.0) for natural atmospheric
+	# banding and storm detail; keep the procedural shader as an offline fallback.
+	var gas_giant_texture := load("res://assets/textures/space/jupiter_2k.jpg") as Texture2D
+	if gas_giant_texture != null:
+		var textured_giant := StandardMaterial3D.new()
+		textured_giant.albedo_texture = gas_giant_texture
+		textured_giant.roughness = 0.94
+		textured_giant.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		giant_material = textured_giant
 	giant_mesh.material = giant_material
 	giant.mesh = giant_mesh
 	giant.scale = Vector3.ONE * 82.0
@@ -616,28 +710,42 @@ void fragment() {
 
 	var ring := MeshInstance3D.new()
 	ring.name = "NacreonRings"
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 1.24
-	ring_mesh.outer_radius = 1.86
-	ring_mesh.rings = 96
-	ring_mesh.ring_segments = 12
-	var ring_material := StandardMaterial3D.new()
-	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var ring_mesh := QuadMesh.new()
+	ring_mesh.size = Vector2(3.6, 3.6)
+	var ring_shader := Shader.new()
+	ring_shader.code = """
+shader_type spatial;
+render_mode unshaded, blend_mix, cull_disabled;
+uniform vec4 ring_tint : source_color = vec4(0.68, 0.54, 0.38, 1.0);
+void fragment() {
+	vec2 centered = (UV - vec2(0.5)) * 2.0;
+	float radius = length(centered);
+	if (radius < 0.48 || radius > 0.985) {
+		discard;
+	}
+	float radial = (radius - 0.48) / 0.505;
+	float broad = sin(radial * 54.0 + sin(radial * 11.0) * 0.55);
+	float fine = sin(radial * 214.0 + sin(radial * 37.0)) * 0.12;
+	float bands = smoothstep(-0.18, 0.38, broad + fine);
+	float variation = 0.88 + 0.12 * sin(radial * 17.0);
+	vec3 color = ring_tint.rgb * variation * mix(0.68, 1.12, bands);
+	float edge_fade = 1.0 - smoothstep(0.94, 0.99, radius);
+	ALBEDO = color;
+	EMISSION = color * 0.035;
+	ALPHA = mix(0.045, 0.30, bands) * edge_fade;
+}
+"""
+	var ring_material := ShaderMaterial.new()
+	ring_material.shader = ring_shader
 	var ring_tint: Color = _theme.get("ring_tint", Color(0.68, 0.54, 0.38))
-	ring_material.albedo_color = Color(ring_tint.r, ring_tint.g, ring_tint.b, 0.58)
-	ring_material.emission_enabled = true
-	ring_material.emission = Color(0.12, 0.075, 0.035)
-	ring_material.emission_energy_multiplier = 0.18
-	ring_material.roughness = 0.88
+	ring_material.set_shader_parameter("ring_tint", ring_tint)
 	ring_mesh.material = ring_material
 	ring.mesh = ring_mesh
 	ring.scale = Vector3.ONE * 100.0
 	_companion_rings = ring
 	add_child(ring)
-	_add_ring_detail(ring, "NacreonInnerRing", 1.06, 1.17, 0.30)
-	_add_ring_detail(ring, "NacreonOuterRing", 1.92, 2.12, 0.22)
-	_add_ring_detail(ring, "NacreonDustBand", 2.18, 2.25, 0.10)
+	# The broad translucent shader carries the ring structure; extra torus outlines
+	# made the planet look like a wireframe icon instead of a natural ring system.
 
 	var moon := MeshInstance3D.new()
 	moon.name = "NacreonMoon"
@@ -691,8 +799,8 @@ void fragment() {
 	add_child(moon)
 
 func _create_planet_texture() -> Texture2D:
-	const WIDTH := 768
-	const HEIGHT := 384
+	const WIDTH := 1024
+	const HEIGHT := 512
 	var noise := FastNoiseLite.new()
 	noise.seed = 19073
 	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
@@ -700,13 +808,19 @@ func _create_planet_texture() -> Texture2D:
 	noise.fractal_octaves = 6
 	noise.fractal_lacunarity = 2.05
 	noise.fractal_gain = 0.48
-	noise.frequency = 1.15
+	noise.frequency = 1.32
 
 	var water_dark: Color = _theme.get("water_dark", Color(0.018, 0.075, 0.16))
 	var water_light: Color = _theme.get("water_light", Color(0.035, 0.19, 0.31))
 	var land_low: Color = _theme.get("land_low", Color(0.18, 0.34, 0.31))
 	var land_high: Color = _theme.get("land_high", Color(0.43, 0.38, 0.25))
 	var snow: Color = _theme.get("snow", Color(0.78, 0.79, 0.72))
+	var detail_noise := FastNoiseLite.new()
+	detail_noise.seed = 48291
+	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	detail_noise.fractal_octaves = 4
+	detail_noise.frequency = 5.8
 	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
 	for y in range(HEIGHT):
 		var latitude := (float(y) / float(HEIGHT - 1) - 0.5) * PI
@@ -718,6 +832,8 @@ func _create_planet_texture() -> Texture2D:
 				cos(latitude) * sin(longitude)
 			)
 			var value := noise.get_noise_3d(direction.x * 2.8, direction.y * 2.8, direction.z * 2.8)
+			var surface_detail := detail_noise.get_noise_3d(direction.x * 5.8, direction.y * 5.8, direction.z * 5.8)
+			value += surface_detail * 0.075
 			var color: Color
 			if value < -0.18:
 				color = water_dark.lerp(water_light, clampf((value + 1.0) / 0.82, 0.0, 1.0))
@@ -731,15 +847,45 @@ func _create_planet_texture() -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
+func _load_nasa_asteroid_mesh() -> Mesh:
+	var source := load("res://assets/models/environment/1999_rq36_asteroid.glb") as PackedScene
+	if source == null:
+		push_warning("NASA asteroid GLB could not be loaded; using procedural asteroid fallback")
+		return null
+	var instance := source.instantiate()
+	var mesh := _find_first_mesh(instance)
+	instance.free()
+	if mesh == null:
+		push_warning("NASA asteroid GLB contains no MeshInstance3D; using procedural fallback")
+	return mesh
+
+
+func _find_first_mesh(node: Node) -> Mesh:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			return mesh_instance.mesh
+	for child in node.get_children():
+		var found := _find_first_mesh(child)
+		if found != null:
+			return found
+	return null
+
+
 func _build_asteroid_field() -> void:
-	# A denser base sphere plus deterministic vertex displacement avoids the
-	# smooth blue-marble look of the first capture and gives each instance a
-	# fractured, rocky silhouette without spawning hundreds of separate nodes.
-	var asteroid_mesh := SphereMesh.new()
-	asteroid_mesh.radius = 1.0
-	asteroid_mesh.height = 2.0
-	asteroid_mesh.radial_segments = 20
-	asteroid_mesh.rings = 12
+	# Use NASA's authored asteroid geometry and embedded materials for the
+	# actual debris field; retain a procedural mesh only as a safe fallback.
+	var asteroid_mesh: Mesh = _load_nasa_asteroid_mesh()
+	var using_nasa_asset := asteroid_mesh != null
+	if asteroid_mesh == null:
+		# Keep the procedural fallback available on platforms where the imported
+		# NASA GLB is unavailable; normal project builds use the real scanned mesh.
+		var fallback_mesh := SphereMesh.new()
+		fallback_mesh.radius = 1.0
+		fallback_mesh.height = 2.0
+		fallback_mesh.radial_segments = 20
+		fallback_mesh.rings = 12
+		asteroid_mesh = fallback_mesh
 	var asteroid_shader := Shader.new()
 	asteroid_shader.code = """
 shader_type spatial;
@@ -763,9 +909,10 @@ void vertex() {
 
 void fragment() {
 	float strata = sin(VERTEX.x * 8.0 + VERTEX.y * 5.0 + VERTEX.z * 7.0) * 0.035;
-	float value = clamp(0.30 + rock_variation * 0.24 + strata, 0.12, 0.48);
+	float value = clamp(0.42 + rock_variation * 0.30 + strata, 0.24, 0.78);
 	vec3 mineral_tint = mix(vec3(0.72), vec3(1.18), asteroid_custom.rgb);
 	ALBEDO = rock_tint.rgb * value * mineral_tint;
+	EMISSION = rock_tint.rgb * value * mineral_tint * 0.14;
 	METALLIC = 0.08 + asteroid_custom.g * 0.16;
 	ROUGHNESS = 0.94;
 }
@@ -773,19 +920,57 @@ void fragment() {
 	var asteroid_material := ShaderMaterial.new()
 	asteroid_material.shader = asteroid_shader
 	asteroid_material.set_shader_parameter("rock_tint", _theme.get("asteroid_tint", Color(0.48, 0.52, 0.56)))
-	asteroid_mesh.material = asteroid_material
+	# Keep the NASA GLB's authored PBR materials and embedded texture maps.
+	# Only the low-detail fallback receives the procedural shader.
+	if not using_nasa_asset:
+		for surface_index in range(asteroid_mesh.get_surface_count()):
+			asteroid_mesh.surface_set_material(surface_index, asteroid_material)
 
+	const RELAY_CLUSTER_COUNT := 28
+	var total_asteroid_count := asteroid_count + RELAY_CLUSTER_COUNT
 	var asteroid_multimesh := MultiMesh.new()
 	asteroid_multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	asteroid_multimesh.use_custom_data = true
 	asteroid_multimesh.mesh = asteroid_mesh
-	asteroid_multimesh.instance_count = asteroid_count
+	asteroid_multimesh.instance_count = total_asteroid_count
 	var field := MultiMeshInstance3D.new()
 	field.name = "AsteroidField"
 	field.multimesh = asteroid_multimesh
-	for index in range(asteroid_count):
-		var position := _random_asteroid_position()
+	# The mesh instances span a 33 km route; without an explicit world AABB,
+	# Godot culls the MultiMesh using only the unit-sphere source mesh bounds.
+	field.custom_aabb = AABB(Vector3(-1500.0, -1500.0, -35000.0), Vector3(3000.0, 3000.0, 36000.0))
+	for index in range(total_asteroid_count):
+		var position: Vector3
+		if index < asteroid_count:
+			position = _random_asteroid_position()
+		else:
+			# A denser, navigable debris belt around the relay gives the player
+			# a memorable asteroid encounter instead of a few isolated rocks.
+			var cluster_angle := _rng.randf_range(0.0, TAU)
+			var cluster_radius := _rng.randf_range(120.0, 180.0)
+			position = Vector3(
+				-250.0 + cos(cluster_angle) * cluster_radius,
+				220.0 + sin(cluster_angle) * cluster_radius,
+				-13500.0 + _rng.randf_range(-100.0, 100.0)
+			)
+			# The route returns through this sector; keep every new rock outside
+			# both outbound and return corridors, not just the straight relay leg.
+			for attempt in range(24):
+				var route_distance := _distance_to_route(position)
+				if route_distance >= 120.0 and route_distance <= 700.0:
+					break
+				cluster_angle = _rng.randf_range(0.0, TAU)
+				cluster_radius = _rng.randf_range(120.0, 180.0)
+				position = Vector3(
+					-250.0 + cos(cluster_angle) * cluster_radius,
+					220.0 + sin(cluster_angle) * cluster_radius,
+					-13500.0 + _rng.randf_range(-100.0, 100.0)
+				)
 		var size := _rng.randf_range(0.8, 3.8)
+		if index >= asteroid_count:
+			# Larger relay-sector boulders create a readable close-range field
+			# while remaining outside the marked flight corridor.
+			size = _rng.randf_range(8.0, 22.0)
 		var rotation := Vector3(
 			_rng.randf_range(0.0, TAU),
 			_rng.randf_range(0.0, TAU),
@@ -799,6 +984,38 @@ void fragment() {
 		field.multimesh.set_instance_transform(index, Transform3D(basis, position))
 		field.multimesh.set_instance_custom_data(index, Color(_rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf_range(0.0, 1.0), _rng.randf()))
 		_add_asteroid_collision(index, position, size)
+	add_child(field)
+	_build_asteroid_variants()
+
+
+func _build_asteroid_variants() -> void:
+	# A second silhouette from the CC0 Kenney kit breaks up repetition in the
+	# NASA asteroid field without adding hundreds of draw calls.
+	var packed_scene := load("res://assets/models/environment/kenney_meteor_detailed.glb") as PackedScene
+	if packed_scene == null:
+		push_warning("Optional Kenney meteor variant unavailable")
+		return
+	var instance := packed_scene.instantiate()
+	var meteor_mesh := _find_first_mesh(instance)
+	instance.free()
+	if meteor_mesh == null:
+		push_warning("Kenney meteor model contains no MeshInstance3D")
+		return
+	var multi := MultiMesh.new()
+	multi.transform_format = MultiMesh.TRANSFORM_3D
+	multi.mesh = meteor_mesh
+	multi.instance_count = 18
+	var field := MultiMeshInstance3D.new()
+	field.name = "KenneyMeteorVariants"
+	field.multimesh = multi
+	field.custom_aabb = AABB(Vector3(-1500.0, -1500.0, -35000.0), Vector3(3000.0, 3000.0, 36000.0))
+	for index in range(multi.instance_count):
+		var position := _random_asteroid_position()
+		var size := _rng.randf_range(3.0, 9.0)
+		var rotation := Vector3(_rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU), _rng.randf_range(0.0, TAU))
+		var basis := Basis.from_euler(rotation).scaled(Vector3(size * 0.9, size * 0.72, size * 1.12))
+		multi.set_instance_transform(index, Transform3D(basis, position))
+		_add_asteroid_collision(asteroid_count + 100 + index, position, size)
 	add_child(field)
 
 
@@ -826,7 +1043,7 @@ func _add_ring_detail(parent: MeshInstance3D, node_name: String, inner_radius: f
 func _build_cosmic_dust() -> void:
 	# Layered, chromatic dust motes trace the long flight corridor. A single
 	# custom-data MultiMesh keeps this visual detail out of the physics scene.
-	const DUST_COUNT := 1800
+	const DUST_COUNT := 2400
 	var dust_mesh := SphereMesh.new()
 	dust_mesh.radius = 0.22
 	dust_mesh.height = 0.44
@@ -858,6 +1075,7 @@ void fragment() {
 	_cosmic_dust = MultiMeshInstance3D.new()
 	_cosmic_dust.name = "InterplanetaryDust"
 	_cosmic_dust.multimesh = dust_multimesh
+	_cosmic_dust.custom_aabb = AABB(Vector3(-4000.0, -4000.0, -36000.0), Vector3(8000.0, 8000.0, 37000.0))
 	var dust_palettes: Array[Color] = [
 		Color(0.28, 0.48, 0.82), Color(0.46, 0.62, 0.92),
 		Color(0.72, 0.48, 0.34), Color(0.42, 0.72, 0.72),
@@ -1002,15 +1220,15 @@ func _build_comet_landmark() -> void:
 	nucleus_mesh.radial_segments = 24
 	nucleus_mesh.rings = 16
 	var nucleus_material := StandardMaterial3D.new()
-	nucleus_material.albedo_color = Color(0.30, 0.34, 0.38)
+	nucleus_material.albedo_color = Color(0.40, 0.34, 0.27)
 	nucleus_material.roughness = 0.98
 	nucleus_material.metallic = 0.04
 	nucleus_material.emission_enabled = true
-	nucleus_material.emission = Color(0.16, 0.22, 0.32)
-	nucleus_material.emission_energy_multiplier = 0.22
+	nucleus_material.emission = Color(0.18, 0.12, 0.07)
+	nucleus_material.emission_energy_multiplier = 0.18
 	nucleus_mesh.material = nucleus_material
 	nucleus.mesh = nucleus_mesh
-	nucleus.scale = Vector3(8.0, 6.0, 7.0)
+	nucleus.scale = Vector3(24.0, 17.0, 22.0)
 	_comet_root.add_child(nucleus)
 
 	var coma := MeshInstance3D.new()
@@ -1024,32 +1242,33 @@ func _build_comet_landmark() -> void:
 	coma_shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 coma_tint : source_color = vec4(0.36, 0.72, 1.0, 0.22);
+uniform vec4 coma_tint : source_color = vec4(0.42, 0.76, 1.0, 0.28);
 void fragment() {
-	float edge = 1.0 - smoothstep(0.08, 0.98, length((UV - vec2(0.5)) * vec2(1.0, 0.82)));
-	float turbulence = 0.78 + 0.22 * sin(UV.x * 48.0 + TIME * 0.7) * sin(UV.y * 35.0 - TIME * 0.4);
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float rim = pow(1.0 - facing, 1.45);
+	float turbulence = 0.82 + 0.18 * sin(UV.x * 52.0 + TIME * 0.7) * sin(UV.y * 39.0 - TIME * 0.4);
 	ALBEDO = coma_tint.rgb;
-	EMISSION = coma_tint.rgb * (0.25 + edge * turbulence * 1.8);
-	ALPHA = edge * coma_tint.a * turbulence;
+	EMISSION = coma_tint.rgb * (0.28 + rim * 1.45) * turbulence;
+	ALPHA = (0.07 + rim * 0.24) * coma_tint.a * turbulence;
 }
 """
 	var coma_material := ShaderMaterial.new()
 	coma_material.shader = coma_shader
-	coma_material.set_shader_parameter("coma_tint", Color(0.38, 0.72, 1.0, 0.24))
+	coma_material.set_shader_parameter("coma_tint", Color(0.42, 0.76, 1.0, 0.28))
 	coma_mesh.material = coma_material
 	coma.mesh = coma_mesh
-	coma.scale = Vector3(17.0, 13.0, 15.0)
+	coma.scale = Vector3(54.0, 42.0, 48.0)
 	_comet_root.add_child(coma)
 
 	var tail := MeshInstance3D.new()
 	tail.name = "CometIonTail"
 	var tail_mesh := QuadMesh.new()
-	tail_mesh.size = Vector2(34.0, 150.0)
+	tail_mesh.size = Vector2(54.0, 310.0)
 	var tail_shader := Shader.new()
 	tail_shader.code = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
-uniform vec4 tail_tint : source_color = vec4(0.24, 0.58, 1.0, 0.22);
+uniform vec4 tail_tint : source_color = vec4(0.46, 0.68, 0.88, 0.075);
 void fragment() {
 	float across = abs(UV.x - 0.5) * 2.0;
 	float along = UV.y;
@@ -1064,11 +1283,53 @@ void fragment() {
 """
 	var tail_material := ShaderMaterial.new()
 	tail_material.shader = tail_shader
-	tail_material.set_shader_parameter("tail_tint", Color(0.24, 0.58, 1.0, 0.24))
+	tail_material.set_shader_parameter("tail_tint", Color(0.46, 0.68, 0.88, 0.075))
 	tail_mesh.material = tail_material
 	tail.mesh = tail_mesh
-	tail.position = Vector3(0.0, 70.0, 2.0)
+	tail.position = Vector3(0.0, 155.0, 2.0)
+	tail.rotation_degrees = Vector3(0.0, 0.0, 12.0)
 	_comet_root.add_child(tail)
+
+
+func _build_orbital_station_landmark() -> void:
+	# NASA's detailed ISS model adds a recognizable human-made landmark to the
+	# deep-space route. It is visual-only and follows the camera like other sky
+	# landmarks, so it never changes flight physics or mission collision.
+	var station_scene := load("res://assets/models/environment/nasa_iss_station.glb") as PackedScene
+	if station_scene == null:
+		push_warning("NASA ISS model unavailable; skipping orbital station landmark")
+		return
+	_orbital_station_root = Node3D.new()
+	_orbital_station_root.name = "OrbitalStationLandmark"
+	var station := station_scene.instantiate()
+	station.name = "NASA_ISS_Visual"
+	station.scale = Vector3.ONE * 0.62
+	station.rotation_degrees = Vector3(18.0, -24.0, 11.0)
+	_orbital_station_root.add_child(station)
+	add_child(_orbital_station_root)
+
+
+func _build_distant_traffic() -> void:
+	# Kenney CC0 ships are intentionally used as distant civilian traffic,
+	# not as replacements for the game's hero fighters. Their silhouettes add
+	# scale and life to the system while remaining small in the Full HD frame.
+	var traffic_specs: Array[Dictionary] = [
+		{"path": "res://assets/models/environment/kenney_craft_cargo_a.glb", "name": "CivilianCargoA", "scale": 8.0},
+		{"path": "res://assets/models/environment/kenney_craft_miner.glb", "name": "CivilianMiner", "scale": 7.0},
+		{"path": "res://assets/models/environment/kenney_craft_racer.glb", "name": "CivilianCourier", "scale": 7.5}
+	]
+	for spec in traffic_specs:
+		var packed_scene := load(str(spec.path)) as PackedScene
+		if packed_scene == null:
+			push_warning("Optional Kenney traffic model unavailable: %s" % spec.path)
+			continue
+		var root := Node3D.new()
+		root.name = str(spec.name)
+		var ship := packed_scene.instantiate()
+		ship.scale = Vector3.ONE * float(spec.scale)
+		root.add_child(ship)
+		add_child(root)
+		_traffic_roots.append(root)
 
 
 func _build_derelict_landmark() -> void:
@@ -1079,9 +1340,9 @@ func _build_derelict_landmark() -> void:
 	add_child(_derelict_root)
 
 	var hull_material := StandardMaterial3D.new()
-	hull_material.albedo_color = Color(0.16, 0.22, 0.29)
-	hull_material.metallic = 0.72
-	hull_material.roughness = 0.78
+	hull_material.albedo_color = Color(0.25, 0.32, 0.40)
+	hull_material.metallic = 0.58
+	hull_material.roughness = 0.72
 	var exposed_material := StandardMaterial3D.new()
 	exposed_material.albedo_color = Color(0.42, 0.24, 0.12)
 	exposed_material.metallic = 0.48
@@ -1098,6 +1359,14 @@ func _build_derelict_landmark() -> void:
 	_add_wreck_box("WreckStarboardWing", Vector3(19.0, -1.0, 7.0), Vector3(23.0, 1.5, 7.0), exposed_material)
 	_add_wreck_box("WreckBrokenPanel", Vector3(-31.0, 1.0, 9.0), Vector3(10.0, 1.0, 13.0), exposed_material)
 	_add_wreck_box("WreckBridgeGlass", Vector3(0.0, 3.0, -8.0), Vector3(6.0, 1.2, 8.0), window_material)
+	var turret_scene := load("res://assets/models/environment/kenney_turret_double.glb") as PackedScene
+	if turret_scene != null:
+		var turret := turret_scene.instantiate()
+		turret.name = "KenneyDerelictTurret"
+		turret.position = Vector3(0.0, 5.0, -18.0)
+		turret.rotation_degrees = Vector3(0.0, 180.0, 0.0)
+		turret.scale = Vector3.ONE * 2.2
+		_derelict_root.add_child(turret)
 
 	var antenna := MeshInstance3D.new()
 	antenna.name = "WreckAntenna"

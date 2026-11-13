@@ -22,7 +22,7 @@ shading_mode = 0
 albedo_color = Color(0.08, 0.66, 1, 1)
 emission_enabled = true
 emission = Color(0.035, 0.42, 1, 1)
-emission_energy_multiplier = 4.0
+emission_energy_multiplier = 2.6
 
 [node name="CombatProjectile" type="Area3D"]
 collision_layer = 0
@@ -46,5 +46,5 @@ surface_material_override/0 = SubResource("Material_energy")
 
 [node name="PointLight" type="OmniLight3D" parent="."]
 light_color = Color(0.08, 0.66, 1, 1)
-light_energy = 1.6
-omni_range = 5.5
+light_energy = 0.9
+omni_range = 4.2

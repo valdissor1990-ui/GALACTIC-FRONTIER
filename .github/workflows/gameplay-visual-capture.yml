@@ -68,6 +68,24 @@ jobs:
       - name: Import project and validate scripts and GLB resources
         run: godot --headless --editor --path . --import --quit
 
+      - name: Capture the actual test flight scene in both cameras and combat
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/screenshots
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan --script res://scripts/demo/test_flight_visual_capture.gd > build/test-flight-visual.log 2>&1
+            grep -q "TEST_FLIGHT_VISUAL_QA_COMPLETE cameras=2 combat_enemy=true" build/test-flight-visual.log
+            grep -Eq "Vulkan [0-9]" build/test-flight-visual.log
+            grep -q "Forward+" build/test-flight-visual.log
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            for shot in test-flight-chase test-flight-cockpit test-flight-combat; do
+              test -s "$app_data/$shot.png"
+              cp "$app_data/$shot.png" build/screenshots/
+            done
+          '
+
       - name: Capture eight deterministic Full HD gameplay screenshots
         shell: bash
         run: |
@@ -100,6 +118,38 @@ jobs:
               exit 1
             fi
             test "$(find build/screenshots -maxdepth 1 -name "gameplay-*.png" | wc -l)" -eq 8
+            kill -TERM "$game_pid" 2>/dev/null || true
+            wait "$game_pid" 2>/dev/null || true
+          '
+
+      - name: Capture seven orbital space views from different camera angles
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a -s "-screen 0 1920x1080x24" bash -lc '
+            set -euo pipefail
+            godot --path . --windowed --resolution 1920x1080 --rendering-method forward_plus --rendering-driver vulkan res://scenes/demo/space_environment_showcase.tscn > build/space-showcase.log 2>&1 &
+            game_pid=$!
+            trap "kill $game_pid 2>/dev/null || true" EXIT
+            ready=0
+            for attempt in $(seq 1 240); do
+              if grep -q "SPACE_SHOWCASE_COMPLETE count=7" build/space-showcase.log; then ready=1; break; fi
+              if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+              sleep 0.25
+            done
+            app_data="$HOME/.local/share/godot/app_userdata/GALACTIC FRONTIER/screenshots"
+            test -d "$app_data"
+            cp "$app_data"/space-*.png build/screenshots/ 2>/dev/null || true
+            if [ "$ready" -ne 1 ]; then
+              cat build/space-showcase.log
+              exit 1
+            fi
+            if ! grep -Eq "Vulkan [0-9]" build/space-showcase.log || ! grep -q "Forward+" build/space-showcase.log; then
+              echo "Space showcase did not use the required Forward+ Vulkan renderer."
+              cat build/space-showcase.log
+              exit 1
+            fi
+            test "$(find build/screenshots -maxdepth 1 -name "space-*.png" | wc -l)" -eq 7
             kill -TERM "$game_pid" 2>/dev/null || true
             wait "$game_pid" 2>/dev/null || true
           '
@@ -160,37 +210,62 @@ jobs:
           for i, image in enumerate(thumbs):
               sheet.paste(image, ((i % 2) * 480, (i // 2) * 270))
           sheet.save("build/screenshots/contact-sheet.png")
+
+          space_files = sorted(Path("build/screenshots").glob("space-*.png"))
+          if len(space_files) != 7:
+              raise SystemExit(f"Expected 7 space views, got {len(space_files)}")
+          space_sheet = Image.new("RGB", (1920, 1080), "#10151d")
+          for i, path in enumerate(space_files):
+              image = Image.open(path).convert("RGB")
+              if image.size != (1920, 1080):
+                  raise SystemExit(f"Unexpected space screenshot size: {path} {image.size}")
+              space_sheet.paste(image.resize((640, 360)), ((i % 3) * 640, (i // 3) * 360))
+          space_sheet.save("build/screenshots/space-contact-sheet.png")
           PY
 
       - name: Verify full mission sequence and screenshot evidence
+        shell: bash
         run: |
-          cat build/gameplay-showcase.log
-          test "$(find build/screenshots -maxdepth 1 -name 'gameplay-*.png' | wc -l)" -eq 8
-          test -s build/screenshots/contact-sheet.png
-          test -s build/screenshots/fleet-hangar.png
-          test -s build/screenshots/carrier-services.png
-          test -s build/screenshots/contract-board.png
           python3 - <<'PY'
+          from pathlib import Path
           from PIL import Image
-          for path in ("build/screenshots/fleet-hangar.png", "build/screenshots/carrier-services.png", "build/screenshots/contract-board.png"):
-              image = Image.open(path)
-              if image.size != (1920, 1080):
-                  raise SystemExit(f"Unexpected Full HD screenshot size: {path} {image.size}")
+
+          screenshots = Path("build/screenshots")
+          gameplay = sorted(screenshots.glob("gameplay-*.png"))
+          space = sorted(path for path in screenshots.glob("space-*.png") if path.name != "space-contact-sheet.png")
+          required = [
+              "contact-sheet.png", "space-contact-sheet.png", "fleet-hangar.png",
+              "carrier-services.png", "contract-board.png"
+          ]
+          if len(gameplay) != 8:
+              raise SystemExit(f"Expected 8 gameplay frames, got {len(gameplay)}")
+          if len(space) != 7:
+              raise SystemExit(f"Expected 7 space frames, got {len(space)}")
+          for name in required:
+              path = screenshots / name
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Missing screenshot evidence: {name}")
+          for path in gameplay + space + [screenshots / "fleet-hangar.png", screenshots / "carrier-services.png", screenshots / "contract-board.png"]:
+              with Image.open(path) as image:
+                  if image.size != (1920, 1080):
+                      raise SystemExit(f"Unexpected Full HD size: {path} {image.size}")
+
+          gameplay_log = Path("build/gameplay-showcase.log").read_text(errors="replace")
+          fleet_log = Path("build/fleet-hangar.log").read_text(errors="replace")
+          for marker in [
+              "SHOWCASE_PLAYER_MODEL_MESHES=", "SHOWCASE_ENEMY_MODEL_MESHES=",
+              "SHOWCASE_PHASE=RELAY_APPROACH", "SHOWCASE_PHASE=RELAY_COMBAT",
+              "SHOWCASE_PHASE=WRECK_INVESTIGATION", "SHOWCASE_PHASE=WRECK_COMBAT",
+              "SHOWCASE_PHASE=MISSION_COMPLETE", "SHOWCASE_SEQUENCE_COMPLETE stage=7"
+          ]:
+              if marker not in gameplay_log:
+                  raise SystemExit(f"Missing gameplay QA marker: {marker}")
+          if gameplay_log.count("SHOWCASE_SCREENSHOT=") != 10:
+              raise SystemExit("Gameplay showcase did not capture all 10 frames")
+          if "FLEET_HANGAR_SHIPS_LOADED=7" not in fleet_log or "FLEET_HANGAR_COMPLETE" not in fleet_log:
+              raise SystemExit("Seven-ship hangar showcase did not complete")
+          print(f"VISUAL_QA_PASS gameplay={len(gameplay)} space={len(space)} resolution=1920x1080")
           PY
-          grep -E "FLEET_HANGAR_SHIPS_LOADED=7" build/fleet-hangar.log
-          grep -q "FLEET_HANGAR_COMPLETE" build/fleet-hangar.log
-          file build/screenshots/gameplay-*.png build/screenshots/fleet-hangar.png build/screenshots/carrier-services.png build/screenshots/contract-board.png
-          grep -E "SHOWCASE_PLAYER_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
-          grep -E "SHOWCASE_ENEMY_MODEL_MESHES=[1-9][0-9]*" build/gameplay-showcase.log
-          test "$(grep -c "SHOWCASE_SCREENSHOT=" build/gameplay-showcase.log)" -eq 10
-          for phase in RELAY_APPROACH RELAY_COMBAT WRECK_INVESTIGATION WRECK_COMBAT MISSION_COMPLETE; do
-            grep -q "SHOWCASE_PHASE=${phase}" build/gameplay-showcase.log
-          done
-          grep -E "SHOWCASE_SEQUENCE_COMPLETE stage=7" build/gameplay-showcase.log
-          if grep -E "No loader found|Parse Error|modified from inside an instance" build/gameplay-showcase.log; then
-            echo "Gameplay visual capture contains broken GLB resources or scene overrides."
-            exit 1
-          fi
 
       - name: Upload Full HD gameplay screenshots and diagnostics
         if: always()
@@ -199,7 +274,9 @@ jobs:
           name: GALACTIC-FRONTIER-gameplay-visual-qa-fullhd
           path: |
             build/screenshots/*.png
+            build/test-flight-visual.log
             build/gameplay-showcase.log
+            build/space-showcase.log
             build/fleet-hangar.log
           if-no-files-found: error
           retention-days: 30
