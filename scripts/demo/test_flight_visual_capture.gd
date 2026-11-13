@@ -40,8 +40,10 @@ func _run() -> void:
 	var player := scene.get_node("PlayerShip") as ShipController
 	var targeting := player.get_node("TargetingSystem") as TargetingSystem
 	if enemy != null:
-		enemy.global_position = player.global_position + Vector3(0.0, 1.0, -32.0)
+		enemy.global_position = player.global_position + Vector3(0.0, 0.5, -32.0)
 		enemy.look_at(player.global_position, Vector3.UP)
+		enemy.set_physics_process(false)
+		enemy.set_process(false)
 		targeting.set_target(enemy)
 	await create_timer(0.35).timeout
 	Input.action_press("fire_primary")
