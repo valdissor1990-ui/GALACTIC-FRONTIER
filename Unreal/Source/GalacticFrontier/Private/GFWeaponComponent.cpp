@@ -1,6 +1,7 @@
 #include "GFWeaponComponent.h"
 
 #include "GFProjectile.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
@@ -8,6 +9,7 @@
 UGFWeaponComponent::UGFWeaponComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
+    ProjectileClass = AGFProjectile::StaticClass();
 }
 
 void UGFWeaponComponent::StartFiring()
