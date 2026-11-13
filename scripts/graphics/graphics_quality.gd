@@ -52,9 +52,36 @@ func apply_preset(preset: Preset) -> void:
 			RenderingServer.directional_shadow_atlas_set_size(2048, true)
 		Preset.HIGH:
 			RenderingServer.directional_shadow_atlas_set_size(4096, true)
+	var viewport := get_viewport()
+	if viewport != null:
+		viewport.msaa_3d = msaa_3d_level()
+		viewport.anisotropic_filtering_level = anisotropic_filtering_level()
 	_apply_viewport_scale()
 	_apply_to_scene_tree()
 
+
+func msaa_3d_level() -> int:
+	## Native edge antialiasing without temporal ghosting on fast-moving ships/VFX.
+	match current:
+		Preset.LOW:
+			return Viewport.MSAA_DISABLED
+		Preset.MEDIUM:
+			return Viewport.MSAA_2X
+		Preset.HIGH:
+			return Viewport.MSAA_4X
+	return Viewport.MSAA_2X
+
+
+func anisotropic_filtering_level() -> int:
+	## Keep oblique hull and station textures sharp at distance.
+	match current:
+		Preset.LOW:
+			return Viewport.ANISOTROPY_4X
+		Preset.MEDIUM:
+			return Viewport.ANISOTROPY_8X
+		Preset.HIGH:
+			return Viewport.ANISOTROPY_16X
+	return Viewport.ANISOTROPY_8X
 
 func get_preset_name() -> String:
 	match current:
