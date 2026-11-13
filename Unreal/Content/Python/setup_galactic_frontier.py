@@ -64,7 +64,7 @@ def spawn_lighting():
         sun.set_actor_label("GF_KeyLight")
         light = sun.get_component_by_class(unreal.DirectionalLightComponent)
         if light:
-            light.set_editor_property("intensity", 12.0)
+            light.set_editor_property("intensity", 45000.0)
             light.set_editor_property("light_color", unreal.LinearColor(0.78, 0.86, 1.0, 1.0))
     sky = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.SkyLight, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
@@ -116,6 +116,14 @@ def create_flight_test_level(player_mesh, imported):
                 enemy_component.set_collision_profile_name("BlockAll")
             if hasattr(enemy, "set_combat_target"):
                 enemy.set_combat_target(pawn)
+
+    mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
+    if mission_class:
+        mission = unreal.EditorLevelLibrary.spawn_actor_from_class(
+            mission_class, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+        if mission:
+            mission.set_actor_label("The Silent Relay - Mission Director")
+            mission.set_editor_property("enemy_ship_mesh", enemy_mesh)
     unreal.EditorLevelLibrary.save_current_level()
     unreal.EditorAssetLibrary.save_directory("/Game/GF", only_if_is_dirty=False, recursive=True)
     log("Created " + level_path)
