@@ -88,6 +88,8 @@ func _run() -> void:
 	_check(environment.has_node("NacreonMoon"), "the distant planetary system includes a moon")
 	var cratered_moon := environment.get_node_or_null("NacreonMoon") as MeshInstance3D
 	_check(cratered_moon != null and cratered_moon.mesh.material is ShaderMaterial, "the distant moon has procedural crater and regolith shading")
+	var lens := environment.get_node_or_null("GravitationalLensMass") as Node3D
+	_check(lens != null and not bool(lens.get("show_debug_core")) and not lens.has_node("LensCore") and not lens.has_node("PhotonSphereHint"), "gravitational lens debug core and guide ring are hidden in production")
 	_check(environment.has_node("DistantSpiralGalaxy"), "a procedural spiral galaxy is generated as a distant sky landmark")
 	_check(environment.has_node("StellarPrimary") and environment.has_node("StellarCorona"), "the system has a visible animated primary star and plasma corona")
 	_check(environment.has_node("CometLandmark/CometNucleus") and environment.has_node("CometLandmark/CometComa") and environment.has_node("CometLandmark/CometIonTail"), "a comet has a rocky nucleus, animated coma and ion tail")
