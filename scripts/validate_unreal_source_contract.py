@@ -93,8 +93,10 @@ def main():
             "Development build must restart the current level with R only after mission failure")
     require("/Engine/BasicShapes/BasicShapeMaterial" in mission_cpp and
             "RelayMarkerGlow" in mission_cpp and "WreckMarkerGlow" in mission_cpp and
-            'SetVectorParameterValue(TEXT("Color"),' in mission_cpp,
-            "Objective markers must use tinted engine material and soft local glow")
+            'SetVectorParameterValue(TEXT("Color"),' in mission_cpp and
+            "UpdateObjectiveMarker(WreckMarker, WreckPosition)" in mission_cpp and
+            "WreckMarkerGlow->SetVisibility(true, true)" in mission_cpp,
+            "Objective markers must use tinted engine material, soft glow and correct relay-to-wreck handoff")
     material_map = read("docs/SHIP_MATERIAL_SLOT_MAP.md")
     require(all(name in material_map for name in
                 ("Brushed gunmetal armor", "Cockpit polarized glass",
