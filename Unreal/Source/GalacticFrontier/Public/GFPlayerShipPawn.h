@@ -106,4 +106,7 @@ private:
     float RollInput = 0.0f;
     bool bCockpitCameraActive = false;
     float CurrentEngineGlowIntensity = 650.0f;
+#if !UE_BUILD_SHIPPING
+    FName DebugShipOverrideId;
+#endif
 };
