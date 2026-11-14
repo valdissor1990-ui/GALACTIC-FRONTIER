@@ -12,6 +12,7 @@ on:
       - "Unreal/Content/Python/setup_galactic_frontier.py"
       - "Unreal/Source/GalacticFrontier/**"
       - "Unreal/Config/**"
+      - "scripts/blender/**"
       - "scripts/validate_unreal_asset_contract.py"
       - "scripts/validate_unreal_source_contract.py"
       - ".github/workflows/unreal-source-asset-contract.yml"
@@ -45,7 +46,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile Unreal Editor Python script syntax
-        run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/validate_unreal_asset_contract.py scripts/validate_unreal_source_contract.py
+        run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/blender/*.py scripts/validate_unreal_asset_contract.py scripts/validate_unreal_source_contract.py
       - name: Validate Unreal gameplay and asset integration
         run: python scripts/validate_unreal_source_contract.py
       - name: Validate all GLB geometry and PBR materials
