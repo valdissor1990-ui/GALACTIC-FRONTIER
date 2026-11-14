@@ -6,6 +6,7 @@ Run with Blender 4.5:
 """
 import bpy, math, os, sys
 from mathutils import Vector
+from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -42,6 +43,7 @@ def mat(name, color, metallic=.65, rough=.34, emission=None, strength=0):
         links.new(bump.outputs["Normal"],p.inputs["Normal"])
         links.new(noise.outputs["Fac"],rough_map.inputs["Value"])
         links.new(rough_map.outputs["Result"],p.inputs["Roughness"])
+        apply_exportable_surface_maps(m, p, color, rough, name)
     return m
 
 def finish(o, material, bevel=.05):
