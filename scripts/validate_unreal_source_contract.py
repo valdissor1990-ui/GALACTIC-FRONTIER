@@ -67,7 +67,7 @@ def main():
             "DefaultEngine.ini must select the flight test map")
 
     for token in (
-        "GF_DeepSpace_Backdrop", "GF_Planet_Verdant", "GF_Planet_Glacius",
+        "GF_DeepSpace_Backdrop", "GF_Planet_Verdant", "GF_Planet_Glacius",\n        "GF_Planet_Dune", "GF_Planet_Helios_Gas_Giant",
         "CollisionEnabled.NO_COLLISION", "L_FlightTest",
     ):
         require(token in setup_py, "Flight test level setup is missing: " + token)
