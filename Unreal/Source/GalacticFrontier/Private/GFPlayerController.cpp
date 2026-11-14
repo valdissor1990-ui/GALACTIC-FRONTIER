@@ -27,7 +27,8 @@ void AGFPlayerController::SetupInputComponent()
         return;
     }
 
-    InputComponent->BindAction(TEXT("PauseGame"), IE_Pressed, this, &AGFPlayerController::TogglePauseMenu);
+    // This binding must remain active while paused so Esc can resume gameplay.
+    InputComponent->BindAction(TEXT("PauseGame"), IE_Pressed, this, &AGFPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
     InputComponent->BindAction(TEXT("CycleGraphics"), IE_Pressed, this, &AGFPlayerController::CycleGraphicsQuality);
 #if !UE_BUILD_SHIPPING
     InputComponent->BindKey(EKeys::One, IE_Pressed, this, &AGFPlayerController::DebugSelectShip1);
