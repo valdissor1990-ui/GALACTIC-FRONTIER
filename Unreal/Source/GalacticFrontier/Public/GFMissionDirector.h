@@ -8,6 +8,7 @@ class AGFEnemyShip;
 class APawn;
 class UStaticMesh;
 class UStaticMeshComponent;
+class UPointLightComponent;
 
 UENUM(BlueprintType)
 enum class EGFMissionStage : uint8
@@ -97,6 +98,12 @@ private:
 
     UPROPERTY()
     TObjectPtr<UStaticMeshComponent> WreckMarker;
+
+    UPROPERTY()
+    TObjectPtr<UPointLightComponent> RelayMarkerGlow;
+
+    UPROPERTY()
+    TObjectPtr<UPointLightComponent> WreckMarkerGlow;
 
     EGFMissionStage Stage = EGFMissionStage::Outbound;
     TWeakObjectPtr<APawn> PlayerPawn;
