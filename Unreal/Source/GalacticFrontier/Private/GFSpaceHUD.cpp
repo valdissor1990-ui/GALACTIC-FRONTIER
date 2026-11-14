@@ -101,7 +101,7 @@ void AGFSpaceHUD::DrawHUD()
                 TEXT("RETURN TO CARRIER"), TEXT("CONTRACT COMPLETE"), TEXT("CONTRACT FAILED")
             };
             const int32 StageIndex = static_cast<int32>(Mission->GetMissionStage());
-            const int32 SafeIndex = FMath::Clamp(StageIndex, 0, UE_ARRAY_COUNT(StageLabels) - 1);
+            const int32 SafeIndex = FMath::Clamp(StageIndex, 0, static_cast<int32>(UE_ARRAY_COUNT(StageLabels)) - 1);
             DrawTextLine(FString::Printf(TEXT("CONTRACT  %s  /  %s"), *Mission->GetActiveContractName().ToString(), StageLabels[SafeIndex]), Canvas->ClipX - 500.0f, 68.0f, FLinearColor(0.3f, 0.85f, 1.0f), 1.0f);
             if (Mission->GetMissionStage() == EGFMissionStage::ScanRelay ||
                 Mission->GetMissionStage() == EGFMissionStage::ScanWreck)
