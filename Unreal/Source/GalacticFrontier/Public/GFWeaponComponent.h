@@ -45,4 +45,6 @@ public:
 private:
     void FireTimerTick();
     FTimerHandle FireTimer;
+    /** Earliest world time at which another shot may be spawned. */
+    double NextAllowedFireTime = 0.0;
 };
