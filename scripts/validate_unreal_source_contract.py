@@ -93,7 +93,7 @@ def main():
             "GLB validator must check binary structure and PBR material properties")
     require("MODEL_DIRS = (\"ships\", \"environment\", \"space\", \"planets\")" in validator,
             "GLB quality validation must cover every model category")
-    require("ShaderNodeNormalMap" in space_builder and "Baked planetary roughness" in space_builder and
+    require("ShaderNodeNormalMap" in space_builder and "Baked planetary metallic-roughness" in space_builder and "ShaderNodeSeparateRGB" in space_builder and
             "Baked planetary tangent normal" in space_builder and "make_surface_maps" in space_builder,
             "Planet materials must export baked roughness and tangent-space normal maps")
     require("--resolution 1024" in asset_workflow,
