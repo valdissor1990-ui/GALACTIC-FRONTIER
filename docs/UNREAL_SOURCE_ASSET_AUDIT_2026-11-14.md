@@ -11,14 +11,15 @@ Scope: source and asset-pipeline review of the Unreal migration branch `chatgpt/
 - The import gate now checks every source independently: all imported object paths must load; every model must produce at least one StaticMesh; and each ship GLB must have exactly one source mesh node and exactly one imported StaticMesh. Violations are marked `failed`, not merely logged as warnings.
 - The machine-readable report now includes source mesh-node count, imported StaticMesh count, expected count, object-load status, per-model validation status, total validated count, failed source list and an overall pass/fail result. Stage summaries use the same validation status.
 - The Editor script now separately loads and type-checks all four exact ship soft-object paths used by `GFGameCatalog` (player fighter, interceptor, heavy fighter and bomber). The result records the expected and actual object paths and marks the catalog gate failed if any path is missing or is not a `StaticMesh`. These paths are still assumptions until this check is executed inside Unreal Editor.
-- The ship import stage now normalizes the imported StaticMesh object name to the source GLB filename under the destination folder (for example, `player_fighter.glb` → `/Game/GF/Ships/player_fighter.player_fighter`). It refuses to overwrite an existing conflicting target, records rename outcome, updates the in-memory imported-object inventory after a successful rename, and fails that ship's validation unless its final object path exactly matches the catalog convention. This is implemented but not yet executed in Unreal Editor; `EditorAssetLibrary.rename_asset` behavior and actual Interchange naming remain to be confirmed in UE 5.8.4.
-- Added a standalone Python CI check at `scripts/validate_unreal_asset_contract.py` and workflow `.github/workflows/unreal-source-asset-contract.yml`. GitHub Actions run **43566474420** completed successfully: Python syntax compilation passed and all seven ship GLBs passed the one-mesh/one-mesh-node/material-count source contract. This does not execute Unreal's Interchange importer or compile C++.
+- Every single-mesh GLB (ships, backdrop and single-mesh planets/environment props) now receives a deterministic object name based on its source filename inside its destination folder. The importer refuses to overwrite an existing conflicting target, records rename outcome, updates the in-memory imported-object inventory after a successful rename, and fails validation unless the final path matches the naming contract. Multi-mesh GLBs are not renamed as a single asset. This is implemented but not yet executed in Unreal Editor; `EditorAssetLibrary.rename_asset` behavior and actual Interchange naming remain to be confirmed in UE 5.8.4.
+- Added standalone Python CI checks at `scripts/validate_unreal_asset_contract.py` and `scripts/validate_unreal_source_contract.py`. Workflow `.github/workflows/unreal-source-asset-contract.yml` now runs on gameplay C++/config changes as well as asset/import-script changes. GitHub Actions run **43567055278** completed successfully: all three Python files passed syntax compilation, the player camera/fallback, catalog paths, GameMode/map setup, flight-level props and import-report gates passed static source checks, and all seven ship GLBs passed the structural contract. This does not execute Unreal's Interchange importer, UnrealHeaderTool, UBT or runtime.
 - It now parses each source GLB JSON chunk before import, walks the selected scene hierarchy, composes each mesh node's world matrix from all parent transforms, records node-to-mesh references and primitive material names, and writes a JSON manifest under `Saved/GFAssetManifests`. A nested-rotation/translation self-check runs before the import workflow. Matrices remain in glTF source coordinates and units; they are deliberately not passed to Unreal components until coordinate/unit conversion is validated against actual Interchange imports.
 - The generated ship GLBs now contain exactly one complete mesh each, while editable Blender sources retain their component meshes. This avoids requiring Unreal to assemble hundreds of imported mesh assets for the visual ship body. It does not yet produce separate gameplay-damage modules or validate imported material/transform results in Unreal.
-- It creates `/Game/GF/Maps/L_FlightTest`, lighting, a PlayerStart and a GFMissionDirector.
-- It attempts to assign an enemy mesh only when the imported-path token lookup yields exactly one StaticMesh.
-- It logs a Player Fighter candidate but does not assign that mesh to the player pawn.
-- The manifest is not yet mapped to the exact StaticMesh assets produced by Interchange, and it does not yet populate `AGFShipAssemblyActor.Parts` automatically. Materials, pivots, scale, axis and collision still require Editor validation.
+- It creates `/Game/GF/Maps/L_FlightTest`, key/fill lighting, a forward-facing PlayerStart, a two-sided emissive space backdrop, Verdant and Glacius planet actors, and a GFMissionDirector. Imported visual actors have collision disabled so they do not block flight.
+- Single-mesh imports are normalized to source-filename object paths, allowing deterministic lookup of the enemy fighter, backdrop and planet meshes. The mission director receives the enemy fighter when the lookup returns exactly one StaticMesh.
+- The player pawn resolves the selected ship's catalog soft-object path at runtime. If no saved selection exists it selects Player Fighter Mk.I; if a non-default selected ship mesh is missing it uses Player Fighter visuals while retaining the selected ship's gameplay stats. Missing all fallback mesh assets is logged as an error.
+- Chase and cockpit camera positions are calculated from the selected StaticMesh local bounds. This removes the previous one-size-fits-all offsets, but camera framing still requires an in-engine visual check.
+- The manifest is not yet mapped to exact StaticMesh assets produced by Interchange, and `AGFShipAssemblyActor.Parts` is not populated automatically. Current ship GLBs are intentionally consolidated to one complete mesh each, so the player visual path uses one StaticMesh rather than the assembly actor. Materials, pivots, scale, axis and collision still require Editor validation.
 - A reusable C++ `AGFShipAssemblyActor` has now been added. It accepts an explicit list of source-node mesh assets, composed root-relative transforms and optional material overrides, then builds one `UStaticMeshComponent` per part. Missing mesh references are logged rather than silently skipped.
 - This actor is an assembly primitive, not a completed asset pipeline: the Editor script does not yet populate its `Parts` array from the manifest, and no actual imported GLB has been reconstructed or visually checked.
 
@@ -26,16 +27,11 @@ Scope: source and asset-pipeline review of the Unreal migration branch `chatgpt/
 
 No Unreal Engine 5.8 installation is available in this execution environment. C++ source has not been compiled. Header parsing, generated code, module dependencies and linker correctness remain unverified. The catalog automation test exists but has not been executed.
 
-## P0 — Existing ship models are not yet restored as complete Unreal assets
+## P0 — Unreal import and Player Fighter visual acceptance remain open
 
-The current import script inventories StaticMesh outputs but does not create a reusable assembled ship Blueprint/Actor from all GLB nodes. A multi-node ship may therefore remain a collection of separate imported assets without a complete in-game representation. This blocks acceptance of the Player Fighter visual slice.
+The source-side path is now implemented: the seven ship GLBs are each a single complete mesh; the Editor script imports and normalizes their object names; the catalog paths are checked; the pawn resolves the selected mesh; and the flight-test level receives a backdrop and planets. However, no Unreal Editor has executed this import script yet. Therefore there is still no evidence that Interchange produces the expected object paths, that the materials render correctly, or that the pawn/camera/planet framing looks correct in UE 5.8.4.
 
-Required implementation:
-1. Inspect actual GLB node hierarchy, mesh references, transforms and material bindings from source files.
-2. Import every node and preserve source-relative transforms.
-3. Populate a Blueprint subclass of `AGFShipAssemblyActor` with one part descriptor per source mesh node, using composed root-relative transforms and preserved material slots.
-4. Verify all expected source nodes are represented exactly once.
-5. Verify materials, scale, forward axis, pivots and collision in Unreal Editor.
+The retained multi-part `.blend` files preserve the original editable geometry. `AGFShipAssemblyActor` remains available for future modular damage/upgrade variants, but is not required to assemble the current consolidated single-mesh ship bodies.
 
 ## P1 — Catalog soft-object paths remain assumptions
 
@@ -61,9 +57,9 @@ The current first-pass implementation includes a relay/wreck encounter loop and 
 
 1. Build with the exact Unreal Engine 5.8.4 toolchain; resolve UHT/compiler/linker errors.
 2. Run the Editor Python setup script and capture the import log.
-3. Reconstruct the Player Fighter from every GLB mesh node and verify visual completeness/materials.
-4. Confirm exact imported paths and update catalog references.
-5. Inspect scale, forward axis, pivot, collision and cockpit camera placement.
+3. Execute the automated import and confirm all four catalog ship paths plus backdrop/planet assets resolve exactly.
+4. Open `L_FlightTest`; inspect Player Fighter materials, scale, forward axis, pivot, collision, cockpit view and chase-camera framing.
+5. Playtest flight and verify planet/backdrop placement and mission enemy spawn.
 6. Playtest flight, cameras, targeting, weapons, enemy AI, mission progression and save/reload.
 7. Run catalog automation tests and package a Windows development build.
 
