@@ -5,7 +5,10 @@ on:
     branches:
       - chatgpt/unreal-migration-ue5.8
     paths:
-      - "assets/models/ships/**"\n      - "assets/models/environment/**"\n      - "assets/models/space/**"\n      - "assets/models/planets/**"
+      - "assets/models/ships/**"
+      - "assets/models/environment/**"
+      - "assets/models/space/**"
+      - "assets/models/planets/**"
       - "Unreal/Content/Python/setup_galactic_frontier.py"
       - "Unreal/Source/GalacticFrontier/**"
       - "Unreal/Config/**"
@@ -15,6 +18,9 @@ on:
   pull_request:
     paths:
       - "assets/models/ships/**"
+      - "assets/models/environment/**"
+      - "assets/models/space/**"
+      - "assets/models/planets/**"
       - "Unreal/Content/Python/setup_galactic_frontier.py"
       - "Unreal/Source/GalacticFrontier/**"
       - "Unreal/Config/**"
