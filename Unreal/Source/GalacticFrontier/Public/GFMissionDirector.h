@@ -62,6 +62,9 @@ public:
     FText ActiveContractName = FText::FromString(TEXT("The Silent Relay"));
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
+    FText FailureReason;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
     int32 MissionReward = 5000;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Mission")
@@ -72,6 +75,9 @@ public:
 
     UFUNCTION(BlueprintPure, Category="Mission")
     FText GetActiveContractName() const { return ActiveContractName; }
+
+    UFUNCTION(BlueprintPure, Category="Mission")
+    FText GetFailureReason() const { return FailureReason; }
 
     UFUNCTION(BlueprintPure, Category="Mission")
     int32 GetEnemiesRemaining() const { return EnemiesRemaining; }
