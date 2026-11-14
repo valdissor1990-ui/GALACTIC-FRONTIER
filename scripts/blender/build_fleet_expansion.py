@@ -6,6 +6,7 @@ Run with Blender 4.5:
 """
 import bpy, math, os, sys
 from mathutils import Vector
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
