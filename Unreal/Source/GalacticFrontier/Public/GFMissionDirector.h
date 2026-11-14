@@ -9,6 +9,7 @@ class APawn;
 class UStaticMesh;
 class UStaticMeshComponent;
 class UPointLightComponent;
+class UMaterialInterface;
 
 UENUM(BlueprintType)
 enum class EGFMissionStage : uint8
@@ -104,6 +105,9 @@ private:
 
     UPROPERTY()
     TObjectPtr<UPointLightComponent> WreckMarkerGlow;
+
+    UPROPERTY()
+    TObjectPtr<UMaterialInterface> MarkerBaseMaterial;
 
     EGFMissionStage Stage = EGFMissionStage::Outbound;
     TWeakObjectPtr<APawn> PlayerPawn;
