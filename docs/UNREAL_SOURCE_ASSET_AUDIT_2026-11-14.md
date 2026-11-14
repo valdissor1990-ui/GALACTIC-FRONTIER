@@ -104,3 +104,18 @@ All migration work remains on `chatgpt/unreal-migration-ue5.8`. PR #99 remains d
 **Source CI:** GitHub Actions run [#43578596597](https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43578596597) passed on source commit `4277dcc1af0dfde39d01390406d47f3e510ca190` (Python syntax, static gameplay/import contracts, and all GLB geometry/PBR checks). The branch head was subsequently advanced by documentation-only commits; no gameplay source changed after that passing run.
 
 **Current gate: NEEDS_UE_EDITOR.** The source and path contracts can be checked in CI, but no UnrealHeaderTool/UBT compile, Interchange import, Content Browser inspection or Play-in-Editor test has been run in this environment. Catalog `VisualScale` values and +X orientation still require viewport confirmation against the actual imported assets.
+
+
+## Parallel work after independent Grok audit — debug fleet, mission UX and objective markers
+
+- Added development-only numeric fleet switching: keys `1–7` select the seven entries in catalog order. The override is resolved directly from the catalog and bypasses unlock checks only for the debug path; it does not mutate or save the pilot's selected ship or unlock progression. On-screen and Output Log feedback includes ship name and price.
+- Debug switching uses the same mesh loader and ship configuration path as normal selection. If a selected mesh is missing, it logs an Error and does not substitute a different ship or apply mismatched stats. This control is compiled out for Shipping builds.
+- Added concise HUD terminal feedback for Silent Relay: completion and awarded credits/story flag, or failure and a reason (ship destroyed, enemy class unavailable, or empty/failed wave).
+- Added development-only `R` restart of the current level, guarded so it only acts after the mission is in Failed state.
+- Improved relay/wreck objective markers using the existing engine sphere `/Engine/BasicShapes/Sphere.Sphere`, engine basic-shape material `/Engine/BasicShapes/BasicShapeMaterial` with a `Color` parameter, and soft cyan/amber point lights. Corrected the relay-to-wreck handoff so the wreck marker is shown at the wreck position; the relay marker is hidden without hiding its attached wreck marker.
+- Added `docs/SHIP_MATERIAL_SLOT_MAP.md` from the existing Blender `single-mesh-report.json`. It lists all exported source material names for all seven ships and proposes Hull/Glass/Engine/Trim master assignments. It explicitly does not claim imported slot order or visual acceptance.
+- Extended `docs/UE_EDITOR_ACCEPTANCE_CHECKLIST.md` with the debug controls, terminal mission feedback and marker checks.
+
+**Source CI:** [run #43579954256](https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43579954256) passed on commit `e8bc5bb0d7a4597172d90d41b4e15e28078b3164`: Python syntax, static gameplay/source contracts, and all GLB geometry/PBR validation.
+
+**Still NEEDS_UE_EDITOR:** C++ compile/UHT, actual Interchange import, confirmation of the engine basic-shape material's `Color` parameter, material appearance, light intensity, debug key behavior in PIE, and full Silent Relay playthrough have not been run in Unreal Engine 5.8.4.
