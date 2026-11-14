@@ -88,3 +88,17 @@ All migration work remains on `chatgpt/unreal-migration-ue5.8`. PR #99 remains d
 - Static source checks for the camera/fallback, engine glow, post-process setup, renderer settings, planet PBR generation and starfield scale pass on the current branch. The GLB asset gate is expected to remain red against the old planet exports until the current batch publishes the rebuilt files.
 
 **Not verified in-engine:** post-process appearance, point-light placement against the imported ship's actual engine nozzles, planet surface response, and Unreal C++ compilation. These require Unreal Engine 5.8.4 Editor/runtime, which is not connected to this environment.
+
+
+## Phase A — fleet/catalog-to-runtime integration
+
+- Expanded `UGFGameCatalog::GetShips()` to seven complete entries in purchase progression order: Player Fighter Mk.I (free), Mule Cargo Hauler (1,800), Raider Interceptor (2,500), Aegis Heavy Fighter (5,000), Bastion Bomber (7,500), Vanguard Frigate (11,000), Leviathan Cruiser (16,000).
+- Added exact soft-object paths for the three previously missing catalog entries: cargo hauler, frigate and cruiser. The paths match the source GLB basenames and the import script's deterministic naming convention. This is a source-level agreement, not yet proof of the Interchange output; the Editor report remains the authority.
+- Expanded `validate_catalog_ship_assets()` to load/type-check all seven catalog paths as StaticMesh. Source CI now checks the seven IDs, intended order, monotonic prices, and matching catalog/import paths.
+- Added `FGFShipAssetLoader`, a shared fail-closed StaticMesh resolver. Missing or invalid assets log consumer, ship ID and exact soft-object path. Player pawn, enemy ship and hangar preview API now use the same resolver.
+- Removed the player's silent substitution of Player Fighter visuals when a different selected ship's mesh fails. Missing selected mesh now logs an Error and disables flight rather than showing the wrong ship with mismatched stats.
+- Added `UGFHangarSubsystem::GetShipPreviewMesh` so a future UMG/debug hangar preview can request the catalog mesh through the shared loader.
+- Replaced the mission director's single `EnemyShipMesh` override with catalog-driven wave composition: wave 1 uses Raider Interceptors; wave 2 adds an Aegis Heavy Fighter; wave 3 adds a reduced-durability/reduced-damage Bastion Bomber. A missing enemy mesh logs an Error and that spawn is skipped; no cube/sphere ship fallback is used.
+- Added `docs/UE_EDITOR_ACCEPTANCE_CHECKLIST.md` with the UE 5.8.4 compile, seven-ship import, material/mesh inspection, flight test and Silent Relay acceptance steps.
+
+**Current gate: NEEDS_UE_EDITOR.** The source and path contracts can be checked in CI, but no UnrealHeaderTool/UBT compile, Interchange import, Content Browser inspection or Play-in-Editor test has been run in this environment. Catalog `VisualScale` values and +X orientation still require viewport confirmation against the actual imported assets.
