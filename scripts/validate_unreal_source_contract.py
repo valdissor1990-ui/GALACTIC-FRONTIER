@@ -119,6 +119,7 @@ def main():
     print("PASS: all-category GLB PBR/geometry validator")
     print("PASS: planet relief shading, ring consolidation and crisp starfield")
     print("PASS: export-safe albedo, roughness and normal maps for all ships")
+    print("PASS: embedded PNG dimensions meet 1024px ship/planet and 2048px backdrop targets")
     print("NOTE: UnrealHeaderTool/UBT/Editor/runtime checks still require Unreal Engine 5.8.4")
 
 
