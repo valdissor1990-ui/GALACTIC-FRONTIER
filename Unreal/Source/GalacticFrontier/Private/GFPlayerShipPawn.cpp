@@ -126,6 +126,52 @@ void AGFPlayerShipPawn::SetCameraTogglePressed() { ToggleCameraMode(); }
 void AGFPlayerShipPawn::SetTargetLockPressed() { if (Targeting) Targeting->AcquireBestTarget(); }
 void AGFPlayerShipPawn::SetTargetClearPressed() { if (Targeting) Targeting->ClearTarget(); }
 
+void AGFPlayerShipPawn::ConfigureCamerasForShipMesh(UStaticMesh* Mesh)
+{
+    if (!Mesh || !ShipMesh || !ChaseArm || !CockpitCamera)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[GF Camera] Cannot configure ship cameras: required component or mesh is missing."));
+        return;
+    }
+
+    const FBox Bounds = Mesh->GetBoundingBox();
+    if (!Bounds.IsValid)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[GF Camera] Mesh '%s' has invalid local bounds; keeping safe fallback camera offsets."),
+            *Mesh->GetPathName());
+        return;
+    }
+
+    const FVector Size = Bounds.GetSize();
+    const float Length = FMath::Max(Size.X, 1.0f);
+    const float Width = FMath::Max(Size.Y, 1.0f);
+    const float Height = FMath::Max(Size.Z, 1.0f);
+
+    // The ship's forward axis is +X. Place the cockpit camera inside the
+    // forward third of the model, rather than using one guessed offset for
+    // every ship in the catalog.
+    const FVector CockpitLocation(
+        Bounds.Max.X - Length * 0.30f,
+        0.0f,
+        Bounds.Min.Z + Height * 0.72f);
+    CockpitCamera->SetRelativeLocation(CockpitLocation);
+
+    // The camera rig is attached to the scaled mesh component, so these
+    // distances are expressed in source-mesh local units.
+    const float FollowDistance = FMath::Max3(950.0f, Length * 2.8f, Width * 2.2f);
+    ChaseArm->TargetArmLength = FollowDistance;
+    ChaseArm->SetRelativeLocation(FVector(
+        -Length * 0.18f,
+        0.0f,
+        Height * 0.48f));
+    ChaseArm->SetRelativeRotation(FRotator(-8.0f, 0.0f, 0.0f));
+
+    UE_LOG(LogTemp, Log,
+        TEXT("[GF Camera] Mesh='%s' bounds=(%.1f, %.1f, %.1f), cockpit=(%.1f, %.1f, %.1f), follow=%.1f"),
+        *Mesh->GetPathName(), Size.X, Size.Y, Size.Z,
+        CockpitLocation.X, CockpitLocation.Y, CockpitLocation.Z, FollowDistance);
+}
+
 void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
 {
     UGameInstance* GI = GetGameInstance();
@@ -133,10 +179,18 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
     FGFShipDefinition Definition;
     if (!Saves || !Saves->GetSelectedShipDefinition(Definition)) return;
 
-    if (UStaticMesh* SelectedMesh = Cast<UStaticMesh>(Definition.MeshAsset.TryLoad()))
+    UStaticMesh* SelectedMesh = Cast<UStaticMesh>(Definition.MeshAsset.TryLoad());
+    if (SelectedMesh)
     {
         ShipMesh->SetStaticMesh(SelectedMesh);
         ShipMesh->SetRelativeScale3D(FVector(Definition.VisualScale));
+        ConfigureCamerasForShipMesh(SelectedMesh);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[GF Ship] Selected ship '%s' mesh failed to load from '%s'. The pawn will be invisible until the asset path is corrected."),
+            *Definition.Id.ToString(), *Definition.MeshAsset.ToString());
     }
 
     if (Flight)
