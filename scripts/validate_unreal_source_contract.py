@@ -67,7 +67,8 @@ def main():
             '"b_unbound", True' in setup_py and
             '"bloom_intensity"' in setup_py and
             '"ambient_occlusion_intensity"' in setup_py and
-            '"motion_blur_amount", 0.0' in setup_py,
+            '"motion_blur_amount", 0.0' in setup_py and
+            '"scene_fringe_intensity", 0.0' in setup_py,
             "Flight test scene must configure an unbound cinematic post-process baseline")
     require("r.DefaultFeature.MotionBlur=False" in engine_ini and
             "r.ContactShadows=1" in engine_ini and
