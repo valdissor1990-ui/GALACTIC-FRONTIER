@@ -98,7 +98,7 @@ void AGFSpaceHUD::DrawHUD()
             static const TCHAR* StageLabels[] = {
                 TEXT("FLY TO RELAY"), TEXT("SCAN RELAY"), TEXT("DEFEND RELAY"),
                 TEXT("INVESTIGATE WRECK"), TEXT("SCAN WRECK"), TEXT("DEFEND WRECK"),
-                TEXT("RETURN TO CARRIER"), TEXT("CONTRACT COMPLETE"), TEXT("SHIP LOST")
+                TEXT("RETURN TO CARRIER"), TEXT("CONTRACT COMPLETE"), TEXT("CONTRACT FAILED")
             };
             const int32 StageIndex = static_cast<int32>(Mission->GetMissionStage());
             const int32 SafeIndex = FMath::Clamp(StageIndex, 0, UE_ARRAY_COUNT(StageLabels) - 1);
