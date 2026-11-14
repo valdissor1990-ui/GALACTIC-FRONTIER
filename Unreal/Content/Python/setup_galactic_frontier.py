@@ -577,6 +577,20 @@ def create_flight_test_level(imported):
     else:
         unreal.log_warning("[GF Setup] Glacius planet mesh is missing or ambiguous.")
 
+    dune_mesh = find_static_mesh(imported, "planet_dune")
+    if dune_mesh:
+        spawn_mesh_display(dune_mesh, "GF_Planet_Dune",
+                           unreal.Vector(35000, 285000, -65000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Dune planet mesh is missing or ambiguous.")
+
+    helios_mesh = find_static_mesh(imported, "planet_helios_gas")
+    if helios_mesh:
+        spawn_mesh_display(helios_mesh, "GF_Planet_Helios_Gas_Giant",
+                           unreal.Vector(-305000, -275000, 105000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Helios gas giant mesh is missing or ambiguous.")
+
     enemy_mesh = find_static_mesh(imported, "enemy_fighter")
     mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
     if not mission_class:
