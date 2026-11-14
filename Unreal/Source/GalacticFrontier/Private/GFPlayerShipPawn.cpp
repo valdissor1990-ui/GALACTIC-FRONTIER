@@ -237,23 +237,13 @@ void AGFPlayerShipPawn::DebugSelectShipByIndex(const int32 ShipIndex)
         return;
     }
 
-    UGameInstance* GI = GetGameInstance();
-    UGFSaveSubsystem* Saves = GI ? GI->GetSubsystem<UGFSaveSubsystem>() : nullptr;
-    UGFPlayerProfileSave* Profile = Saves ? Saves->GetProfile() : nullptr;
-    if (!Profile)
-    {
-        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Cannot switch ship: pilot profile is unavailable."));
-        return;
-    }
-
-    const FName PreviousSelection = Profile->SelectedShipId;
-    Profile->SelectedShipId = Ships[ShipIndex].Id;
+    DebugShipOverrideId = Ships[ShipIndex].Id;
     const bool bApplied = ApplySelectedShipConfiguration();
-    Profile->SelectedShipId = PreviousSelection; // Temporary PIE override; never changes saved progression.
+    DebugShipOverrideId = NAME_None; // Temporary PIE override; does not touch unlocks or saved progression.
 
     if (!bApplied)
     {
-        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Could not apply %s; previous ship configuration remains active."),
+        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Could not apply %s; no alternate ship/stats were substituted."),
             *Ships[ShipIndex].Id.ToString());
         return;
     }
@@ -263,18 +253,23 @@ void AGFPlayerShipPawn::DebugSelectShipByIndex(const int32 ShipIndex)
     UE_LOG(LogTemp, Display, TEXT("[GF Debug Hangar] %s"), *Message);
     if (GEngine)
     {
-        GEngine->AddOnScreenDebugMessage(
-            -1, 3.0f, FColor(70, 220, 255), Message);
+        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor(70, 220, 255), Message);
     }
-}
-#endif
+}#endif
 
 bool AGFPlayerShipPawn::ApplySelectedShipConfiguration()
 {
     UGameInstance* GI = GetGameInstance();
     UGFSaveSubsystem* Saves = GI ? GI->GetSubsystem<UGFSaveSubsystem>() : nullptr;
     FGFShipDefinition Definition;
-    const bool bHasSelectedShip = Saves && Saves->GetSelectedShipDefinition(Definition);
+#if !UE_BUILD_SHIPPING
+    const bool bUsingDebugOverride = !DebugShipOverrideId.IsNone();
+#else
+    const bool bUsingDebugOverride = false;
+#endif
+    const bool bHasSelectedShip = bUsingDebugOverride
+        ? UGFGameCatalog::FindShip(DebugShipOverrideId, Definition)
+        : (Saves && Saves->GetSelectedShipDefinition(Definition));
     if (!bHasSelectedShip)
     {
         if (!UGFGameCatalog::FindShip(TEXT("player_fighter"), Definition))
