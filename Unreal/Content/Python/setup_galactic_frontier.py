@@ -261,7 +261,7 @@ def import_glb(source_path: Path, destination_path: str):
 
     is_ship = source_path.parent.name.lower() == "ships"
     rename_results = []
-    if is_ship and len(mesh_assets) == 1:
+    if len(source_nodes) == 1 and len(mesh_assets) == 1:
         mesh = mesh_assets[0]
         expected_package_path = destination_path.rstrip("/") + "/" + source_path.stem
         expected_object_path = expected_package_path + "." + source_path.stem
@@ -306,14 +306,14 @@ def import_glb(source_path: Path, destination_path: str):
     is_ship = source_path.parent.name.lower() == "ships"
     expected_mesh_count = 1 if is_ship else None
     expected_name_path = (destination_path.rstrip("/") + "/" + source_path.stem +
-                          "." + source_path.stem) if is_ship else None
+                          "." + source_path.stem) if len(source_nodes) == 1 else None
     checks = {
         "source_mesh_instances": len(source_nodes),
         "imported_static_mesh_count": len(mesh_assets),
         "expected_static_mesh_count": expected_mesh_count,
-        "expected_ship_object_path": expected_name_path,
-        "ship_name_normalization": rename_results,
-        "ship_name_matches_catalog": (not is_ship or mesh_paths == [expected_name_path]),
+        "expected_source_named_object_path": expected_name_path,
+        "asset_name_normalization": rename_results,
+        "source_name_matches_asset_path": (expected_name_path is None or mesh_paths == [expected_name_path]),
         "all_imported_objects_load": len(load_errors) == 0,
         "imported_object_count": len(imported),
     }
@@ -321,6 +321,8 @@ def import_glb(source_path: Path, destination_path: str):
     if is_ship:
         passed = (passed and len(source_nodes) == 1 and len(mesh_assets) == 1
                   and mesh_paths == [expected_name_path])
+    elif len(source_nodes) == 1:
+        passed = passed and len(mesh_assets) == 1 and mesh_paths == [expected_name_path]
 
     log("GLB " + source_path.name + ": " + json.dumps(checks) +
         ", static_meshes=" + str(mesh_paths))
@@ -342,7 +344,7 @@ def import_glb(source_path: Path, destination_path: str):
         "imported_objects": imported,
         "static_meshes": mesh_paths,
         "load_errors": load_errors,
-        "ship_name_normalization": rename_results,
+        "asset_name_normalization": rename_results,
         "checks": checks,
         "status": "validated" if passed else "failed",
     })
