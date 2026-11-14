@@ -46,7 +46,8 @@ def main():
             "Ship camera setup must use the selected mesh bounds")
     require("UPointLightComponent" in pawn_h and "LeftEngineGlow" in pawn_cpp and
             "RightEngineGlow" in pawn_cpp and "Flight->IsBoostActive()" in pawn_cpp and
-            "CurrentEngineGlowIntensity" in pawn_cpp,
+            "CurrentEngineGlowIntensity" in pawn_cpp and "EngineX = Bounds.Min.X" in pawn_cpp and
+            "EngineY = Width * 0.28f" in pawn_cpp,
             "Player ship must have speed/boost-reactive engine illumination")
     require("using Player Fighter Mk.I visuals" in pawn_cpp,
             "Missing selected mesh must have a visible fallback path")
