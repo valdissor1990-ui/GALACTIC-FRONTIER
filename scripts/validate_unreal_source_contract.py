@@ -34,6 +34,7 @@ def main():
     interceptor_builder = read("scripts/blender/build_enemy_interceptor.py")
     fleet_builder = read("scripts/blender/build_fleet_expansion.py")
     pbr_utility = read("scripts/blender/pbr_surface_maps.py")
+    asset_workflow = read(".github/workflows/build-3d-assets.yml")
 
     require("void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);" in pawn_h,
             "Pawn header must declare mesh-aware camera setup")
@@ -83,6 +84,8 @@ def main():
             "GLB quality validation must cover every model category")
     require("ShaderNodeRGBToBW" in space_builder and "ShaderNodeBump" in space_builder,
             "Planet materials must include subtle terrain relief for lighting response")
+    require("--resolution 1024" in asset_workflow,
+            "Planet and backdrop generation must use 1024-pixel source textures")
     require("apply_exportable_surface_maps" in interceptor_builder and
             "from pbr_surface_maps import apply_exportable_surface_maps" in interceptor_builder,
             "Raider Interceptor must bake exportable PBR surface maps")
@@ -91,6 +94,7 @@ def main():
             "Fleet expansion ships must bake exportable PBR surface maps")
     require("def ensure_glb_file_image" in pbr_utility and
             "def apply_exportable_surface_maps" in pbr_utility and
+            "size = 1024" in pbr_utility and
             "normal_map.outputs" in pbr_utility,
             "Shared PBR utility must stage albedo, roughness and tangent normal textures")
     require("len(images) < 3" in validator and
