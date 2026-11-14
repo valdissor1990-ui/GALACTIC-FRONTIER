@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GFShipFlightComponent.h"
@@ -31,6 +32,26 @@ AGFPlayerShipPawn::AGFPlayerShipPawn()
     Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
     Targeting = CreateDefaultSubobject<UGFTargetingComponent>(TEXT("Targeting"));
     ShipVfx = CreateDefaultSubobject<UGFShipVfxComponent>(TEXT("ShipVfx"));
+
+    // Lightweight dynamic engine illumination remains visible even when optional
+    // Niagara systems have not yet been authored/imported into the project.
+    LeftEngineGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("LeftEngineGlow"));
+    LeftEngineGlow->SetupAttachment(ShipMesh);
+    LeftEngineGlow->SetRelativeLocation(FVector(-120.0f, -40.0f, 0.0f));
+    LeftEngineGlow->SetLightColor(FLinearColor(0.12f, 0.42f, 1.0f));
+    LeftEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+    LeftEngineGlow->SetAttenuationRadius(420.0f);
+    LeftEngineGlow->SetSourceRadius(24.0f);
+    LeftEngineGlow->SetCastShadows(false);
+
+    RightEngineGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RightEngineGlow"));
+    RightEngineGlow->SetupAttachment(ShipMesh);
+    RightEngineGlow->SetRelativeLocation(FVector(-120.0f, 40.0f, 0.0f));
+    RightEngineGlow->SetLightColor(FLinearColor(0.12f, 0.42f, 1.0f));
+    RightEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+    RightEngineGlow->SetAttenuationRadius(420.0f);
+    RightEngineGlow->SetSourceRadius(24.0f);
+    RightEngineGlow->SetCastShadows(false);
 
     ChaseArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm"));
     ChaseArm->SetupAttachment(ShipMesh);
@@ -75,6 +96,24 @@ void AGFPlayerShipPawn::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (Flight) Flight->SetFlightInput(FVector(ForwardInput, StrafeInput, VerticalInput));
     if (Flight) Flight->SetRotationInput(FVector(PitchInput, YawInput, RollInput));
+
+    if (Flight && LeftEngineGlow && RightEngineGlow)
+    {
+        const float SpeedNorm = FMath::Clamp(
+            Flight->GetVelocity().Size() / FMath::Max(1.0f, Flight->MaxSpeed), 0.0f, 1.0f);
+        const bool bBoosting = Flight->IsBoostActive();
+        const float TargetIntensity = FMath::Lerp(650.0f, 2200.0f, SpeedNorm) *
+            (bBoosting ? 1.85f : 1.0f);
+        CurrentEngineGlowIntensity = FMath::FInterpTo(
+            CurrentEngineGlowIntensity, TargetIntensity, DeltaSeconds, 6.0f);
+        LeftEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+        RightEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+        const FLinearColor GlowColor = bBoosting
+            ? FLinearColor(0.35f, 0.82f, 1.0f)
+            : FLinearColor(0.12f, 0.42f, 1.0f);
+        LeftEngineGlow->SetLightColor(GlowColor);
+        RightEngineGlow->SetLightColor(GlowColor);
+    }
 }
 
 void AGFPlayerShipPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
