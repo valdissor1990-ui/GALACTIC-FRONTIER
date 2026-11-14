@@ -6,6 +6,8 @@
 #include "GFWeaponComponent.h"
 #include "GFPlayerShipPawn.h"
 #include "GFShipFlightComponent.h"
+#include "GFGameCatalog.h"
+#include "GFShipAssetLoader.h"
 #include "Kismet/GameplayStatics.h"
 
 AGFEnemyShip::AGFEnemyShip()
@@ -64,6 +66,64 @@ void AGFEnemyShip::HandleDestroyed()
 void AGFEnemyShip::SetCombatTarget(AActor* Target)
 {
     CombatTarget = Target;
+}
+
+bool AGFEnemyShip::ConfigureFromCatalogShip(
+    const FName ShipId,
+    const float HealthMultiplier,
+    const float DamageMultiplier)
+{
+    FGFShipDefinition Definition;
+    if (!UGFGameCatalog::FindShip(ShipId, Definition))
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[GF Enemy] Unknown catalog ship id '%s'; enemy spawn aborted."),
+            *ShipId.ToString());
+        return false;
+    }
+
+    UStaticMesh* Mesh = FGFShipAssetLoader::LoadStaticMesh(
+        Definition.Id, Definition.MeshAsset, TEXT("EnemyShip"));
+    if (!Mesh)
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[GF Enemy] Cannot spawn enemy '%s': required mesh '%s' is unavailable."),
+            *ShipId.ToString(), *Definition.MeshAsset.ToString());
+        return false;
+    }
+
+    ShipMesh->SetStaticMesh(Mesh);
+    ShipMesh->SetRelativeScale3D(FVector(Definition.VisualScale));
+
+    MaximumSpeed = Definition.MaxSpeed * 100.0f;
+    Acceleration = Definition.Acceleration * 100.0f;
+    ApproachDistance = FMath::Max(3500.0f, Definition.MaxSpeed * 48.0f);
+    StrafeDistance = FMath::Max(2200.0f, Definition.MaxSpeed * 28.0f);
+    FireRange = FMath::Max(7000.0f, Definition.ProjectileSpeed * 42.0f);
+
+    if (Damageable)
+    {
+        Damageable->MaximumHull = Definition.Hull * FMath::Max(0.1f, HealthMultiplier);
+        Damageable->MaximumShield = Definition.Shield * FMath::Max(0.1f, HealthMultiplier);
+        Damageable->ShieldRegenerationPerSecond = Definition.ShieldRegen;
+        Damageable->CurrentHull = Damageable->MaximumHull;
+        Damageable->CurrentShield = Damageable->MaximumShield;
+    }
+
+    if (Weapon)
+    {
+        Weapon->ShotsPerSecond = Definition.ShotsPerSecond;
+        Weapon->ProjectileSpeed = Definition.ProjectileSpeed * 100.0f;
+        Weapon->ProjectileDamage = Definition.ProjectileDamage * FMath::Max(0.1f, DamageMultiplier);
+    }
+
+    UE_LOG(LogTemp, Display,
+        TEXT("[GF Enemy] Configured id='%s' mesh='%s' speed=%.0f hull=%.0f shield=%.0f damage=%.1f"),
+        *ShipId.ToString(), *Mesh->GetPathName(), MaximumSpeed,
+        Damageable ? Damageable->MaximumHull : 0.0f,
+        Damageable ? Damageable->MaximumShield : 0.0f,
+        Weapon ? Weapon->ProjectileDamage : 0.0f);
+    return true;
 }
 
 void AGFEnemyShip::Tick(const float DeltaSeconds)
