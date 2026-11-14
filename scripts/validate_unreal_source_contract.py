@@ -27,6 +27,9 @@ def main():
     pawn_cpp = read("Unreal/Source/GalacticFrontier/Private/GFPlayerShipPawn.cpp")
     enemy_h = read("Unreal/Source/GalacticFrontier/Public/GFEnemyShip.h")
     enemy_cpp = read("Unreal/Source/GalacticFrontier/Private/GFEnemyShip.cpp")
+    mission_h = read("Unreal/Source/GalacticFrontier/Public/GFMissionDirector.h")
+    mission_cpp = read("Unreal/Source/GalacticFrontier/Private/GFMissionDirector.cpp")
+    ship_loader = read("Unreal/Source/GalacticFrontier/Public/GFShipAssetLoader.h")
     catalog_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameCatalog.cpp")
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
@@ -78,6 +81,17 @@ def main():
             "ShipMesh->GetStaticMesh()->GetBoundingBox()" in enemy_cpp and
             "CurrentEngineGlowIntensity" in enemy_cpp,
             "Enemy ship must configure speed-reactive engine lights after its mesh is assigned")
+    require("ConfigureFromCatalogShip" in enemy_h and
+            "FGFShipAssetLoader::LoadStaticMesh" in enemy_cpp and
+            "Unknown catalog ship id" in enemy_cpp,
+            "Enemy ships must load a validated catalog mesh before combat")
+    require("Enemy->ConfigureFromCatalogShip" in mission_cpp and
+            "Enemy->Destroy();" in mission_cpp and
+            "TEXT(\\"raider_interceptor\\")" in mission_cpp and
+            "TEXT(\\"aegis_heavy_fighter\\")" in mission_cpp and
+            "TEXT(\\"bastion_bomber\\")" in mission_cpp and
+            "EnemyShipMesh" not in mission_h and "EnemyShipMesh" not in mission_cpp,
+            "Mission waves must use catalog variants and skip enemies with missing meshes")
     require("unreal.PostProcessVolume" in setup_py and
             '"b_unbound", True' in setup_py and
             '"bloom_intensity"' in setup_py and
