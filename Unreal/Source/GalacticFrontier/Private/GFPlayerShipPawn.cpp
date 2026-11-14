@@ -186,6 +186,20 @@ void AGFPlayerShipPawn::ConfigureCamerasForShipMesh(UStaticMesh* Mesh)
     const float Width = FMath::Max(Size.Y, 1.0f);
     const float Height = FMath::Max(Size.Z, 1.0f);
 
+    // Fit the engine lights to the selected mesh bounds instead of assuming
+    // every ship has identical nozzle spacing and hull dimensions.
+    const float EngineX = Bounds.Min.X + Length * 0.12f;
+    const float EngineY = Width * 0.28f;
+    const float EngineZ = Bounds.Min.Z + Height * 0.48f;
+    if (LeftEngineGlow)
+    {
+        LeftEngineGlow->SetRelativeLocation(FVector(EngineX, -EngineY, EngineZ));
+    }
+    if (RightEngineGlow)
+    {
+        RightEngineGlow->SetRelativeLocation(FVector(EngineX, EngineY, EngineZ));
+    }
+
     // The ship's forward axis is +X. Place the cockpit camera inside the
     // forward third of the model, rather than using one guessed offset for
     // every ship in the catalog.
