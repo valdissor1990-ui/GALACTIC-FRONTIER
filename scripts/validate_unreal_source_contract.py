@@ -118,8 +118,10 @@ def main():
             "raider_interceptor" in mission_cpp and
             "aegis_heavy_fighter" in mission_cpp and
             "bastion_bomber" in mission_cpp and
+            "no valid enemies" in mission_cpp and
+            "Stage = EGFMissionStage::Failed" in mission_cpp and
             "EnemyShipMesh" not in mission_h and "EnemyShipMesh" not in mission_cpp,
-            "Mission waves must use catalog variants and skip enemies with missing meshes")
+            "Mission waves must use catalog variants, skip bad spawns and fail rather than auto-complete an empty wave")
     require("unreal.PostProcessVolume" in setup_py and
             '"b_unbound", True' in setup_py and
             '"bloom_intensity"' in setup_py and
