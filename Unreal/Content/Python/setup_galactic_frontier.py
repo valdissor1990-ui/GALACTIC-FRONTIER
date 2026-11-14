@@ -494,6 +494,16 @@ def find_static_mesh(imported_paths, token):
     return candidates[0] if candidates else None
 
 
+def _set_editor_property_if_supported(target, property_name, value):
+    """Set optional engine-version properties without aborting the full setup."""
+    try:
+        target.set_editor_property(property_name, value)
+        return True
+    except Exception as error:
+        log("Optional visual property '" + property_name + "' was not applied: " + str(error))
+        return False
+
+
 def spawn_lighting():
     sun = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.DirectionalLight, unreal.Vector(0, 0, 0), unreal.Rotator(-25, -35, 0))
@@ -503,6 +513,9 @@ def spawn_lighting():
         if light:
             light.set_editor_property("intensity", 45000.0)
             light.set_editor_property("light_color", unreal.LinearColor(0.78, 0.86, 1.0, 1.0))
+            _set_editor_property_if_supported(light, "source_angle", 0.65)
+            _set_editor_property_if_supported(light, "cast_shadows", True)
+            _set_editor_property_if_supported(light, "volumetric_scattering_intensity", 0.0)
 
     sky = unreal.EditorLevelLibrary.spawn_actor_from_class(
         unreal.SkyLight, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
@@ -512,7 +525,36 @@ def spawn_lighting():
         if component:
             component.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
             component.set_editor_property("intensity", 0.35)
+            _set_editor_property_if_supported(component, "real_time_capture", True)
             component.recapture_sky()
+
+    # An unbound post-process volume supplies a consistent cinematic baseline
+    # regardless of the player's distance from the origin. Each optional field
+    # is applied defensively because Unreal's Python-exposed names can vary.
+    post = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.PostProcessVolume, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+    if post:
+        post.set_actor_label("GF_Cinematic_PostProcess")
+        _set_editor_property_if_supported(post, "b_unbound", True)
+        _set_editor_property_if_supported(post, "blend_weight", 1.0)
+        settings = post.get_editor_property("settings")
+        visual_fields = (
+            ("bloom_intensity", 0.32, "b_override_bloom_intensity"),
+            ("bloom_threshold", 1.15, "b_override_bloom_threshold"),
+            ("vignette_intensity", 0.18, "b_override_vignette_intensity"),
+            ("ambient_occlusion_intensity", 0.65, "b_override_ambient_occlusion_intensity"),
+            ("ambient_occlusion_radius", 180.0, "b_override_ambient_occlusion_radius"),
+            ("motion_blur_amount", 0.0, "b_override_motion_blur_amount"),
+            ("lens_flare_intensity", 0.0, "b_override_lens_flare_intensity"),
+            ("chromatic_aberration_intensity", 0.0, "b_override_scene_fringe_intensity"),
+        )
+        applied = []
+        for property_name, value, override_name in visual_fields:
+            if _set_editor_property_if_supported(settings, property_name, value):
+                if _set_editor_property_if_supported(settings, override_name, True):
+                    applied.append(property_name)
+        _set_editor_property_if_supported(post, "settings", settings)
+        log("Cinematic post-process baseline prepared; applied fields=" + str(applied))
 
 
 def spawn_mesh_display(mesh, label, location, scale=1.0):
