@@ -100,8 +100,8 @@ def main():
     material_map = read("docs/SHIP_MATERIAL_SLOT_MAP.md")
     require(all(name in material_map for name in
                 ("Brushed gunmetal armor", "Cockpit polarized glass",
-                 "Ion engine emission", "Vanguard Frigate | hull",
-                 "Leviathan Cruiser | hull")) and
+                 "Ion engine emission", "Vanguard Frigate &#124; hull",
+                 "Leviathan Cruiser &#124; hull")) and
             "PRE-IMPORT REFERENCE" in material_map and "NEEDS_UE_EDITOR" in material_map,
             "Ship material slot map must document source material names without claiming import acceptance")
 
