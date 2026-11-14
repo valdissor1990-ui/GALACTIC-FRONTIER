@@ -36,6 +36,7 @@ protected:
     void DebugSelectShip5();
     void DebugSelectShip6();
     void DebugSelectShip7();
+    void DebugRestartFailedMission();
 #endif
 
     void ApplyMouseCaptureForGameplay();
