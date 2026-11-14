@@ -25,6 +25,15 @@ AGFMissionDirector::AGFMissionDirector()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     if (SphereAsset.Succeeded()) ObjectiveMesh = SphereAsset.Object;
 
+    RelayMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RelayMarker"));
+    SetRootComponent(RelayMarker);
+    RelayMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    RelayMarker->SetRelativeScale3D(FVector(10.0f));
+
+    WreckMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WreckMarker"));
+    WreckMarker->SetupAttachment(RelayMarker);
+    WreckMarker->SetRelativeScale3D(FVector(7.0f));
+
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> MarkerMaterial(
         TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
     if (MarkerMaterial.Succeeded())
@@ -46,15 +55,6 @@ AGFMissionDirector::AGFMissionDirector()
             }
         }
     }
-
-    RelayMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RelayMarker"));
-    SetRootComponent(RelayMarker);
-    RelayMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    RelayMarker->SetRelativeScale3D(FVector(18.0f));
-
-    WreckMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WreckMarker"));
-    WreckMarker->SetupAttachment(RelayMarker);
-    WreckMarker->SetRelativeScale3D(FVector(7.0f));
 
     RelayMarkerGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RelayMarkerGlow"));
     RelayMarkerGlow->SetupAttachment(RelayMarker);
