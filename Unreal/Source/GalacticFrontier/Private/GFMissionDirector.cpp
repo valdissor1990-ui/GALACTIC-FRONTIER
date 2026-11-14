@@ -179,14 +179,35 @@ void AGFMissionDirector::SpawnWave()
         const FVector SpawnLocation = Center + FVector(FMath::Cos(Angle) * 9000.0f, FMath::Sin(Angle) * 9000.0f, 1500.0f + Index * 700.0f);
         AGFEnemyShip* Enemy = GetWorld()->SpawnActor<AGFEnemyShip>(EnemyShipClass, SpawnLocation, FRotator::ZeroRotator);
         if (!Enemy) continue;
-        if (EnemyShipMesh && Enemy->ShipMesh) Enemy->ShipMesh->SetStaticMesh(EnemyShipMesh);
-        if (Enemy->Damageable)
+
+        // Escalating encounter composition: interceptors first, then a heavy
+        // escort, then a reduced-strength bomber alongside fighter/heavy units.
+        FName EnemyShipId = TEXT("raider_interceptor");
+        float VariantHealthMultiplier = 1.0f;
+        float VariantDamageMultiplier = 1.0f;
+        if (WaveIndex >= 2 && Index == 2)
         {
-            Enemy->Damageable->MaximumHull *= EnemyHealthMultiplier;
-            Enemy->Damageable->MaximumShield *= EnemyHealthMultiplier;
-            Enemy->Damageable->CurrentHull = Enemy->Damageable->MaximumHull;
-            Enemy->Damageable->CurrentShield = Enemy->Damageable->MaximumShield;
+            EnemyShipId = TEXT("aegis_heavy_fighter");
         }
+        if (WaveIndex >= 3 && Index == 2)
+        {
+            EnemyShipId = TEXT("bastion_bomber");
+            VariantHealthMultiplier = 0.72f; // bomber-lite: dangerous payload, reduced durability
+            VariantDamageMultiplier = 0.78f;
+        }
+
+        if (!Enemy->ConfigureFromCatalogShip(
+                EnemyShipId,
+                EnemyHealthMultiplier * VariantHealthMultiplier,
+                VariantDamageMultiplier))
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("[GF Mission] Skipping wave %d enemy %d: catalog ship '%s' could not be configured."),
+                WaveIndex, Index + 1, *EnemyShipId.ToString());
+            Enemy->Destroy();
+            continue;
+        }
+
         Enemy->SetCombatTarget(PlayerPawn.Get());
         if (Enemy->Damageable) Enemy->Damageable->OnDestroyed.AddDynamic(this, &AGFMissionDirector::HandleEnemyDestroyed);
         ++EnemiesRemaining;
