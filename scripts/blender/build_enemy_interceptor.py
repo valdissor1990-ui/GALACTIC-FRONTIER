@@ -5,6 +5,7 @@ Run: blender --background --python scripts/blender/build_enemy_interceptor.py --
 """
 import bpy, math, os, sys
 from mathutils import Vector
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
