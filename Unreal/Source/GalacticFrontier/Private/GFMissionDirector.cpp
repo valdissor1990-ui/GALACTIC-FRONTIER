@@ -28,14 +28,14 @@ AGFMissionDirector::AGFMissionDirector()
     RelayMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RelayMarker"));
     SetRootComponent(RelayMarker);
     RelayMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    RelayMarker->SetRelativeScale3D(FVector(10.0f));
+    RelayMarker->SetRelativeScale3D(FVector(1.0f));
 
     WreckMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WreckMarker"));
     WreckMarker->SetupAttachment(RelayMarker);
-    WreckMarker->SetRelativeScale3D(FVector(7.0f));
+    WreckMarker->SetRelativeScale3D(FVector(1.0f));
 
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> MarkerMaterial(
-        TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
     if (MarkerMaterial.Succeeded()) MarkerBaseMaterial = MarkerMaterial.Object;
 
     RelayMarkerGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RelayMarkerGlow"));
