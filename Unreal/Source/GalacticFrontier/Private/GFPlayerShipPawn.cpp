@@ -11,6 +11,7 @@
 #include "GFTargetingComponent.h"
 #include "GFShipVfxComponent.h"
 #include "GFGameCatalog.h"
+#include "GFShipAssetLoader.h"
 #include "GFSaveSubsystem.h"
 #include "GFPlayerProfileSave.h"
 #include "Engine/GameInstance.h"
@@ -241,35 +242,19 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         UE_LOG(LogTemp, Warning, TEXT("[GF Ship] No saved ship selection; falling back to Player Fighter Mk.I."));
     }
 
-    UStaticMesh* SelectedMesh = Cast<UStaticMesh>(Definition.MeshAsset.TryLoad());
-    if (!SelectedMesh && Definition.Id != FName(TEXT("player_fighter")))
+    UStaticMesh* SelectedMesh = FGFShipAssetLoader::LoadStaticMesh(
+        Definition.Id, Definition.MeshAsset, TEXT("PlayerPawn"));
+    if (!SelectedMesh)
     {
-        FGFShipDefinition DefaultDefinition;
-        if (UGFGameCatalog::FindShip(TEXT("player_fighter"), DefaultDefinition))
-        {
-            SelectedMesh = Cast<UStaticMesh>(DefaultDefinition.MeshAsset.TryLoad());
-            if (SelectedMesh)
-            {
-                Definition.VisualScale = DefaultDefinition.VisualScale;
-                UE_LOG(LogTemp, Warning,
-                    TEXT("[GF Ship] Selected mesh for '%s' is unavailable; using Player Fighter Mk.I visuals while retaining selected ship stats."),
-                    *Definition.Id.ToString());
-            }
-        }
+        // Fail closed: never show a different ship while applying this ship's stats.
+        SetActorTickEnabled(false);
+        if (Flight) Flight->SetFlightDisabled(true);
+        return;
     }
 
-    if (SelectedMesh)
-    {
-        ShipMesh->SetStaticMesh(SelectedMesh);
-        ShipMesh->SetRelativeScale3D(FVector(Definition.VisualScale));
-        ConfigureCamerasForShipMesh(SelectedMesh);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error,
-            TEXT("[GF Ship] Selected ship '%s' mesh failed to load from '%s'. The pawn will be invisible until the asset path is corrected."),
-            *Definition.Id.ToString(), *Definition.MeshAsset.ToString());
-    }
+    ShipMesh->SetStaticMesh(SelectedMesh);
+    ShipMesh->SetRelativeScale3D(FVector(Definition.VisualScale));
+    ConfigureCamerasForShipMesh(SelectedMesh);
 
     if (Flight)
     {
