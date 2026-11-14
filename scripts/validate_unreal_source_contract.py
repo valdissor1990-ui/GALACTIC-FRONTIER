@@ -96,6 +96,8 @@ def main():
     require("ShaderNodeNormalMap" in space_builder and "Baked planetary metallic-roughness" in space_builder and "ShaderNodeSeparateRGB" in space_builder and
             "Baked planetary tangent normal" in space_builder and "make_surface_maps" in space_builder,
             "Planet materials must export baked roughness and tangent-space normal maps")
+    require("radius=1500000.0" in space_builder,
+            "Starfield backdrop must remain behind every planet in the flight-test layout")
     require("--resolution 1024" in asset_workflow,
             "Planet and backdrop generation must use 1024-pixel source textures")
     require("apply_exportable_surface_maps" in interceptor_builder and
