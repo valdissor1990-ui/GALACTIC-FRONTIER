@@ -29,7 +29,7 @@ def main():
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
     setup_py = read("Unreal/Content/Python/setup_galactic_frontier.py")
-    validator = read("scripts/validate_unreal_asset_contract.py")
+    validator = read("scripts/validate_unreal_asset_contract.py")\n    space_builder = read("scripts/blender/build_space_environment.py")
 
     require("void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);" in pawn_h,
             "Pawn header must declare mesh-aware camera setup")
@@ -72,14 +72,24 @@ def main():
             "Editor import script must validate deterministic source-based asset names")
     require("required_stages_validated" in setup_py,
             "Asset report must fail when a required import stage is empty or failed")
-    require("glTF" in validator,
-            "Existing GLB contract validator must remain in place")
+    require("glTF" in validator and "pbrMetallicRoughness" in validator,
+            "GLB validator must check binary structure and PBR material properties")
+    require("MODEL_DIRS = (\"ships\", \"environment\", \"space\", \"planets\")" in validator,
+            "GLB quality validation must cover every model category")
+    require("ShaderNodeRGBToBW" in space_builder and "ShaderNodeBump" in space_builder,
+            "Planet materials must include subtle terrain relief for lighting response")
+    require('planet.name = display_name + "_SurfaceAndRings"' in space_builder,
+            "Gas giant rings and surface must export as one complete mesh asset")
+    require('texture.interpolation = "Closest"' in space_builder,
+            "Starfield texture must preserve crisp star points")
 
     print("PASS: player pawn camera and fallback contract")
     print("PASS: four ship catalog/import paths agree")
     print("PASS: GameMode and default map configuration")
     print("PASS: flight test level includes backdrop and planets")
     print("PASS: asset import naming and stage-report gates")
+    print("PASS: all-category GLB PBR/geometry validator")
+    print("PASS: planet relief shading, ring consolidation and crisp starfield")
     print("NOTE: UnrealHeaderTool/UBT/Editor/runtime checks still require Unreal Engine 5.8.4")
 
 
