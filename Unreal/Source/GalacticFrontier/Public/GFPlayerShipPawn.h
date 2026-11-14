@@ -63,6 +63,7 @@ protected:
 
 private:
     void ApplySelectedShipConfiguration();
+    void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);
     void SetForwardInput(float Value);
     void SetStrafeInput(float Value);
     void SetVerticalInput(float Value);
