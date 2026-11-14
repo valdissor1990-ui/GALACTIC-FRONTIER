@@ -114,6 +114,22 @@ void AGFSpaceHUD::DrawHUD()
                 DrawTextLine(FString::Printf(TEXT("HOSTILES  %d  WAVE %d"), Mission->GetEnemiesRemaining(), Mission->GetCurrentWaveIndex()),
                     Canvas->ClipX - 270.0f, 96.0f, FLinearColor(1.0f, 0.4f, 0.2f), 1.0f);
             }
+            if (Mission->GetMissionStage() == EGFMissionStage::Complete)
+            {
+                DrawTextLine(TEXT("CONTRACT COMPLETE"), CenterX - 112.0f, CenterY - 54.0f,
+                    FLinearColor(0.25f, 1.0f, 0.72f), 1.8f);
+                DrawTextLine(FString::Printf(TEXT("+%d CREDITS  |  STORY FLAG: M01_DONE"), Mission->MissionReward),
+                    CenterX - 178.0f, CenterY - 18.0f, FLinearColor(1.0f, 0.88f, 0.42f), 1.1f);
+            }
+            else if (Mission->GetMissionStage() == EGFMissionStage::Failed)
+            {
+                DrawTextLine(TEXT("CONTRACT FAILED"), CenterX - 104.0f, CenterY - 54.0f,
+                    FLinearColor(1.0f, 0.28f, 0.22f), 1.8f);
+                DrawTextLine(Mission->GetFailureReason().IsEmpty()
+                    ? TEXT("Mission objectives could not be completed.")
+                    : Mission->GetFailureReason().ToString(),
+                    CenterX - 190.0f, CenterY - 18.0f, FLinearColor(1.0f, 0.72f, 0.62f), 1.0f);
+            }
         }
     }
 
