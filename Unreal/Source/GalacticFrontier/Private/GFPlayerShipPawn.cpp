@@ -188,7 +188,7 @@ void AGFPlayerShipPawn::ConfigureCamerasForShipMesh(UStaticMesh* Mesh)
 
     // Fit the engine lights to the selected mesh bounds instead of assuming
     // every ship has identical nozzle spacing and hull dimensions.
-    const float EngineX = Bounds.Min.X + Length * 0.12f;
+    const float EngineX = Bounds.Min.X - Length * 0.035f;
     const float EngineY = Width * 0.28f;
     const float EngineZ = Bounds.Min.Z + Height * 0.48f;
     if (LeftEngineGlow)
