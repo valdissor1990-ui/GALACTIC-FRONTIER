@@ -388,8 +388,19 @@ def import_existing_fleet():
         stage_results = [item for item in PIPELINE_REPORT
                          if item.get("source", "").startswith("assets/models/" + category + "/")]
         failed = sum(1 for item in stage_results if item.get("status") != "validated")
+        stage_status = "validated" if sources and failed == 0 else ("empty" if not sources else "failed")
+        PIPELINE_REPORT.append({
+            "stage": category,
+            "source_count": len(sources),
+            "validated_count": len(stage_results) - failed,
+            "failed_count": failed,
+            "status": stage_status,
+        })
+        if stage_status == "failed":
+            unreal.log_error("[GF Setup] Pipeline stage failed: " + category)
         log("PIPELINE STAGE COMPLETE " + category.upper() + ": " +
-            str(len(stage_results) - failed) + "/" + str(len(sources)) + " imported")
+            str(len(stage_results) - failed) + "/" + str(len(sources)) +
+            " imported; status=" + stage_status)
     return imported
 
 
@@ -434,6 +445,15 @@ def save_pipeline_report():
     report_path = report_dir / "asset_pipeline_report.json"
     model_entries = [item for item in PIPELINE_REPORT if "source" in item]
     failed_entries = [item for item in model_entries if item.get("status") != "validated"]
+    stage_entries = [item for item in PIPELINE_REPORT if "stage" in item]
+    failed_stages = [item for item in stage_entries
+                     if item.get("status") not in ("validated", "empty")]
+    catalog_entries = [item for item in PIPELINE_REPORT if "catalog_ship_assets" in item]
+    catalog_passed = (len(catalog_entries) == 1 and
+                      catalog_entries[0].get("status") == "validated")
+    required_stages = ("ships", "environment", "space", "planets")
+    stage_names = [item.get("stage") for item in stage_entries]
+    all_stages_reported = all(name in stage_names for name in required_stages)
     report_path.write_text(json.dumps({
         "pipeline": ["ships", "environment", "space", "planets"],
         "execution": "sequential",
@@ -445,12 +465,13 @@ def save_pipeline_report():
         "total_models": len(model_entries),
         "validated_models": len(model_entries) - len(failed_entries),
         "failed_models": [item["source"] for item in failed_entries],
-        "catalog_ship_assets": next(
-            (item["catalog_ship_assets"] for item in PIPELINE_REPORT
-             if "catalog_ship_assets" in item), {}),
-        "overall_status": "passed" if model_entries and not failed_entries and
-            all(item["status"] == "validated" for item in PIPELINE_REPORT
-                if "catalog_ship_assets" in item) else "failed",
+        "failed_stages": [item["stage"] for item in failed_stages],
+        "all_stages_reported": all_stages_reported,
+        "catalog_ship_assets": (catalog_entries[0]["catalog_ship_assets"]
+                                if catalog_entries else {}),
+        "overall_status": "passed" if (
+            model_entries and not failed_entries and not failed_stages and
+            all_stages_reported and catalog_passed) else "failed",
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     log("PIPELINE REPORT: " + str(report_path))
 
