@@ -177,7 +177,16 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
     UGameInstance* GI = GetGameInstance();
     UGFSaveSubsystem* Saves = GI ? GI->GetSubsystem<UGFSaveSubsystem>() : nullptr;
     FGFShipDefinition Definition;
-    if (!Saves || !Saves->GetSelectedShipDefinition(Definition)) return;
+    const bool bHasSelectedShip = Saves && Saves->GetSelectedShipDefinition(Definition);
+    if (!bHasSelectedShip)
+    {
+        if (!UGFGameCatalog::FindShip(TEXT("player_fighter"), Definition))
+        {
+            UE_LOG(LogTemp, Error, TEXT("[GF Ship] No selected ship and default Player Fighter catalog entry is unavailable."));
+            return;
+        }
+        UE_LOG(LogTemp, Warning, TEXT("[GF Ship] No saved ship selection; falling back to Player Fighter Mk.I."));
+    }
 
     UStaticMesh* SelectedMesh = Cast<UStaticMesh>(Definition.MeshAsset.TryLoad());
     if (SelectedMesh)
@@ -227,6 +236,7 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         Weapon->ProjectileDamage = Definition.ProjectileDamage;
     }
 
+    if (!Saves) return;
     UGFPlayerProfileSave* Profile = Saves->GetProfile();
     if (!Profile) return;
     const TArray<FName>* Installed = Profile->InstalledModules.Find(Definition.Id);
