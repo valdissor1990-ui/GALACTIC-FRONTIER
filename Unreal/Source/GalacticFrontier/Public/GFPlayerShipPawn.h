@@ -30,6 +30,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="Ship|Camera")
     void ToggleCameraMode();
 
+#if !UE_BUILD_SHIPPING
+    /** Development-only temporary ship override for validating all catalog meshes in PIE. */
+    void DebugSelectShipByIndex(int32 ShipIndex);
+#endif
+
     UFUNCTION(BlueprintPure, Category="Ship|Camera")
     bool IsCockpitCameraActive() const { return bCockpitCameraActive; }
 
@@ -70,7 +75,7 @@ protected:
     virtual void BeginPlay() override;
 
 private:
-    void ApplySelectedShipConfiguration();
+    bool ApplySelectedShipConfiguration();
     void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);
     void SetForwardInput(float Value);
     void SetStrafeInput(float Value);
