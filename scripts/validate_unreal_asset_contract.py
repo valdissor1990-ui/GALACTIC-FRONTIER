@@ -286,6 +286,7 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
         "assigned_materials": len(assigned_materials),
         "textures": len(textures),
         "images": len(images),
+        "image_dimensions": image_dimensions,
         "uv_primitives": uv_primitive_count,
         "normal_primitives": normal_primitive_count,
         "warnings": warnings,
