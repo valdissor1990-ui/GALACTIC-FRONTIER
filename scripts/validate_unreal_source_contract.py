@@ -92,9 +92,9 @@ def main():
             "Enemy ships must load a validated catalog mesh before combat")
     require("Enemy->ConfigureFromCatalogShip" in mission_cpp and
             "Enemy->Destroy();" in mission_cpp and
-            "TEXT(\\"raider_interceptor\\")" in mission_cpp and
-            "TEXT(\\"aegis_heavy_fighter\\")" in mission_cpp and
-            "TEXT(\\"bastion_bomber\\")" in mission_cpp and
+            "raider_interceptor" in mission_cpp and
+            "aegis_heavy_fighter" in mission_cpp and
+            "bastion_bomber" in mission_cpp and
             "EnemyShipMesh" not in mission_h and "EnemyShipMesh" not in mission_cpp,
             "Mission waves must use catalog variants and skip enemies with missing meshes")
     require("unreal.PostProcessVolume" in setup_py and
