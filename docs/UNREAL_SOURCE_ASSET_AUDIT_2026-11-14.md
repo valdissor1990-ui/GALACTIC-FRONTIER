@@ -116,6 +116,6 @@ All migration work remains on `chatgpt/unreal-migration-ue5.8`. PR #99 remains d
 - Added `docs/SHIP_MATERIAL_SLOT_MAP.md` from the existing Blender `single-mesh-report.json`. It lists all exported source material names for all seven ships and proposes Hull/Glass/Engine/Trim master assignments. It explicitly does not claim imported slot order or visual acceptance.
 - Extended `docs/UE_EDITOR_ACCEPTANCE_CHECKLIST.md` with the debug controls, terminal mission feedback and marker checks.
 
-**Source CI:** [run #43579954256](https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43579954256) passed on commit `e8bc5bb0d7a4597172d90d41b4e15e28078b3164`: Python syntax, static gameplay/source contracts, and all GLB geometry/PBR validation.
+**Source CI:** [run #43580065860](https://github.com/valdissor1990-ui/GALACTIC-FRONTIER/actions/runs/43580065860) passed on commit `e6c99b74a42440d5482e8d58a8ee26535709f4a2`: Python syntax, static gameplay/source contracts, and all GLB geometry/PBR validation.
 
 **Still NEEDS_UE_EDITOR:** C++ compile/UHT, actual Interchange import, confirmation of the engine basic-shape material's `Color` parameter, material appearance, light intensity, debug key behavior in PIE, and full Silent Relay playthrough have not been run in Unreal Engine 5.8.4.
