@@ -58,7 +58,7 @@ def main():
     require("FGFShipAssetLoader::LoadStaticMesh" in pawn_cpp and
             "SetFlightDisabled(true)" in pawn_cpp,
             "Player pawn must fail closed when the selected catalog mesh is missing")
-    require("FGFShipAssetLoader::LoadStaticMesh" in ship_loader and
+    require("static UStaticMesh* LoadStaticMesh" in ship_loader and
             "failed to load StaticMesh for ship" in ship_loader and
             "AssetPath.ToString()" in ship_loader,
             "Shared ship loader must log ship id and exact asset path on failure")
