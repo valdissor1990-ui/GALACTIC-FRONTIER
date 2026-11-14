@@ -5,7 +5,7 @@ on:
     branches:
       - chatgpt/unreal-migration-ue5.8
     paths:
-      - "assets/models/ships/**"
+      - "assets/models/ships/**"\n      - "assets/models/environment/**"\n      - "assets/models/space/**"\n      - "assets/models/planets/**"
       - "Unreal/Content/Python/setup_galactic_frontier.py"
       - "Unreal/Source/GalacticFrontier/**"
       - "Unreal/Config/**"
@@ -42,5 +42,5 @@ jobs:
         run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/validate_unreal_asset_contract.py scripts/validate_unreal_source_contract.py
       - name: Validate Unreal gameplay and asset integration
         run: python scripts/validate_unreal_source_contract.py
-      - name: Validate all ship GLB files
+      - name: Validate all GLB geometry and PBR materials
         run: python scripts/validate_unreal_asset_contract.py
