@@ -128,6 +128,9 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
         fail(errors, "selected scene contains no reachable mesh nodes")
     if is_ship and len(reachable_mesh_nodes) != 1:
         fail(errors, f"ship must contain one reachable mesh node, found {len(reachable_mesh_nodes)}")
+    if path.parent.name in ("space", "planets"):
+        if len(meshes) != 1 or len(reachable_mesh_nodes) != 1:
+            fail(errors, f"space/planet asset must import as one complete StaticMesh; found meshes={len(meshes)}, nodes={len(reachable_mesh_nodes)}")
 
     primitive_count = 0
     uv_primitive_count = 0
