@@ -157,7 +157,17 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
             if valid_index(uv_index, accessors):
                 uv_primitive_count += 1
             else:
-                warnings.append(f"mesh {mesh_index} primitive {primitive_index} has no TEXCOORD_0 UV set")
+                material_hint = primitive.get("material")
+                needs_uv = is_ship
+                if valid_index(material_hint, materials):
+                    material_hint_data = materials[material_hint]
+                    material_hint_pbr = material_hint_data.get("pbrMetallicRoughness", {})
+                    needs_uv = needs_uv or any(
+                        material_hint_pbr.get(key) for key in
+                        ("baseColorTexture", "metallicRoughnessTexture")
+                    ) or bool(material_hint_data.get("normalTexture"))
+                if needs_uv:
+                    warnings.append(f"mesh {mesh_index} primitive {primitive_index} has no TEXCOORD_0 UV set despite texture-based shading")
             indices = primitive.get("indices")
             if indices is not None and not valid_index(indices, accessors):
                 fail(errors, f"mesh {mesh_index} primitive {primitive_index} has invalid index accessor")
