@@ -36,25 +36,7 @@ AGFMissionDirector::AGFMissionDirector()
 
     static ConstructorHelpers::FObjectFinder<UMaterialInterface> MarkerMaterial(
         TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-    if (MarkerMaterial.Succeeded())
-    {
-        if (RelayMarker)
-        {
-            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerMaterial.Object, this))
-            {
-                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.08f, 0.58f, 0.82f));
-                RelayMarker->SetMaterial(0, Material);
-            }
-        }
-        if (WreckMarker)
-        {
-            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerMaterial.Object, this))
-            {
-                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.82f, 0.28f, 0.06f));
-                WreckMarker->SetMaterial(0, Material);
-            }
-        }
-    }
+    if (MarkerMaterial.Succeeded()) MarkerBaseMaterial = MarkerMaterial.Object;
 
     RelayMarkerGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RelayMarkerGlow"));
     RelayMarkerGlow->SetupAttachment(RelayMarker);
@@ -99,6 +81,25 @@ void AGFMissionDirector::BeginPlay()
     }
     if (RelayMarker && ObjectiveMesh) RelayMarker->SetStaticMesh(ObjectiveMesh);
     if (WreckMarker && ObjectiveMesh) WreckMarker->SetStaticMesh(ObjectiveMesh);
+    if (MarkerBaseMaterial)
+    {
+        if (RelayMarker)
+        {
+            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerBaseMaterial, this))
+            {
+                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.08f, 0.58f, 0.82f));
+                RelayMarker->SetMaterial(0, Material);
+            }
+        }
+        if (WreckMarker)
+        {
+            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerBaseMaterial, this))
+            {
+                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.82f, 0.28f, 0.06f));
+                WreckMarker->SetMaterial(0, Material);
+            }
+        }
+    }
     UpdateObjectiveMarker(RelayMarker, RelayPosition);
     if (WreckMarker) WreckMarker->SetVisibility(false, true);
     if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(false, true);
