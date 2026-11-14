@@ -58,7 +58,7 @@ def read_glb(path: Path) -> dict:
     document = json.loads(json_chunks[0].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
     document["_glb_chunks"] = [{"type": kind.decode("ascii", "replace"), "bytes": len(data)}
                                for kind, data in chunks]
-    document["_glb_binary_chunks"] = [data for kind, data in chunks if kind == b"BIN\\0"]
+    document["_glb_binary_chunks"] = [data for kind, data in chunks if kind == b"BIN\0"]
     return document
 
 
@@ -251,7 +251,7 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
                 payload = base64.b64decode(uri.split(",", 1)[1], validate=True)
             except (ValueError, base64.binascii.Error):
                 fail(errors, f"image {image_index} has an invalid base64 data URI")
-        if payload.startswith(b"\\x89PNG\\r\\n\\x1a\\n") and len(payload) >= 24:
+        if payload.startswith(b"\x89PNG\r\n\x1a\n") and len(payload) >= 24:
             width, height = struct.unpack(">II", payload[16:24])
             image_dimensions.append({"index": image_index, "width": width, "height": height})
         elif image.get("mimeType") == "image/png":
