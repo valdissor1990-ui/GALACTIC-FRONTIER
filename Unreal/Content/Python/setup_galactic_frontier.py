@@ -341,6 +341,41 @@ def import_existing_fleet():
     return imported
 
 
+
+def validate_catalog_ship_assets():
+    """Verify the exact soft-object paths hardcoded by UGFGameCatalog."""
+    expected = {
+        "player_fighter": "/Game/GF/Ships/player_fighter.player_fighter",
+        "raider_interceptor": "/Game/GF/Ships/enemy_fighter.enemy_fighter",
+        "aegis_heavy_fighter": "/Game/GF/Ships/heavy_fighter.heavy_fighter",
+        "bastion_bomber": "/Game/GF/Ships/bomber.bomber",
+    }
+    results = {}
+    for ship_id, object_path in expected.items():
+        asset = unreal.EditorAssetLibrary.load_asset(object_path)
+        is_mesh = isinstance(asset, unreal.StaticMesh)
+        results[ship_id] = {
+            "expected_object_path": object_path,
+            "loaded": asset is not None,
+            "is_static_mesh": is_mesh,
+            "actual_object_path": asset.get_path_name() if is_mesh else None,
+            "status": "validated" if is_mesh else "failed",
+        }
+        if not is_mesh:
+            unreal.log_error(
+                "[GF Setup] Catalog mesh path is missing or is not a StaticMesh: " +
+                ship_id + " -> " + object_path)
+        else:
+            log("Catalog mesh validated: " + ship_id + " -> " + asset.get_path_name())
+
+    PIPELINE_REPORT.append({
+        "catalog_ship_assets": results,
+        "status": "validated" if all(
+            item["status"] == "validated" for item in results.values()) else "failed",
+    })
+    return results
+
+
 def save_pipeline_report():
     report_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -358,7 +393,12 @@ def save_pipeline_report():
         "total_models": len(model_entries),
         "validated_models": len(model_entries) - len(failed_entries),
         "failed_models": [item["source"] for item in failed_entries],
-        "overall_status": "passed" if model_entries and not failed_entries else "failed",
+        "catalog_ship_assets": next(
+            (item["catalog_ship_assets"] for item in PIPELINE_REPORT
+             if "catalog_ship_assets" in item), {}),
+        "overall_status": "passed" if model_entries and not failed_entries and
+            all(item["status"] == "validated" for item in PIPELINE_REPORT
+                if "catalog_ship_assets" in item) else "failed",
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     log("PIPELINE REPORT: " + str(report_path))
 
@@ -436,6 +476,7 @@ def main():
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
     unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
     imported = import_existing_fleet()
+    validate_catalog_ship_assets()
     save_pipeline_report()
 
     player_mesh = find_static_mesh(imported, "player_fighter")
