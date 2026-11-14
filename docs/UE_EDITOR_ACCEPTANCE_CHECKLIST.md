@@ -110,7 +110,7 @@ This is a development-only validation shortcut, not a finished hangar UI or a pr
 
 ### Objective marker appearance
 
-- [ ] Relay marker uses the engine basic sphere mesh `/Engine/BasicShapes/Sphere.Sphere`, tinted with `/Engine/BasicShapes/BasicShapeMaterial` (cyan) and a soft cyan point light.
+- [ ] Relay marker uses the engine basic sphere mesh `/Engine/BasicShapes/Sphere.Sphere`, tinted with `/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial` (cyan) and a soft cyan point light.
 - [ ] Wreck marker uses the same engine sphere/material family with an amber tint and amber point light.
 - [ ] The two markers are distinguishable at flight-test distance and do not wash out nearby ship surfaces.
 - [ ] Marker material parameter `Color` is present in the imported engine material; if the tint is not applied, record it and do not claim visual acceptance.
