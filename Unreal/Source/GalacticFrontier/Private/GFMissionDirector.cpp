@@ -167,7 +167,13 @@ void AGFMissionDirector::HandleInteract()
 
 void AGFMissionDirector::SpawnWave()
 {
-    if (!GetWorld() || !PlayerPawn.IsValid() || !EnemyShipClass) return;
+    if (!GetWorld() || !PlayerPawn.IsValid()) return;
+    if (!EnemyShipClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GF Mission] Enemy ship class is unavailable; refusing to advance an empty encounter."));
+        Stage = EGFMissionStage::Failed;
+        return;
+    }
     ++WaveIndex;
     const int32 EnemiesThisWave = 3;
     EnemiesRemaining = 0;
@@ -178,7 +184,13 @@ void AGFMissionDirector::SpawnWave()
         const float Angle = (2.0f * PI * Index) / EnemiesThisWave;
         const FVector SpawnLocation = Center + FVector(FMath::Cos(Angle) * 9000.0f, FMath::Sin(Angle) * 9000.0f, 1500.0f + Index * 700.0f);
         AGFEnemyShip* Enemy = GetWorld()->SpawnActor<AGFEnemyShip>(EnemyShipClass, SpawnLocation, FRotator::ZeroRotator);
-        if (!Enemy) continue;
+        if (!Enemy)
+        {
+            UE_LOG(LogTemp, Error,
+                TEXT("[GF Mission] Failed to spawn enemy actor for wave %d slot %d."),
+                WaveIndex, Index + 1);
+            continue;
+        }
 
         // Escalating encounter composition: interceptors first, then a heavy
         // escort, then a reduced-strength bomber alongside fighter/heavy units.
@@ -214,7 +226,13 @@ void AGFMissionDirector::SpawnWave()
     }
 
     UE_LOG(LogTemp, Display, TEXT("GF Mission: encounter wave %d/%d spawned (%d enemies)."), WaveIndex, WavesPerEncounter, EnemiesRemaining);
-    if (EnemiesRemaining == 0) AdvanceAfterEncounter();
+    if (EnemiesRemaining == 0)
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[GF Mission] Wave %d produced no valid enemies; contract marked failed instead of skipping combat."),
+            WaveIndex);
+        Stage = EGFMissionStage::Failed;
+    }
 }
 
 void AGFMissionDirector::HandleEnemyDestroyed()
