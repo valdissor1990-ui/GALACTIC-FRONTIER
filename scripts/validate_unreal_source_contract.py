@@ -31,6 +31,9 @@ def main():
     setup_py = read("Unreal/Content/Python/setup_galactic_frontier.py")
     validator = read("scripts/validate_unreal_asset_contract.py")
     space_builder = read("scripts/blender/build_space_environment.py")
+    interceptor_builder = read("scripts/blender/build_enemy_interceptor.py")
+    fleet_builder = read("scripts/blender/build_fleet_expansion.py")
+    pbr_utility = read("scripts/blender/pbr_surface_maps.py")
 
     require("void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);" in pawn_h,
             "Pawn header must declare mesh-aware camera setup")
@@ -79,6 +82,20 @@ def main():
             "GLB quality validation must cover every model category")
     require("ShaderNodeRGBToBW" in space_builder and "ShaderNodeBump" in space_builder,
             "Planet materials must include subtle terrain relief for lighting response")
+    require("apply_exportable_surface_maps" in interceptor_builder and
+            "from pbr_surface_maps import apply_exportable_surface_maps" in interceptor_builder,
+            "Raider Interceptor must bake exportable PBR surface maps")
+    require("apply_exportable_surface_maps" in fleet_builder and
+            "from pbr_surface_maps import apply_exportable_surface_maps" in fleet_builder,
+            "Fleet expansion ships must bake exportable PBR surface maps")
+    require("def ensure_glb_file_image" in pbr_utility and
+            "def apply_exportable_surface_maps" in pbr_utility and
+            "normal_map.outputs" in pbr_utility,
+            "Shared PBR utility must stage albedo, roughness and tangent normal textures")
+    require("len(images) < 3" in validator and
+            "uv_primitive_count != primitive_count" in validator and
+            "normal_primitive_count != primitive_count" in validator,
+            "Ship GLBs must have embedded PBR maps, UVs and normals on every primitive")
     require('planet.name = display_name + "_SurfaceAndRings"' in space_builder,
             "Gas giant rings and surface must export as one complete mesh asset")
     require('texture.interpolation = "Closest"' in space_builder,
@@ -91,6 +108,7 @@ def main():
     print("PASS: asset import naming and stage-report gates")
     print("PASS: all-category GLB PBR/geometry validator")
     print("PASS: planet relief shading, ring consolidation and crisp starfield")
+    print("PASS: export-safe albedo, roughness and normal maps for all ships")
     print("NOTE: UnrealHeaderTool/UBT/Editor/runtime checks still require Unreal Engine 5.8.4")
 
 
