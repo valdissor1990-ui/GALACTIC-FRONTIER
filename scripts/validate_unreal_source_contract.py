@@ -34,6 +34,10 @@ def main():
     mission_h = read("Unreal/Source/GalacticFrontier/Public/GFMissionDirector.h")
     mission_cpp = read("Unreal/Source/GalacticFrontier/Private/GFMissionDirector.cpp")
     ship_loader = read("Unreal/Source/GalacticFrontier/Public/GFShipAssetLoader.h")
+    collision_setup = read("Unreal/Content/Python/gf_fix_ship_collision.py")
+    flight_cpp = read("Unreal/Source/GalacticFrontier/Private/GFShipFlightComponent.cpp")
+    weapon_cpp = read("Unreal/Source/GalacticFrontier/Private/GFWeaponComponent.cpp")
+    weapon_h = read("Unreal/Source/GalacticFrontier/Public/GFWeaponComponent.h")
     catalog_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameCatalog.cpp")
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
@@ -61,6 +65,24 @@ def main():
     require("FGFShipAssetLoader::LoadStaticMesh" in pawn_cpp and
             "SetFlightDisabled(true)" in pawn_cpp,
             "Player pawn must fail closed when the selected catalog mesh is missing")
+    require("Body->AggGeom.GetElementCount()" in ship_loader and
+            "CTF_UseComplexAsSimple" in ship_loader and
+            "gf_fix_ship_collision.py" in ship_loader and
+            "StaticMeshEditorSubsystem" in collision_setup and
+            "ScriptingCollisionShapeType.NDOP26" in collision_setup and
+            "CTF_USE_COMPLEX_AS_SIMPLE" in collision_setup,
+            "Ship collision diagnostics and Editor repair utility must be present")
+    require("RotationStabilization" in flight_cpp and
+            "MouseLookRadiansPerPixel" in flight_cpp and
+            "PendingMouseDelta.X * MouseLookRadiansPerPixel" in flight_cpp and
+            "if (RotationInput.IsNearlyZero())" in flight_cpp,
+            "Flight rotation must apply one response per tick and use configured mouse sensitivity")
+    require("NextAllowedFireTime" in weapon_cpp and
+            "IsTimerActive(FireTimer)" in weapon_cpp and
+            "double NextAllowedFireTime" in weapon_h,
+            "Weapon fire cadence must resist rapid trigger taps")
+    require(".bExecuteWhenPaused = true" in controller_cpp,
+            "Pause input must remain active while paused")
     require("static UStaticMesh* LoadStaticMesh" in ship_loader and
             "failed to load StaticMesh for ship" in ship_loader and
             "AssetPath.ToString()" in ship_loader,
@@ -222,6 +244,9 @@ def main():
             "Starfield texture must preserve crisp star points")
 
     print("PASS: player and enemy ship camera/fallback/engine glow contracts")
+    print("PASS: ship collision diagnostics and repair utility")
+    print("PASS: flight input signs, angular response and weapon fire cadence")
+    print("PASS: pause input remains available while paused")
     print("PASS: four ship catalog/import paths agree")
     print("PASS: GameMode and default map configuration")
     print("PASS: flight test level includes backdrop and planets")
