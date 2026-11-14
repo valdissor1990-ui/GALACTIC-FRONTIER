@@ -282,6 +282,10 @@ def import_glb(source_path: Path, destination_path: str):
                 reloaded = unreal.EditorAssetLibrary.load_asset(expected_object_path) if renamed else None
                 if renamed and isinstance(reloaded, unreal.StaticMesh):
                     mesh_assets[0] = reloaded
+                    imported = [
+                        expected_object_path if object_path == current_object_path else object_path
+                        for object_path in imported
+                    ]
                     rename_results.append({
                         "from": current_object_path,
                         "to": expected_object_path,
