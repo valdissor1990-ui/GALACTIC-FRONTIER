@@ -97,7 +97,7 @@ jobs:
           set -euo pipefail
           timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
             --python-exit-code 1 --python scripts/blender/build_space_environment.py \
-            -- --output-dir build/unreal-assets/environment --resolution 512
+            -- --output-dir build/unreal-assets/environment --resolution 1024
 
       - name: Verify complete output package
         run: |
