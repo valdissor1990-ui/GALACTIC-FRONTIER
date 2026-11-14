@@ -28,6 +28,16 @@ public:
     bool IsGamePausedByPlayer() const { return bPausedByPlayer; }
 
 protected:
+#if !UE_BUILD_SHIPPING
+    void DebugSelectShip1();
+    void DebugSelectShip2();
+    void DebugSelectShip3();
+    void DebugSelectShip4();
+    void DebugSelectShip5();
+    void DebugSelectShip6();
+    void DebugSelectShip7();
+#endif
+
     void ApplyMouseCaptureForGameplay();
     void ApplyMouseForMenu();
 
