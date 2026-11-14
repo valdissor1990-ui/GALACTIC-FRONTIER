@@ -25,6 +25,8 @@ def require(condition, message):
 def main():
     pawn_h = read("Unreal/Source/GalacticFrontier/Public/GFPlayerShipPawn.h")
     pawn_cpp = read("Unreal/Source/GalacticFrontier/Private/GFPlayerShipPawn.cpp")
+    enemy_h = read("Unreal/Source/GalacticFrontier/Public/GFEnemyShip.h")
+    enemy_cpp = read("Unreal/Source/GalacticFrontier/Private/GFEnemyShip.cpp")
     catalog_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameCatalog.cpp")
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
@@ -68,6 +70,11 @@ def main():
 
     require("DefaultPawnClass = AGFPlayerShipPawn::StaticClass()" in game_mode_cpp,
             "GameMode must spawn the player ship pawn")
+    require("UPointLightComponent" in enemy_h and
+            "bEngineGlowConfigured" in enemy_cpp and
+            "ShipMesh->GetStaticMesh()->GetBoundingBox()" in enemy_cpp and
+            "CurrentEngineGlowIntensity" in enemy_cpp,
+            "Enemy ship must configure speed-reactive engine lights after its mesh is assigned")
     require("unreal.PostProcessVolume" in setup_py and
             '"b_unbound", True' in setup_py and
             '"bloom_intensity"' in setup_py and
@@ -131,7 +138,7 @@ def main():
     require('texture.interpolation = "Closest"' in space_builder,
             "Starfield texture must preserve crisp star points")
 
-    print("PASS: player pawn camera, fallback and dynamic engine glow contract")
+    print("PASS: player and enemy ship camera/fallback/engine glow contracts")
     print("PASS: four ship catalog/import paths agree")
     print("PASS: GameMode and default map configuration")
     print("PASS: flight test level includes backdrop and planets")
