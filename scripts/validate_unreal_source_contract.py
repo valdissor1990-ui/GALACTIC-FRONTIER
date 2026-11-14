@@ -63,6 +63,16 @@ def main():
 
     require("DefaultPawnClass = AGFPlayerShipPawn::StaticClass()" in game_mode_cpp,
             "GameMode must spawn the player ship pawn")
+    require("unreal.PostProcessVolume" in setup_py and
+            '"b_unbound", True' in setup_py and
+            '"bloom_intensity"' in setup_py and
+            '"ambient_occlusion_intensity"' in setup_py and
+            '"motion_blur_amount", 0.0' in setup_py,
+            "Flight test scene must configure an unbound cinematic post-process baseline")
+    require("r.DefaultFeature.MotionBlur=False" in engine_ini and
+            "r.ContactShadows=1" in engine_ini and
+            "r.Lumen.Reflections.ScreenTraces=1" in engine_ini,
+            "Renderer defaults must preserve clean motion and high-quality local reflections")
     require("GlobalDefaultGameMode=/Script/GalacticFrontier.GFGameModeBase" in engine_ini,
             "DefaultEngine.ini must select the Galactic Frontier game mode")
     require("GameDefaultMap=/Game/GF/Maps/L_FlightTest" in engine_ini,
