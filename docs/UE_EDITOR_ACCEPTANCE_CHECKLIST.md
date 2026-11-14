@@ -82,6 +82,39 @@ Record any failed ship by ID and attach a screenshot of the StaticMesh viewport 
 
 Open and play `/Game/GF/Maps/L_FlightTest`.
 
+### Development-only fleet switching
+
+In a non-Shipping Development Editor build, press **1–7** to temporarily apply the corresponding catalog ship in this order:
+
+1. Player Fighter Mk.I
+2. Mule Cargo Hauler
+3. Raider Interceptor
+4. Aegis Heavy Fighter
+5. Bastion Bomber
+6. Vanguard Frigate
+7. Leviathan Cruiser
+
+- [ ] Each key changes the player mesh and matching flight/combat stats together.
+- [ ] On-screen debug text reports ship name and catalog price.
+- [ ] The temporary switch does not unlock ships or overwrite the saved selected-ship progression.
+- [ ] A missing mesh logs an Error and does not apply another ship's stats to the currently visible hull.
+
+This is a development-only validation shortcut, not a finished hangar UI or a production ship-unlock flow.
+
+### Mission terminal feedback
+
+- [ ] Completing Silent Relay displays a concise completion message and the contract credit reward.
+- [ ] Losing the player ship displays a failure message explaining that the ship was destroyed.
+- [ ] A failed enemy-wave deployment displays a failure reason instead of silently advancing.
+- [ ] In non-Shipping Development builds, **R** restarts the current level only after the mission has failed.
+
+### Objective marker appearance
+
+- [ ] Relay marker uses the engine basic sphere mesh `/Engine/BasicShapes/Sphere.Sphere`, tinted with `/Engine/BasicShapes/BasicShapeMaterial` (cyan) and a soft cyan point light.
+- [ ] Wreck marker uses the same engine sphere/material family with an amber tint and amber point light.
+- [ ] The two markers are distinguishable at flight-test distance and do not wash out nearby ship surfaces.
+- [ ] Marker material parameter `Color` is present in the imported engine material; if the tint is not applied, record it and do not claim visual acceptance.
+
 - [ ] Player spawns in the Player Fighter Mk.I with a visible complete mesh.
 - [ ] Chase camera frames the full ship and does not clip through the hull.
 - [ ] Cockpit camera is inside the forward cockpit area and looks along +X.
