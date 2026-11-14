@@ -250,7 +250,7 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
 
 
 def create_space_backdrop(resolution):
-    """Create a textured, inward-facing sky sphere with stars and nebula clouds."""
+    """Create a textured, inward-facing sky sphere with stars and nebula clouds.\n\n    The 15 km radius keeps the background behind every planet in the flight-test\n    layout; a small sky sphere would incorrectly occlude planets placed in front."""
     width = max(512, resolution * 2)
     height_px = max(256, resolution)
     image = bpy.data.images.new("GF_DeepSpace_Starfield", width=width, height=height_px, alpha=True)
@@ -276,7 +276,7 @@ def create_space_backdrop(resolution):
     image.pixels.foreach_set(pixels)
     image.pack()
 
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=256, ring_count=128, radius=5000.0)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=256, ring_count=128, radius=1500000.0)
     sky = bpy.context.object
     sky.name = "GF_DeepSpace_Backdrop"
     sky.data.name = "GF_DeepSpace_BackdropMesh"
