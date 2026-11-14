@@ -26,6 +26,9 @@ def require(condition, message):
 def main():
     pawn_h = read("Unreal/Source/GalacticFrontier/Public/GFPlayerShipPawn.h")
     pawn_cpp = read("Unreal/Source/GalacticFrontier/Private/GFPlayerShipPawn.cpp")
+    controller_h = read("Unreal/Source/GalacticFrontier/Public/GFPlayerController.h")
+    controller_cpp = read("Unreal/Source/GalacticFrontier/Private/GFPlayerController.cpp")
+    hud_cpp = read("Unreal/Source/GalacticFrontier/Private/GFSpaceHUD.cpp")
     enemy_h = read("Unreal/Source/GalacticFrontier/Public/GFEnemyShip.h")
     enemy_cpp = read("Unreal/Source/GalacticFrontier/Private/GFEnemyShip.cpp")
     mission_h = read("Unreal/Source/GalacticFrontier/Public/GFMissionDirector.h")
@@ -68,6 +71,36 @@ def main():
             "Hangar previews must resolve catalog meshes through the shared loader")
     require("player_fighter" in pawn_cpp and "FindShip" in pawn_cpp,
             "Missing saved selection must resolve to the starter ship")
+    require("DebugSelectShipByIndex" in pawn_h and
+            "#if !UE_BUILD_SHIPPING" in pawn_h and
+            "Profile->SelectedShipId = PreviousSelection" in pawn_cpp and
+            "AddOnScreenDebugMessage" in pawn_cpp,
+            "Debug ship selection must be development-only, temporary and report the chosen ship")
+    require(all(f"BindKey(EKeys::{key}" in controller_cpp for key in
+                ("One", "Two", "Three", "Four", "Five", "Six", "Seven")) and
+            "DebugSelectShipByIndex(6)" in controller_cpp,
+            "Development controller must expose numeric 1–7 fleet selection")
+    require("GetFailureReason" in mission_h and
+            "Your ship was destroyed." in mission_cpp and
+            "Hostile reinforcements could not be deployed." in mission_cpp and
+            "CONTRACT COMPLETE" in hud_cpp and "CONTRACT FAILED" in hud_cpp and
+            "Mission->MissionReward" in hud_cpp,
+            "Silent Relay must expose visible completion/reward and actionable failure feedback")
+    require("DebugRestartFailedMission" in controller_cpp and
+            "EKeys::R" in controller_cpp and
+            "EGFMissionStage::Failed" in controller_cpp,
+            "Development build must restart the current level with R only after mission failure")
+    require("/Engine/BasicShapes/BasicShapeMaterial" in mission_cpp and
+            "RelayMarkerGlow" in mission_cpp and "WreckMarkerGlow" in mission_cpp and
+            "SetVectorParameterValue(TEXT(\\"Color\\"))" in mission_cpp,
+            "Objective markers must use tinted engine material and soft local glow")
+    material_map = read("docs/SHIP_MATERIAL_SLOT_MAP.md")
+    require(all(name in material_map for name in
+                ("Brushed gunmetal armor", "Cockpit polarized glass",
+                 "Ion engine emission", "Vanguard Frigate | hull",
+                 "Leviathan Cruiser | hull")) and
+            "PRE-IMPORT REFERENCE" in material_map and "NEEDS_UE_EDITOR" in material_map,
+            "Ship material slot map must document source material names without claiming import acceptance")
 
     expected_paths = (
         "/Game/GF/Ships/player_fighter.player_fighter",
