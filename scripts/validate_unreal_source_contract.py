@@ -44,6 +44,10 @@ def main():
     require("Mesh->GetBoundingBox()" in pawn_cpp and
             "ConfigureCamerasForShipMesh(SelectedMesh)" in pawn_cpp,
             "Ship camera setup must use the selected mesh bounds")
+    require("UPointLightComponent" in pawn_h and "LeftEngineGlow" in pawn_cpp and
+            "RightEngineGlow" in pawn_cpp and "Flight->IsBoostActive()" in pawn_cpp and
+            "CurrentEngineGlowIntensity" in pawn_cpp,
+            "Player ship must have speed/boost-reactive engine illumination")
     require("using Player Fighter Mk.I visuals" in pawn_cpp,
             "Missing selected mesh must have a visible fallback path")
     require("UGFGameCatalog::FindShip(TEXT(\"player_fighter\"), Definition)" in pawn_cpp,
@@ -126,7 +130,7 @@ def main():
     require('texture.interpolation = "Closest"' in space_builder,
             "Starfield texture must preserve crisp star points")
 
-    print("PASS: player pawn camera and fallback contract")
+    print("PASS: player pawn camera, fallback and dynamic engine glow contract")
     print("PASS: four ship catalog/import paths agree")
     print("PASS: GameMode and default map configuration")
     print("PASS: flight test level includes backdrop and planets")
