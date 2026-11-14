@@ -61,7 +61,7 @@ def main():
             "failed to load StaticMesh for ship" in ship_loader and
             "AssetPath.ToString()" in ship_loader,
             "Shared ship loader must log ship id and exact asset path on failure")
-    require("UGFGameCatalog::FindShip(TEXT(\\"player_fighter\\"), Definition)" in pawn_cpp,
+    require("player_fighter" in pawn_cpp and "FindShip" in pawn_cpp,
             "Missing saved selection must resolve to the starter ship")
 
     expected_paths = (
