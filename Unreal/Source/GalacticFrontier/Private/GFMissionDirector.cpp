@@ -217,6 +217,7 @@ void AGFMissionDirector::SpawnWave()
     if (!EnemyShipClass)
     {
         UE_LOG(LogTemp, Error, TEXT("[GF Mission] Enemy ship class is unavailable; refusing to advance an empty encounter."));
+        FailureReason = FText::FromString(TEXT("Enemy ship class is unavailable. Contract aborted."));
         Stage = EGFMissionStage::Failed;
         return;
     }
