@@ -100,7 +100,7 @@ def main():
             "Shared PBR utility must stage albedo, roughness and tangent normal textures")
     require("len(images) < 3" in validator and
             "metallicRoughnessTexture" in validator and "normalTexture" in validator and
-            "minimum_texture_width" in validator and "image_dimensions" in validator and
+            "minimum_texture_width" in validator and "image_dimensions" in validator and "base64.b64decode" in validator and
             'path.parent.name in ("space", "planets")' in validator and
             "despite texture-based shading" in validator and
             "uv_primitive_count != primitive_count" in validator and
