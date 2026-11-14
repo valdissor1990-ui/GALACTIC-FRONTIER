@@ -231,6 +231,13 @@ def inspect_glb_scene(source_path: Path):
 def import_glb(source_path: Path, destination_path: str):
     if not source_path.exists():
         unreal.log_warning("[GF Setup] Missing source: " + str(source_path))
+        PIPELINE_REPORT.append({
+            "source": str(source_path),
+            "destination": destination_path,
+            "status": "missing_source",
+            "imported_objects": [],
+            "static_meshes": [],
+        })
         return []
 
     source_nodes = inspect_glb_scene(source_path)
@@ -244,27 +251,51 @@ def import_glb(source_path: Path, destination_path: str):
     imported = list(task.get_editor_property("imported_object_paths"))
 
     mesh_assets = []
+    load_errors = []
     for object_path in imported:
         asset = unreal.EditorAssetLibrary.load_asset(object_path)
         if isinstance(asset, unreal.StaticMesh):
             mesh_assets.append(asset)
+        elif asset is None:
+            load_errors.append(object_path)
 
-    log("GLB " + source_path.name + ": source_mesh_instances=" + str(len(source_nodes)) +
-        ", imported_objects=" + str(len(imported)) +
-        ", static_meshes=" + str([mesh.get_path_name() for mesh in mesh_assets]))
+    mesh_paths = [mesh.get_path_name() for mesh in mesh_assets]
+    is_ship = source_path.parent.name.lower() == "ships"
+    expected_mesh_count = 1 if is_ship else None
+    checks = {
+        "source_mesh_instances": len(source_nodes),
+        "imported_static_mesh_count": len(mesh_assets),
+        "expected_static_mesh_count": expected_mesh_count,
+        "all_imported_objects_load": len(load_errors) == 0,
+        "imported_object_count": len(imported),
+    }
+    passed = bool(imported) and not load_errors and bool(mesh_assets)
+    if is_ship:
+        passed = passed and len(source_nodes) == 1 and len(mesh_assets) == 1
+
+    log("GLB " + source_path.name + ": " + json.dumps(checks) +
+        ", static_meshes=" + str(mesh_paths))
+    if load_errors:
+        unreal.log_error("[GF Setup] Imported object paths could not be loaded: " + str(load_errors))
+    if is_ship and len(source_nodes) != 1:
+        unreal.log_error("[GF Setup] Ship source violates the one-mesh GLB contract: " +
+                         source_path.name + " has " + str(len(source_nodes)) + " mesh nodes.")
+    if is_ship and len(mesh_assets) != 1:
+        unreal.log_error("[GF Setup] Ship import must produce exactly one StaticMesh: " +
+                         source_path.name + " produced " + str(len(mesh_assets)) + ".")
+    if not mesh_assets:
+        unreal.log_error("[GF Setup] No StaticMesh imported from " + source_path.name)
+
     PIPELINE_REPORT.append({
         "source": str(source_path.relative_to(PROJECT_ROOT)),
         "destination": destination_path,
+        "source_mesh_instances": len(source_nodes),
         "imported_objects": imported,
-        "static_meshes": [mesh.get_path_name() for mesh in mesh_assets],
-        "status": "imported" if imported else "failed",
+        "static_meshes": mesh_paths,
+        "load_errors": load_errors,
+        "checks": checks,
+        "status": "validated" if passed else "failed",
     })
-    if len(mesh_assets) > 1:
-        unreal.log_warning(
-            "[GF Setup] " + source_path.name + " produced multiple StaticMesh assets. "
-            "Do not use a single mesh as the complete ship; preserve and assemble every node.")
-    elif len(mesh_assets) == 0:
-        unreal.log_warning("[GF Setup] " + source_path.name + " produced no StaticMesh asset.")
     return imported
 
 
@@ -314,13 +345,20 @@ def save_pipeline_report():
     report_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / "asset_pipeline_report.json"
+    model_entries = [item for item in PIPELINE_REPORT if "source" in item]
+    failed_entries = [item for item in model_entries if item.get("status") != "validated"]
     report_path.write_text(json.dumps({
         "pipeline": ["ships", "environment", "space", "planets"],
         "execution": "sequential",
+        "acceptance_contract": {
+            "ships": "each source GLB must contain one mesh node and import as exactly one StaticMesh",
+            "other_categories": "at least one imported StaticMesh and all imported object paths must load",
+        },
         "models": PIPELINE_REPORT,
-        "total_models": sum(1 for item in PIPELINE_REPORT if "source" in item),
-        "failed_models": [item["source"] for item in PIPELINE_REPORT
-                          if item.get("status") != "imported" and "source" in item],
+        "total_models": len(model_entries),
+        "validated_models": len(model_entries) - len(failed_entries),
+        "failed_models": [item["source"] for item in failed_entries],
+        "overall_status": "passed" if model_entries and not failed_entries else "failed",
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     log("PIPELINE REPORT: " + str(report_path))
 
