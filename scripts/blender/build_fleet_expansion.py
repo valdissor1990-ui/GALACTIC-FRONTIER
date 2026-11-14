@@ -6,6 +6,8 @@ Run with Blender 4.5:
 """
 import bpy, math, os, sys
 from mathutils import Vector
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -42,6 +44,7 @@ def mat(name, color, metallic=.65, rough=.34, emission=None, strength=0):
         links.new(bump.outputs["Normal"],p.inputs["Normal"])
         links.new(noise.outputs["Fac"],rough_map.inputs["Value"])
         links.new(rough_map.outputs["Result"],p.inputs["Roughness"])
+        apply_exportable_surface_maps(m, p, color, rough, name)
     return m
 
 def finish(o, material, bevel=.05):
@@ -381,8 +384,14 @@ def clear():
             if b.users==0: blocks.remove(b)
 
 def render_setup(target, extent):
-    scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE_NEXT"
-    scene.render.resolution_x=1500; scene.render.resolution_y=1000; scene.render.resolution_percentage=100
+    scene=bpy.context.scene
+    fast_preview = os.environ.get("GF_CI_FAST_PREVIEW") == "1"
+    scene.render.engine = "BLENDER_WORKBENCH" if fast_preview else "BLENDER_EEVEE_NEXT"
+    scene.render.resolution_x=1500; scene.render.resolution_y=1000
+    scene.render.resolution_percentage=50 if fast_preview else 100
+    if fast_preview:
+        scene.display.shading.light="STUDIO";scene.display.shading.color_type="MATERIAL"
+        scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True
     scene.view_settings.view_transform="AgX"
     world=bpy.data.worlds.new("GF fleet studio world") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.color=(.026,.034,.052)

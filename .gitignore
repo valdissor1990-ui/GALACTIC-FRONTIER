@@ -13,3 +13,18 @@ export_presets.cfg.tmp
 Thumbs.db
 *.tmp
 *.bak
+
+# Unreal Engine generated files
+Unreal/Binaries/
+Unreal/DerivedDataCache/
+Unreal/Intermediate/
+Unreal/Saved/
+Unreal/.vs/
+Unreal/.idea/
+Unreal/*.sln
+Unreal/*.slnx
+Unreal/*.VC.db
+Unreal/*.VC.opendb
+Unreal/Build/
+Unreal/Plugins/*/Binaries/
+Unreal/Plugins/*/Intermediate/

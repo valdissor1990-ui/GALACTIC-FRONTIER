@@ -104,11 +104,11 @@ def clear_scene():
 
 def apply_exportable_surface_maps(material, principled, base_color, base_roughness, label):
     """Attach packed, UV-based PBR maps that survive Blender -> glTF -> Godot."""
-    size = 512
+    size = 1024
     token = "".join(ch if ch.isalnum() else "_" for ch in label)
     albedo_name = "GF_Surface_%s_Albedo" % token
     roughness_name = "GF_Surface_%s_Roughness" % token
-    normal_name = "GF_Aerospace_MicroNormal_512"
+    normal_name = "GF_Aerospace_MicroNormal_1024"
 
     def clamp01(value):
         return max(0.0, min(1.0, value))
@@ -988,10 +988,17 @@ def consolidate_static_meshes(root):
 def setup_scene(materials, out_dir):
     scene = bpy.context.scene
     # EEVEE was renamed in Blender 4.2; support both runner and newer desktop versions.
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"
+    fast_preview = os.environ.get("GF_CI_FAST_PREVIEW") == "1"
+    scene.render.engine = ("BLENDER_WORKBENCH" if fast_preview else
+                           ("BLENDER_EEVEE_NEXT" if bpy.app.version >= (4, 2, 0) else "BLENDER_EEVEE"))
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1100
-    scene.render.resolution_percentage = 100
+    scene.render.resolution_percentage = 50 if fast_preview else 100
+    if fast_preview:
+        scene.display.shading.light = "STUDIO"
+        scene.display.shading.color_type = "MATERIAL"
+        scene.display.shading.show_shadows = True
+        scene.display.shading.show_cavity = True
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
     scene.world.color = (0.018, 0.024, 0.045)

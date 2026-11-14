@@ -1,0 +1,679 @@
+"""One-time Unreal Editor setup for GALACTIC FRONTIER.
+
+Run in Unreal Editor: Tools -> Execute Python Script.
+Compile the C++ project once before running this script.
+
+Imports the existing GLB fleet, creates a flight-test level, and prepares
+/Game/GF/VFX for Niagara systems used by UGFShipVfxComponent.
+"""
+from pathlib import Path
+import json
+import struct
+import unreal
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ASSET_ROOT = PROJECT_ROOT / "assets" / "models"
+CONTENT_ROOT = "/Game/GF"
+VFX_ROOT = CONTENT_ROOT + "/VFX"
+PIPELINE_REPORT = []
+
+# Soft paths expected by UGFShipVfxComponent defaults
+VFX_SYSTEMS = [
+    "NS_EngineThrust",
+    "NS_BoostTrail",
+    "NS_MuzzleFlash",
+    "NS_SpaceDust",
+    "NS_ImpactSpark",
+]
+
+
+def log(message):
+    unreal.log("[GF Setup] " + str(message))
+
+
+def _identity_matrix():
+    return [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+
+
+def _multiply_matrix(a, b):
+    return [[sum(a[row][k] * b[k][column] for k in range(4))
+             for column in range(4)] for row in range(4)]
+
+
+def _node_local_matrix(node):
+    """Return a glTF node transform as a row-major 4x4 matrix."""
+    if "matrix" in node:
+        values = node["matrix"]
+        if len(values) != 16:
+            raise ValueError("glTF node matrix must contain 16 values")
+        # glTF stores matrices column-major; convert for our matrix routines.
+        return [[float(values[column * 4 + row]) for column in range(4)]
+                for row in range(4)]
+
+    tx, ty, tz = node.get("translation", [0.0, 0.0, 0.0])
+    sx, sy, sz = node.get("scale", [1.0, 1.0, 1.0])
+    qx, qy, qz, qw = node.get("rotation", [0.0, 0.0, 0.0, 1.0])
+
+    # glTF quaternion order is x, y, z, w. Normalize defensively.
+    q_length = (qx * qx + qy * qy + qz * qz + qw * qw) ** 0.5
+    if q_length <= 1e-12:
+        raise ValueError("glTF node has a zero-length rotation quaternion")
+    qx, qy, qz, qw = qx / q_length, qy / q_length, qz / q_length, qw / q_length
+
+    rotation = [
+        [1 - 2 * (qy * qy + qz * qz), 2 * (qx * qy - qz * qw), 2 * (qx * qz + qy * qw), 0.0],
+        [2 * (qx * qy + qz * qw), 1 - 2 * (qx * qx + qz * qz), 2 * (qy * qz - qx * qw), 0.0],
+        [2 * (qx * qz - qy * qw), 2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy), 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+    scale = [
+        [float(sx), 0.0, 0.0, 0.0],
+        [0.0, float(sy), 0.0, 0.0],
+        [0.0, 0.0, float(sz), 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+    translation = _identity_matrix()
+    translation[0][3], translation[1][3], translation[2][3] = float(tx), float(ty), float(tz)
+    return _multiply_matrix(_multiply_matrix(translation, rotation), scale)
+
+
+def _matrix_to_gltf_column_major(matrix):
+    return [matrix[row][column] for column in range(4) for row in range(4)]
+
+
+def _run_transform_self_check():
+    """Fail early if parent/child transform composition regresses."""
+    parent = _node_local_matrix({
+        "translation": [10.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.7071067811865475, 0.7071067811865476],
+    })
+    child = _node_local_matrix({"translation": [1.0, 0.0, 0.0]})
+    world = _multiply_matrix(parent, child)
+    actual = (world[0][3], world[1][3], world[2][3])
+    expected = (10.0, 1.0, 0.0)
+    if any(abs(actual[i] - expected[i]) > 1e-5 for i in range(3)):
+        raise AssertionError("GLB transform self-check failed: " + str(actual))
+    log("GLB transform self-check passed: nested translation + parent rotation")
+
+
+def inspect_glb_scene(source_path: Path):
+    """Inventory GLB nodes and calculate each mesh node's composed world matrix.
+
+    Matrices remain in the source glTF coordinate system and source units.
+    Unreal's importer performs coordinate/unit conversion; do not feed these
+    raw matrices into an Unreal actor until they are converted and validated
+    against the actual Interchange import result.
+    """
+    try:
+        with source_path.open("rb") as stream:
+            header = stream.read(12)
+            if len(header) != 12:
+                raise ValueError("truncated GLB header")
+            magic, version, total_length = struct.unpack("<4sII", header)
+            if magic != b"glTF" or version != 2:
+                raise ValueError("expected binary glTF 2.0")
+            if total_length < 20:
+                raise ValueError("invalid GLB length")
+            chunk_header = stream.read(8)
+            if len(chunk_header) != 8:
+                raise ValueError("truncated GLB JSON chunk header")
+            json_length, json_type = struct.unpack("<I4s", chunk_header)
+            if json_type != b"JSON" or json_length > total_length - 20:
+                raise ValueError("missing or invalid GLB JSON chunk")
+            json_bytes = stream.read(json_length)
+            if len(json_bytes) != json_length:
+                raise ValueError("truncated GLB JSON chunk")
+            document = json.loads(json_bytes.decode("utf-8").rstrip(" \t\r\n\0"))
+
+        nodes = document.get("nodes", [])
+        meshes = document.get("meshes", [])
+        materials = document.get("materials", [])
+        scenes = document.get("scenes", [])
+        scene_index = document.get("scene", 0)
+        if scenes and 0 <= scene_index < len(scenes):
+            roots = scenes[scene_index].get("nodes", [])
+        else:
+            child_indices = {child for node in nodes for child in node.get("children", [])}
+            roots = [index for index in range(len(nodes)) if index not in child_indices]
+
+        mesh_instances = []
+        visited = set()
+        active = set()
+
+        def visit(node_index, parent_path, parent_world):
+            if not isinstance(node_index, int) or node_index < 0 or node_index >= len(nodes):
+                log("GLB hierarchy warning: invalid node index " + str(node_index))
+                return
+            if node_index in active:
+                log("GLB hierarchy warning: cycle detected at node " + str(node_index))
+                return
+            if node_index in visited:
+                log("GLB hierarchy warning: node referenced more than once: " + str(node_index))
+                return
+
+            node = nodes[node_index]
+            node_name = node.get("name", "Node_" + str(node_index))
+            node_path = parent_path + "/" + node_name
+            local_matrix = _node_local_matrix(node)
+            world_matrix = _multiply_matrix(parent_world, local_matrix)
+            active.add(node_index)
+            visited.add(node_index)
+
+            mesh_index = node.get("mesh")
+            if mesh_index is not None:
+                if isinstance(mesh_index, int) and 0 <= mesh_index < len(meshes):
+                    mesh = meshes[mesh_index]
+                    primitive_materials = []
+                    for primitive in mesh.get("primitives", []):
+                        material_index = primitive.get("material")
+                        primitive_materials.append(
+                            materials[material_index].get("name", "Material_" + str(material_index))
+                            if isinstance(material_index, int) and 0 <= material_index < len(materials)
+                            else None)
+                    item = {
+                        "node": node_path,
+                        "node_index": node_index,
+                        "mesh_index": mesh_index,
+                        "mesh_name": mesh.get("name", "Mesh_" + str(mesh_index)),
+                        "local_matrix_column_major": _matrix_to_gltf_column_major(local_matrix),
+                        "world_matrix_column_major": _matrix_to_gltf_column_major(world_matrix),
+                        "source_translation": node.get("translation"),
+                        "source_rotation_xyzw": node.get("rotation"),
+                        "source_scale": node.get("scale"),
+                        "primitive_materials": primitive_materials,
+                    }
+                    mesh_instances.append(item)
+                    log("GLB mesh node: " + json.dumps(item, ensure_ascii=False))
+                else:
+                    log("GLB hierarchy warning: invalid mesh index " + str(mesh_index))
+
+            for child_index in node.get("children", []):
+                visit(child_index, node_path, world_matrix)
+            active.remove(node_index)
+
+        for root_index in roots:
+            visit(root_index, "", _identity_matrix())
+
+        manifest = {
+            "source_file": source_path.name,
+            "coordinate_system": "glTF source coordinates; right-handed, Y-up; source units",
+            "transform_note": "world matrices include all ancestor transforms; convert and validate against Unreal Interchange imports before use",
+            "node_count": len(nodes),
+            "mesh_count": len(meshes),
+            "material_count": len(materials),
+            "scene_roots": roots,
+            "mesh_instances": mesh_instances,
+        }
+        manifest_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+        manifest_path = manifest_dir / (source_path.parent.name + "_" + source_path.stem + ".json")
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        log("GLB source inventory " + source_path.name +
+            ": nodes=" + str(len(nodes))) 
+        log("GLB composed mesh instances=" + str(len(mesh_instances)) +
+            "; manifest=" + str(manifest_path))
+        if len(visited) != len(nodes):
+            log("GLB hierarchy warning: " + str(len(nodes) - len(visited)) +
+                " nodes are not reachable from the selected scene roots")
+        return mesh_instances
+    except Exception as error:
+        unreal.log_error("[GF Setup] Could not inspect GLB hierarchy " +
+                         str(source_path) + ": " + str(error))
+        return []
+
+
+def import_glb(source_path: Path, destination_path: str):
+    if not source_path.exists():
+        unreal.log_warning("[GF Setup] Missing source: " + str(source_path))
+        PIPELINE_REPORT.append({
+            "source": str(source_path),
+            "destination": destination_path,
+            "status": "missing_source",
+            "imported_objects": [],
+            "static_meshes": [],
+        })
+        return []
+
+    source_nodes = inspect_glb_scene(source_path)
+    task = unreal.AssetImportTask()
+    task.set_editor_property("filename", str(source_path))
+    task.set_editor_property("destination_path", destination_path)
+    task.set_editor_property("automated", True)
+    task.set_editor_property("replace_existing", True)
+    task.set_editor_property("save", True)
+    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+    imported = list(task.get_editor_property("imported_object_paths"))
+
+    mesh_assets = []
+    load_errors = []
+    for object_path in imported:
+        asset = unreal.EditorAssetLibrary.load_asset(object_path)
+        if isinstance(asset, unreal.StaticMesh):
+            mesh_assets.append(asset)
+        elif asset is None:
+            load_errors.append(object_path)
+
+    is_ship = source_path.parent.name.lower() == "ships"
+    rename_results = []
+    if len(source_nodes) == 1 and len(mesh_assets) == 1:
+        mesh = mesh_assets[0]
+        expected_package_path = destination_path.rstrip("/") + "/" + source_path.stem
+        expected_object_path = expected_package_path + "." + source_path.stem
+        current_object_path = mesh.get_path_name()
+        if current_object_path != expected_object_path:
+            if unreal.EditorAssetLibrary.does_asset_exist(expected_object_path):
+                rename_results.append({
+                    "from": current_object_path,
+                    "to": expected_object_path,
+                    "status": "failed_target_exists",
+                })
+                unreal.log_error(
+                    "[GF Setup] Cannot normalize ship asset name; target already exists: " +
+                    expected_object_path)
+            else:
+                renamed = unreal.EditorAssetLibrary.rename_asset(
+                    current_object_path, expected_package_path)
+                reloaded = unreal.EditorAssetLibrary.load_asset(expected_object_path) if renamed else None
+                if renamed and isinstance(reloaded, unreal.StaticMesh):
+                    mesh_assets[0] = reloaded
+                    imported = [
+                        expected_object_path if object_path == current_object_path else object_path
+                        for object_path in imported
+                    ]
+                    rename_results.append({
+                        "from": current_object_path,
+                        "to": expected_object_path,
+                        "status": "renamed",
+                    })
+                    log("Normalized ship asset name: " + expected_object_path)
+                else:
+                    rename_results.append({
+                        "from": current_object_path,
+                        "to": expected_object_path,
+                        "status": "failed_rename",
+                    })
+                    unreal.log_error(
+                        "[GF Setup] Failed to normalize ship asset name: " +
+                        current_object_path + " -> " + expected_object_path)
+
+    mesh_paths = [mesh.get_path_name() for mesh in mesh_assets]
+    is_ship = source_path.parent.name.lower() == "ships"
+    expected_mesh_count = 1 if is_ship else None
+    expected_name_path = (destination_path.rstrip("/") + "/" + source_path.stem +
+                          "." + source_path.stem) if len(source_nodes) == 1 else None
+    checks = {
+        "source_mesh_instances": len(source_nodes),
+        "imported_static_mesh_count": len(mesh_assets),
+        "expected_static_mesh_count": expected_mesh_count,
+        "expected_source_named_object_path": expected_name_path,
+        "asset_name_normalization": rename_results,
+        "source_name_matches_asset_path": (expected_name_path is None or mesh_paths == [expected_name_path]),
+        "all_imported_objects_load": len(load_errors) == 0,
+        "imported_object_count": len(imported),
+    }
+    passed = bool(imported) and not load_errors and bool(mesh_assets)
+    if is_ship:
+        passed = (passed and len(source_nodes) == 1 and len(mesh_assets) == 1
+                  and mesh_paths == [expected_name_path])
+    elif len(source_nodes) == 1:
+        passed = passed and len(mesh_assets) == 1 and mesh_paths == [expected_name_path]
+
+    log("GLB " + source_path.name + ": " + json.dumps(checks) +
+        ", static_meshes=" + str(mesh_paths))
+    if load_errors:
+        unreal.log_error("[GF Setup] Imported object paths could not be loaded: " + str(load_errors))
+    if is_ship and len(source_nodes) != 1:
+        unreal.log_error("[GF Setup] Ship source violates the one-mesh GLB contract: " +
+                         source_path.name + " has " + str(len(source_nodes)) + " mesh nodes.")
+    if is_ship and len(mesh_assets) != 1:
+        unreal.log_error("[GF Setup] Ship import must produce exactly one StaticMesh: " +
+                         source_path.name + " produced " + str(len(mesh_assets)) + ".")
+    if not mesh_assets:
+        unreal.log_error("[GF Setup] No StaticMesh imported from " + source_path.name)
+
+    PIPELINE_REPORT.append({
+        "source": str(source_path.relative_to(PROJECT_ROOT)),
+        "destination": destination_path,
+        "source_mesh_instances": len(source_nodes),
+        "imported_objects": imported,
+        "static_meshes": mesh_paths,
+        "load_errors": load_errors,
+        "asset_name_normalization": rename_results,
+        "checks": checks,
+        "status": "validated" if passed else "failed",
+    })
+    return imported
+
+
+def import_existing_fleet():
+    """Run a deterministic, strictly sequential ship -> environment -> space -> planet queue.
+
+    AssetImportTask is synchronous in this Editor Python workflow. The next
+    source is not submitted until the previous task has returned and its result
+    has been inventoried. One bad asset is recorded but does not skip later work.
+    """
+    imported = []
+    stages = ("ships", "environment", "space", "planets")
+    for stage_index, category in enumerate(stages):
+        folder = ASSET_ROOT / category
+        log("PIPELINE STAGE START " + str(stage_index + 1) + "/" +
+            str(len(stages)) + ": " + category.upper())
+        if not folder.exists():
+            unreal.log_warning("[GF Setup] Missing source folder: " + str(folder))
+            PIPELINE_REPORT.append({
+                "stage": category, "status": "missing_folder",
+                "source_count": 0,
+            })
+            continue
+
+        target = CONTENT_ROOT + "/" + category.title()
+        unreal.EditorAssetLibrary.make_directory(target)
+        sources = sorted(folder.glob("*.glb"))
+        log("PIPELINE QUEUE " + category + ": " + str(len(sources)) + " models")
+        for model_index, glb in enumerate(sources):
+            log("PIPELINE MODEL START " + category + " " +
+                str(model_index + 1) + "/" + str(len(sources)) + ": " + glb.name)
+            model_result_start = len(PIPELINE_REPORT)
+            imported.extend(import_glb(glb, target))
+            model_result = PIPELINE_REPORT[model_result_start] if len(PIPELINE_REPORT) > model_result_start else {}
+            log("PIPELINE MODEL COMPLETE " + glb.name + ": " +
+                str(model_result.get("status", "unknown")))
+
+        stage_results = [item for item in PIPELINE_REPORT
+                         if item.get("source", "").startswith("assets/models/" + category + "/")]
+        failed = sum(1 for item in stage_results if item.get("status") != "validated")
+        stage_status = "validated" if sources and failed == 0 else ("empty" if not sources else "failed")
+        PIPELINE_REPORT.append({
+            "stage": category,
+            "source_count": len(sources),
+            "validated_count": len(stage_results) - failed,
+            "failed_count": failed,
+            "status": stage_status,
+        })
+        if stage_status == "failed":
+            unreal.log_error("[GF Setup] Pipeline stage failed: " + category)
+        log("PIPELINE STAGE COMPLETE " + category.upper() + ": " +
+            str(len(stage_results) - failed) + "/" + str(len(sources)) +
+            " imported; status=" + stage_status)
+    return imported
+
+
+
+def validate_catalog_ship_assets():
+    """Verify the exact soft-object paths hardcoded by UGFGameCatalog."""
+    expected = {
+        "player_fighter": "/Game/GF/Ships/player_fighter.player_fighter",
+        "raider_interceptor": "/Game/GF/Ships/enemy_fighter.enemy_fighter",
+        "cargo_hauler": "/Game/GF/Ships/cargo_hauler.cargo_hauler",
+        "aegis_heavy_fighter": "/Game/GF/Ships/heavy_fighter.heavy_fighter",
+        "bastion_bomber": "/Game/GF/Ships/bomber.bomber",
+        "frigate": "/Game/GF/Ships/frigate.frigate",
+        "cruiser": "/Game/GF/Ships/cruiser.cruiser",
+    }
+    results = {}
+    for ship_id, object_path in expected.items():
+        asset = unreal.EditorAssetLibrary.load_asset(object_path)
+        is_mesh = isinstance(asset, unreal.StaticMesh)
+        results[ship_id] = {
+            "expected_object_path": object_path,
+            "loaded": asset is not None,
+            "is_static_mesh": is_mesh,
+            "actual_object_path": asset.get_path_name() if is_mesh else None,
+            "status": "validated" if is_mesh else "failed",
+        }
+        if not is_mesh:
+            unreal.log_error(
+                "[GF Setup] Catalog mesh path is missing or is not a StaticMesh: " +
+                ship_id + " -> " + object_path)
+        else:
+            log("Catalog mesh validated: " + ship_id + " -> " + asset.get_path_name())
+
+    PIPELINE_REPORT.append({
+        "catalog_ship_assets": results,
+        "status": "validated" if all(
+            item["status"] == "validated" for item in results.values()) else "failed",
+    })
+    return results
+
+
+def save_pipeline_report():
+    report_dir = PROJECT_ROOT / "Unreal" / "Saved" / "GFAssetManifests"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "asset_pipeline_report.json"
+    model_entries = [item for item in PIPELINE_REPORT if "source" in item]
+    failed_entries = [item for item in model_entries if item.get("status") != "validated"]
+    stage_entries = [item for item in PIPELINE_REPORT if "stage" in item]
+    failed_stages = [item for item in stage_entries
+                     if item.get("status") not in ("validated", "empty")]
+    catalog_entries = [item for item in PIPELINE_REPORT if "catalog_ship_assets" in item]
+    catalog_passed = (len(catalog_entries) == 1 and
+                      catalog_entries[0].get("status") == "validated")
+    required_stages = ("ships", "environment", "space", "planets")
+    stage_names = [item.get("stage") for item in stage_entries]
+    all_stages_reported = all(name in stage_names for name in required_stages)
+    required_stages_validated = all(
+        any(item.get("stage") == name and item.get("status") == "validated"
+            for item in stage_entries)
+        for name in required_stages)
+    report_path.write_text(json.dumps({
+        "pipeline": ["ships", "environment", "space", "planets"],
+        "execution": "sequential",
+        "acceptance_contract": {
+            "ships": "each source GLB must contain one mesh node and import as exactly one StaticMesh",
+            "other_categories": "at least one imported StaticMesh and all imported object paths must load",
+        },
+        "models": PIPELINE_REPORT,
+        "total_models": len(model_entries),
+        "validated_models": len(model_entries) - len(failed_entries),
+        "failed_models": [item["source"] for item in failed_entries],
+        "failed_stages": [item["stage"] for item in failed_stages],
+        "all_stages_reported": all_stages_reported,
+        "required_stages_validated": required_stages_validated,
+        "catalog_ship_assets": (catalog_entries[0]["catalog_ship_assets"]
+                                if catalog_entries else {}),
+        "overall_status": "passed" if (
+            model_entries and not failed_entries and not failed_stages and
+            all_stages_reported and required_stages_validated and catalog_passed) else "failed",
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    log("PIPELINE REPORT: " + str(report_path))
+
+
+def find_static_mesh(imported_paths, token):
+    candidates = []
+    for object_path in imported_paths:
+        asset = unreal.EditorAssetLibrary.load_asset(object_path)
+        if isinstance(asset, unreal.StaticMesh) and token in object_path.lower():
+            candidates.append(asset)
+    if len(candidates) > 1:
+        unreal.log_warning("[GF Setup] Ambiguous mesh token '" + token +
+                           "': " + str([asset.get_path_name() for asset in candidates]))
+        return None
+    return candidates[0] if candidates else None
+
+
+def _set_editor_property_if_supported(target, property_name, value):
+    """Set optional engine-version properties without aborting the full setup."""
+    try:
+        target.set_editor_property(property_name, value)
+        return True
+    except Exception as error:
+        log("Optional visual property '" + property_name + "' was not applied: " + str(error))
+        return False
+
+
+def spawn_lighting():
+    sun = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.DirectionalLight, unreal.Vector(0, 0, 0), unreal.Rotator(-25, -35, 0))
+    if sun:
+        sun.set_actor_label("GF_KeyLight")
+        light = sun.get_component_by_class(unreal.DirectionalLightComponent)
+        if light:
+            light.set_editor_property("intensity", 45000.0)
+            light.set_editor_property("light_color", unreal.LinearColor(0.78, 0.86, 1.0, 1.0))
+            _set_editor_property_if_supported(light, "source_angle", 0.65)
+            _set_editor_property_if_supported(light, "cast_shadows", True)
+            _set_editor_property_if_supported(light, "volumetric_scattering_intensity", 0.0)
+
+    sky = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.SkyLight, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+    if sky:
+        sky.set_actor_label("GF_SpaceFill")
+        component = sky.get_component_by_class(unreal.SkyLightComponent)
+        if component:
+            component.set_editor_property("mobility", unreal.ComponentMobility.MOVABLE)
+            component.set_editor_property("intensity", 0.35)
+            _set_editor_property_if_supported(component, "real_time_capture", True)
+            component.recapture_sky()
+
+    # An unbound post-process volume supplies a consistent cinematic baseline
+    # regardless of the player's distance from the origin. Each optional field
+    # is applied defensively because Unreal's Python-exposed names can vary.
+    post = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.PostProcessVolume, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+    if post:
+        post.set_actor_label("GF_Cinematic_PostProcess")
+        _set_editor_property_if_supported(post, "b_unbound", True)
+        _set_editor_property_if_supported(post, "blend_weight", 1.0)
+        settings = post.get_editor_property("settings")
+        visual_fields = (
+            ("bloom_intensity", 0.32, "b_override_bloom_intensity"),
+            ("bloom_threshold", 1.15, "b_override_bloom_threshold"),
+            ("vignette_intensity", 0.18, "b_override_vignette_intensity"),
+            ("ambient_occlusion_intensity", 0.65, "b_override_ambient_occlusion_intensity"),
+            ("ambient_occlusion_radius", 180.0, "b_override_ambient_occlusion_radius"),
+            ("motion_blur_amount", 0.0, "b_override_motion_blur_amount"),
+            ("lens_flare_intensity", 0.0, "b_override_lens_flare_intensity"),
+            ("scene_fringe_intensity", 0.0, "b_override_scene_fringe_intensity"),
+        )
+        applied = []
+        for property_name, value, override_name in visual_fields:
+            if _set_editor_property_if_supported(settings, property_name, value):
+                if _set_editor_property_if_supported(settings, override_name, True):
+                    applied.append(property_name)
+        _set_editor_property_if_supported(post, "settings", settings)
+        log("Cinematic post-process baseline prepared; applied fields=" + str(applied))
+
+
+def spawn_mesh_display(mesh, label, location, scale=1.0):
+    if not isinstance(mesh, unreal.StaticMesh):
+        unreal.log_warning("[GF Setup] Cannot spawn visual actor '" + label + "': StaticMesh is missing.")
+        return None
+
+    actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.StaticMeshActor, location, unreal.Rotator(0, 0, 0))
+    if not actor:
+        unreal.log_error("[GF Setup] Failed to spawn visual actor '" + label + "'.")
+        return None
+
+    actor.set_actor_label(label)
+    actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
+    component = actor.get_component_by_class(unreal.StaticMeshComponent)
+    if not component:
+        unreal.log_error("[GF Setup] StaticMeshActor '" + label + "' has no StaticMeshComponent.")
+        unreal.EditorLevelLibrary.destroy_actor(actor)
+        return None
+
+    component.set_static_mesh(mesh)
+    component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    component.set_generate_overlap_events(False)
+    return actor
+
+
+def create_flight_test_level(imported):
+    level_path = "/Game/GF/Maps/L_FlightTest"
+    if not unreal.EditorLevelLibrary.new_level(level_path):
+        log("Could not create level " + level_path)
+        return False
+
+    spawn_lighting()
+    player_start = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.PlayerStart, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+    if player_start:
+        player_start.set_actor_label("GF_PlayerStart")
+    else:
+        unreal.log_error("[GF Setup] PlayerStart could not be created.")
+
+    # The backdrop is a large two-sided emissive sphere. Planet meshes are
+    # placed at kilometre-scale distances so the player has a readable horizon.
+    backdrop_mesh = find_static_mesh(imported, "space_backdrop")
+    if backdrop_mesh:
+        spawn_mesh_display(backdrop_mesh, "GF_DeepSpace_Backdrop",
+                           unreal.Vector(0, 0, 0), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Space backdrop mesh is missing or ambiguous.")
+
+    verdant_mesh = find_static_mesh(imported, "planet_verdant")
+    if verdant_mesh:
+        spawn_mesh_display(verdant_mesh, "GF_Planet_Verdant",
+                           unreal.Vector(185000, 65000, 42000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Verdant planet mesh is missing or ambiguous.")
+
+    glacius_mesh = find_static_mesh(imported, "planet_glacius")
+    if glacius_mesh:
+        spawn_mesh_display(glacius_mesh, "GF_Planet_Glacius",
+                           unreal.Vector(-260000, -115000, 90000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Glacius planet mesh is missing or ambiguous.")
+
+    dune_mesh = find_static_mesh(imported, "planet_dune")
+    if dune_mesh:
+        spawn_mesh_display(dune_mesh, "GF_Planet_Dune",
+                           unreal.Vector(35000, 285000, -65000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Dune planet mesh is missing or ambiguous.")
+
+    helios_mesh = find_static_mesh(imported, "planet_helios_gas")
+    if helios_mesh:
+        spawn_mesh_display(helios_mesh, "GF_Planet_Helios_Gas_Giant",
+                           unreal.Vector(-305000, -275000, 105000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Helios gas giant mesh is missing or ambiguous.")
+
+    mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
+    if not mission_class:
+        unreal.log_error("[GF Setup] GFMissionDirector class not found. Compile C++ and rerun.")
+        return False
+
+    mission = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        mission_class, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
+    if mission:
+        mission.set_actor_label("The Silent Relay - Mission Director")
+
+    unreal.EditorLevelLibrary.save_current_level()
+    unreal.EditorAssetLibrary.save_directory("/Game/GF", only_if_is_dirty=False, recursive=True)
+    log("Created " + level_path)
+    return True
+
+
+def main():
+    _run_transform_self_check()
+    unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Ships")
+    unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Environment")
+    unreal.EditorAssetLibrary.make_directory(CONTENT_ROOT + "/Maps")
+    imported = import_existing_fleet()
+    validate_catalog_ship_assets()
+    save_pipeline_report()
+
+    player_mesh = find_static_mesh(imported, "player_fighter")
+    if player_mesh:
+        log("Player Fighter candidate: " + player_mesh.get_path_name() +
+            ". Catalog soft reference still needs Editor verification.")
+    else:
+        unreal.log_warning("[GF Setup] Player Fighter mesh is missing or ambiguous.")
+
+    create_flight_test_level(imported)
+    log("SHIP -> ENVIRONMENT -> SPACE -> PLANETS import queue finished. Inspect every ship's "
+        "complete node hierarchy, materials, scale, orientation, pivots and collision. "
+        "Planet GLBs are generated by scripts/blender/build_space_environment.py before "
+        "this Editor script is run.")
+
+
+if __name__ == "__main__":
+    main()

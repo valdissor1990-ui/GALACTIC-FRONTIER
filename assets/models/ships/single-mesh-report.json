@@ -1,0 +1,137 @@
+{
+  "schema": "galactic-frontier.single-mesh-fleet/v1",
+  "blender_version": "4.5.3 LTS",
+  "ships_total": 7,
+  "ships_passed": 7,
+  "failures": [],
+  "status": "PASS",
+  "ships": [
+    {
+      "ship": "player_fighter",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/player_fighter.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/player_fighter.glb",
+      "source_mesh_parts": 12,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 98094,
+      "materials": [
+        "Brushed gunmetal armor",
+        "Ceramic titanium — midnight blue",
+        "Cockpit polarized glass",
+        "Graphite recesses",
+        "Identification ceramic",
+        "Ion cyan accent",
+        "Ion engine emission"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "enemy_fighter",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/enemy_fighter.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/enemy_fighter.glb",
+      "source_mesh_parts": 217,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 9859,
+      "materials": [
+        "Raider | graphite recess",
+        "Raider | obsidian ceramic",
+        "Raider | plasma core",
+        "Raider | polarized canopy",
+        "Raider | titanium armor",
+        "Raider | warning vermilion"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "heavy_fighter",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/heavy_fighter.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/heavy_fighter.glb",
+      "source_mesh_parts": 84,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 2866,
+      "materials": [
+        "Aegis Heavy Fighter | canopy glass",
+        "Aegis Heavy Fighter | engine plasma",
+        "Aegis Heavy Fighter | graphite",
+        "Aegis Heavy Fighter | hull",
+        "Aegis Heavy Fighter | identification",
+        "Aegis Heavy Fighter | titanium armor"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "bomber",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/bomber.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/bomber.glb",
+      "source_mesh_parts": 200,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 7110,
+      "materials": [
+        "Bastion Bomber | canopy glass",
+        "Bastion Bomber | engine plasma",
+        "Bastion Bomber | graphite",
+        "Bastion Bomber | hull",
+        "Bastion Bomber | identification",
+        "Bastion Bomber | titanium armor"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "cargo_hauler",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cargo_hauler.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cargo_hauler.glb",
+      "source_mesh_parts": 153,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 2660,
+      "materials": [
+        "Mule Cargo Hauler | canopy glass",
+        "Mule Cargo Hauler | engine plasma",
+        "Mule Cargo Hauler | graphite",
+        "Mule Cargo Hauler | hull",
+        "Mule Cargo Hauler | identification",
+        "Mule Cargo Hauler | titanium armor"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "frigate",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/frigate.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/frigate.glb",
+      "source_mesh_parts": 218,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 7054,
+      "materials": [
+        "Vanguard Frigate | canopy glass",
+        "Vanguard Frigate | engine plasma",
+        "Vanguard Frigate | graphite",
+        "Vanguard Frigate | hull",
+        "Vanguard Frigate | titanium armor"
+      ],
+      "status": "PASS"
+    },
+    {
+      "ship": "cruiser",
+      "source_blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cruiser.blend",
+      "export_glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cruiser.glb",
+      "source_mesh_parts": 428,
+      "export_meshes": 1,
+      "export_mesh_nodes": 1,
+      "polygon_count": 14650,
+      "materials": [
+        "Leviathan Cruiser | canopy glass",
+        "Leviathan Cruiser | engine plasma",
+        "Leviathan Cruiser | graphite",
+        "Leviathan Cruiser | hull",
+        "Leviathan Cruiser | identification",
+        "Leviathan Cruiser | titanium armor"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "note": "Editable BLEND source files remain multi-part; only GLB exports are consolidated."
+}

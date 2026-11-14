@@ -1,0 +1,263 @@
+{
+  "schema": "galactic-frontier.generated-fleet-build/v1",
+  "blender_version": "4.5.3 LTS",
+  "ships_total": 7,
+  "ships_passed": 7,
+  "ships_failed": [],
+  "status": "PASS",
+  "ships": [
+    {
+      "name": "player_fighter",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/player_fighter.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/player_fighter.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/player_fighter_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 12,
+        "polygons": 98094,
+        "materials": [
+          "Brushed gunmetal armor",
+          "Ceramic titanium — midnight blue",
+          "Cockpit polarized glass",
+          "Graphite recesses",
+          "Identification ceramic",
+          "Ion cyan accent",
+          "Ion engine emission"
+        ],
+        "dimensions": [
+          10.8499,
+          14.743,
+          6.1053
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 7,
+        "embedded_images": 9
+      },
+      "preview_bytes": 489881
+    },
+    {
+      "name": "enemy_fighter",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/enemy_fighter.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/enemy_fighter.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/enemy_fighter_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 217,
+        "polygons": 9859,
+        "materials": [
+          "Raider | graphite recess",
+          "Raider | obsidian ceramic",
+          "Raider | plasma core",
+          "Raider | polarized canopy",
+          "Raider | titanium armor",
+          "Raider | warning vermilion"
+        ],
+        "dimensions": [
+          12.6293,
+          14.69,
+          1.7502
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 6,
+        "embedded_images": 7
+      },
+      "preview_bytes": 589493
+    },
+    {
+      "name": "heavy_fighter",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/heavy_fighter.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/heavy_fighter.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/heavy_fighter_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 84,
+        "polygons": 2866,
+        "materials": [
+          "Aegis Heavy Fighter | canopy glass",
+          "Aegis Heavy Fighter | engine plasma",
+          "Aegis Heavy Fighter | graphite",
+          "Aegis Heavy Fighter | hull",
+          "Aegis Heavy Fighter | identification",
+          "Aegis Heavy Fighter | titanium armor"
+        ],
+        "dimensions": [
+          12.3328,
+          14.5024,
+          1.81
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 6,
+        "embedded_images": 7
+      },
+      "preview_bytes": 431437
+    },
+    {
+      "name": "bomber",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/bomber.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/bomber.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/bomber_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 200,
+        "polygons": 7110,
+        "materials": [
+          "Bastion Bomber | canopy glass",
+          "Bastion Bomber | engine plasma",
+          "Bastion Bomber | graphite",
+          "Bastion Bomber | hull",
+          "Bastion Bomber | identification",
+          "Bastion Bomber | titanium armor"
+        ],
+        "dimensions": [
+          19.8927,
+          17.0,
+          2.6607
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 6,
+        "embedded_images": 7
+      },
+      "preview_bytes": 440424
+    },
+    {
+      "name": "cargo_hauler",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cargo_hauler.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cargo_hauler.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cargo_hauler_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 153,
+        "polygons": 2660,
+        "materials": [
+          "Mule Cargo Hauler | canopy glass",
+          "Mule Cargo Hauler | engine plasma",
+          "Mule Cargo Hauler | graphite",
+          "Mule Cargo Hauler | hull",
+          "Mule Cargo Hauler | identification",
+          "Mule Cargo Hauler | titanium armor"
+        ],
+        "dimensions": [
+          9.82,
+          16.0,
+          2.73
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 6,
+        "embedded_images": 7
+      },
+      "preview_bytes": 460100
+    },
+    {
+      "name": "frigate",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/frigate.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/frigate.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/frigate_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 218,
+        "polygons": 7054,
+        "materials": [
+          "Vanguard Frigate | canopy glass",
+          "Vanguard Frigate | engine plasma",
+          "Vanguard Frigate | graphite",
+          "Vanguard Frigate | hull",
+          "Vanguard Frigate | titanium armor"
+        ],
+        "dimensions": [
+          16.7151,
+          28.6264,
+          3.52
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 5,
+        "embedded_images": 7
+      },
+      "preview_bytes": 426309
+    },
+    {
+      "name": "cruiser",
+      "status": "ok",
+      "errors": [],
+      "paths": {
+        "blend": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cruiser.blend",
+        "glb": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cruiser.glb",
+        "preview": "/home/runner/work/GALACTIC-FRONTIER/GALACTIC-FRONTIER/build/unreal-assets/cruiser_preview.png"
+      },
+      "blend": {
+        "mesh_objects": 428,
+        "polygons": 14650,
+        "materials": [
+          "Leviathan Cruiser | canopy glass",
+          "Leviathan Cruiser | engine plasma",
+          "Leviathan Cruiser | graphite",
+          "Leviathan Cruiser | hull",
+          "Leviathan Cruiser | identification",
+          "Leviathan Cruiser | titanium armor"
+        ],
+        "dimensions": [
+          24.866,
+          43.848,
+          8.06
+        ],
+        "uv_complete": true
+      },
+      "glb": {
+        "mesh_definitions": 1,
+        "mesh_nodes": 1,
+        "node_count": 2,
+        "material_count": 6,
+        "embedded_images": 7
+      },
+      "preview_bytes": 444063
+    }
+  ],
+  "note": "Structural build gate only; visual quality and Unreal import still require separate acceptance."
+}

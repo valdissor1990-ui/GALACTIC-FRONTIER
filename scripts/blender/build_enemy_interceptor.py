@@ -5,6 +5,8 @@ Run: blender --background --python scripts/blender/build_enemy_interceptor.py --
 """
 import bpy, math, os, sys
 from mathutils import Vector
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -26,6 +28,8 @@ def mat(name, color, metal=.65, rough=.32, emission=None, strength=0):
     l.new(coords.outputs["Generated"],tex.inputs["Vector"])
     l.new(tex.outputs["Fac"],bump.inputs["Height"]); l.new(bump.outputs["Normal"],p.inputs["Normal"])
     l.new(tex.outputs["Fac"],rough_map.inputs["Value"]); l.new(rough_map.outputs["Result"],p.inputs["Roughness"])
+    if any(token in name.lower() for token in ("graphite", "obsidian", "ceramic", "titanium", "armor", "hull")):
+        apply_exportable_surface_maps(m, p, color, rough, name)
     return m
 
 def finish(o,m,bevel=.04):
@@ -306,7 +310,15 @@ def main():
     root=build(mats)
     add_integrated_raider_detail(root,mats)
     # Retain the clean silhouette; new details are integrated into the existing wing and hull surfaces.
-    scene=bpy.context.scene;scene.render.engine="BLENDER_EEVEE_NEXT";scene.render.resolution_x=1800;scene.render.resolution_y=1200;scene.render.resolution_percentage=100;scene.view_settings.view_transform="AgX"
+    scene=bpy.context.scene
+    fast_preview = os.environ.get("GF_CI_FAST_PREVIEW") == "1"
+    scene.render.engine = "BLENDER_WORKBENCH" if fast_preview else "BLENDER_EEVEE_NEXT"
+    scene.render.resolution_x=1800;scene.render.resolution_y=1200
+    scene.render.resolution_percentage=50 if fast_preview else 100
+    if fast_preview:
+        scene.display.shading.light="STUDIO";scene.display.shading.color_type="MATERIAL"
+        scene.display.shading.show_shadows=True;scene.display.shading.show_cavity=True
+    scene.view_settings.view_transform="AgX"
     scene.world.color=(.012,.018,.03)
     target=Vector((0,0,0));bpy.ops.object.camera_add(location=(16,-19,13));cam=bpy.context.object;cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler();cam.data.lens=58;scene.camera=cam
     for name,loc,power,size,color in [("Key",(2,-8,13),2400,9,(.72,.84,1)),("Rim",(-10,4,7),3000,8,(.12,.35,1)),("Warm",(9,7,4),1900,7,(1,.22,.10)),("Front",(1,-12,3),1100,6,(.5,.7,1))]:

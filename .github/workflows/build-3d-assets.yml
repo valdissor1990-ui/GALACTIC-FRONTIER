@@ -1,0 +1,211 @@
+name: Build 3D asset batch
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - chatgpt/unreal-migration-ue5.8
+    paths:
+      - "scripts/blender/**"
+      - ".github/workflows/build-3d-assets.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: galactic-frontier-asset-build-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-assets:
+    name: Sequential Blender production and validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GF_CI_FAST_PREVIEW: "1"
+    steps:
+      - name: Check out migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Blender runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-6 libxxf86vm1 libxfixes3 libxrender1 libxi6 \
+            libxkbcommon0 libsm6 libgl1 libegl1 libfontconfig1 \
+            libfreetype6 libxrandr2 libxinerama1 libxcursor1
+
+      - name: Download Blender 4.5.3
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/blender"
+          curl --fail --location --retry 3 \
+            https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz \
+            --output "$RUNNER_TEMP/blender.tar.xz"
+          tar -xf "$RUNNER_TEMP/blender.tar.xz" \
+            --strip-components=1 -C "$RUNNER_TEMP/blender"
+          "$RUNNER_TEMP/blender/blender" --background --version
+
+      - name: Build Player Fighter Mk.I
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/build_player_fighter.py \
+            -- --output-dir build/unreal-assets
+
+      - name: Build Raider Interceptor
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/build_enemy_interceptor.py \
+            -- --output-dir build/unreal-assets
+
+      - name: Build Heavy Fighter, Bomber, Cargo Hauler, Frigate and Cruiser
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/build_fleet_expansion.py \
+            -- --output-dir build/unreal-assets
+
+
+      - name: Consolidate each ship into one Unreal-ready mesh
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/consolidate_generated_fleet.py \
+            -- --output-dir build/unreal-assets
+
+      - name: Validate all seven ship assets
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/validate_generated_fleet.py \
+            -- --output-dir build/unreal-assets \
+               --report build/unreal-assets/build-validation.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("build/unreal-assets/build-validation.json").read_text())
+          assert report["status"] == "PASS", report
+          assert report["ships_total"] == 7, report
+          print("Validated all seven ship builds.")
+          PY
+
+      - name: Build space backdrop and four planets
+        run: |
+          set -euo pipefail
+          timeout 20m "$RUNNER_TEMP/blender/blender" --background --factory-startup \
+            --python-exit-code 1 --python scripts/blender/build_space_environment.py \
+            -- --output-dir build/unreal-assets/environment --resolution 1024
+
+      - name: Verify complete output package
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("build/unreal-assets")
+          expected = [
+              "player_fighter", "enemy_fighter", "heavy_fighter", "bomber",
+              "cargo_hauler", "frigate", "cruiser",
+          ]
+          missing = []
+          for slug in expected:
+              for suffix in (".blend", ".glb", "_preview.png"):
+                  path = root / (slug + suffix)
+                  if not path.is_file() or path.stat().st_size < 1024:
+                      missing.append(str(path))
+          env = root / "environment"
+          for relative in (
+              "space/space_backdrop.glb",
+              "planets/planet_verdant.glb",
+              "planets/planet_dune.glb",
+              "planets/planet_glacius.glb",
+              "planets/planet_helios_gas.glb",
+          ):
+              path = env / relative
+              if not path.is_file() or path.stat().st_size < 1024:
+                  missing.append(str(path))
+          if missing:
+              raise SystemExit("Missing or empty outputs:\\n" + "\\n".join(missing))
+          report = json.loads((root / "build-validation.json").read_text())
+          summary = [
+              "# GALACTIC FRONTIER — 3D asset build",
+              "",
+              "- Blender: 4.5.3",
+              "- Ships: 7/7 structurally validated",
+              "- Space backdrop: 1 GLB",
+              "- Planets: 4 GLBs",
+              "- Status: PASS",
+              "",
+              "## Ship outputs",
+              *[f"- {slug}: BLEND + GLB + preview" for slug in expected],
+              "",
+              "## Environment outputs",
+              "- Deep-space backdrop",
+              "- Verdant (ocean)",
+              "- Dune (desert)",
+              "- Glacius (ice)",
+              "- Helios gas giant (rings)",
+              "",
+              "This verifies Blender generation and structural integrity only. It does not verify Unreal import, material appearance in UE, C++ compilation, or gameplay.",
+          ]
+          Path("build/unreal-assets/BUILD_REPORT.md").write_text("\\n".join(summary) + "\\n")
+          print("\\n".join(summary))
+          PY
+
+
+      - name: Publish validated models into the Unreal source folders
+        run: |
+          set -euo pipefail
+          mkdir -p art_source/ships assets/models/ships assets/models/space assets/models/planets assets/previews
+          for ship in player_fighter enemy_fighter heavy_fighter bomber cargo_hauler frigate cruiser; do
+            cp "build/unreal-assets/$ship.blend" "art_source/ships/$ship.blend"
+            cp "build/unreal-assets/$ship.glb" "assets/models/ships/$ship.glb"
+            cp "build/unreal-assets/${ship}_preview.png" "assets/previews/${ship}_preview.png"
+          done
+          cp build/unreal-assets/environment/space/space_backdrop.glb assets/models/space/
+          cp build/unreal-assets/environment/planets/*.glb assets/models/planets/
+          cp build/unreal-assets/build-validation.json assets/models/ships/fleet-build-validation.json
+          cp build/unreal-assets/single-mesh-report.json assets/models/ships/single-mesh-report.json
+          cp build/unreal-assets/BUILD_REPORT.md assets/models/BUILD_REPORT.md
+
+      - name: Validate exported GLB geometry and PBR textures
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_unreal_asset_contract.py
+
+      - name: Commit validated generated assets to migration branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add art_source/ships assets/models/ships assets/models/space assets/models/planets assets/models/BUILD_REPORT.md assets/previews
+          if git diff --cached --quiet; then
+            echo "Generated models are identical to the current branch; no asset commit needed."
+          else
+            git commit -m "Build validated ship fleet, space backdrop and planets"
+            git fetch origin "${GITHUB_REF_NAME}"
+            git rebase "origin/${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload complete model package
+        uses: actions/upload-artifact@v4
+        with:
+          name: galactic-frontier-3d-assets-${{ github.sha }}
+          path: build/unreal-assets/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish build summary
+        if: always()
+        run: |
+          if [ -f build/unreal-assets/BUILD_REPORT.md ]; then
+            cat build/unreal-assets/BUILD_REPORT.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Asset generation did not complete. Inspect the failed step logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
