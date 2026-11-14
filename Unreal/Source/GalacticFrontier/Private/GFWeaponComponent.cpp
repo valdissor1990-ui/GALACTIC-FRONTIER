@@ -19,8 +19,12 @@ void UGFWeaponComponent::StartFiring()
     FireOnce();
     if (UWorld* World = GetWorld())
     {
-        const float Interval = 1.0f / FMath::Max(0.1f, ShotsPerSecond);
-        World->GetTimerManager().SetTimer(FireTimer, this, &UGFWeaponComponent::FireTimerTick, Interval, true, Interval);
+        // Repeated trigger presses must not reset the cadence of an active burst.
+        if (!World->GetTimerManager().IsTimerActive(FireTimer))
+        {
+            const float Interval = 1.0f / FMath::Max(0.1f, ShotsPerSecond);
+            World->GetTimerManager().SetTimer(FireTimer, this, &UGFWeaponComponent::FireTimerTick, Interval, true, Interval);
+        }
     }
 }
 
@@ -40,6 +44,11 @@ bool UGFWeaponComponent::FireOnce()
     UWorld* World = GetWorld();
     if (!IsValid(Owner) || !World || !ProjectileClass) return false;
 
+    // Enforce fire rate in the firing function as well as the timer so rapid
+    // button taps cannot bypass ShotsPerSecond.
+    const double Now = World->GetTimeSeconds();
+    if (Now + 0.002 < NextAllowedFireTime) return false;
+
     const FTransform SpawnTransform(Owner->GetActorRotation(), Owner->GetActorTransform().TransformPosition(MuzzleOffset));
     FActorSpawnParameters Params;
     Params.Owner = Owner;
@@ -48,6 +57,7 @@ bool UGFWeaponComponent::FireOnce()
 
     AGFProjectile* Projectile = World->SpawnActor<AGFProjectile>(ProjectileClass, SpawnTransform, Params);
     if (!Projectile) return false;
+    NextAllowedFireTime = Now + 1.0 / FMath::Max(0.1f, ShotsPerSecond);
 
     Projectile->InitializeProjectile(ProjectileDamage, Owner);
     if (UProjectileMovementComponent* Movement = Projectile->FindComponentByClass<UProjectileMovementComponent>())
