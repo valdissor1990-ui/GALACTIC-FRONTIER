@@ -454,6 +454,10 @@ def save_pipeline_report():
     required_stages = ("ships", "environment", "space", "planets")
     stage_names = [item.get("stage") for item in stage_entries]
     all_stages_reported = all(name in stage_names for name in required_stages)
+    required_stages_validated = all(
+        any(item.get("stage") == name and item.get("status") == "validated"
+            for item in stage_entries)
+        for name in required_stages)
     report_path.write_text(json.dumps({
         "pipeline": ["ships", "environment", "space", "planets"],
         "execution": "sequential",
@@ -467,11 +471,12 @@ def save_pipeline_report():
         "failed_models": [item["source"] for item in failed_entries],
         "failed_stages": [item["stage"] for item in failed_stages],
         "all_stages_reported": all_stages_reported,
+        "required_stages_validated": required_stages_validated,
         "catalog_ship_assets": (catalog_entries[0]["catalog_ship_assets"]
                                 if catalog_entries else {}),
         "overall_status": "passed" if (
             model_entries and not failed_entries and not failed_stages and
-            all_stages_reported and catalog_passed) else "failed",
+            all_stages_reported and required_stages_validated and catalog_passed) else "failed",
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     log("PIPELINE REPORT: " + str(report_path))
 
