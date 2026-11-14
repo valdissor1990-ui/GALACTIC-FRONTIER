@@ -546,7 +546,7 @@ def spawn_lighting():
             ("ambient_occlusion_radius", 180.0, "b_override_ambient_occlusion_radius"),
             ("motion_blur_amount", 0.0, "b_override_motion_blur_amount"),
             ("lens_flare_intensity", 0.0, "b_override_lens_flare_intensity"),
-            ("chromatic_aberration_intensity", 0.0, "b_override_scene_fringe_intensity"),
+            ("scene_fringe_intensity", 0.0, "b_override_scene_fringe_intensity"),
         )
         applied = []
         for property_name, value, override_name in visual_fields:
