@@ -61,6 +61,10 @@ def main():
             "failed to load StaticMesh for ship" in ship_loader and
             "AssetPath.ToString()" in ship_loader,
             "Shared ship loader must log ship id and exact asset path on failure")
+    hangar_cpp = read("Unreal/Source/GalacticFrontier/Private/GFHangarSubsystem.cpp")
+    require("GetShipPreviewMesh" in hangar_cpp and
+            "FGFShipAssetLoader::LoadStaticMesh" in hangar_cpp,
+            "Hangar previews must resolve catalog meshes through the shared loader")
     require("player_fighter" in pawn_cpp and "FindShip" in pawn_cpp,
             "Missing saved selection must resolve to the starter ship")
 
