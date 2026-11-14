@@ -189,6 +189,22 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
     }
 
     UStaticMesh* SelectedMesh = Cast<UStaticMesh>(Definition.MeshAsset.TryLoad());
+    if (!SelectedMesh && Definition.Id != FName(TEXT("player_fighter")))
+    {
+        FGFShipDefinition DefaultDefinition;
+        if (UGFGameCatalog::FindShip(TEXT("player_fighter"), DefaultDefinition))
+        {
+            SelectedMesh = Cast<UStaticMesh>(DefaultDefinition.MeshAsset.TryLoad());
+            if (SelectedMesh)
+            {
+                Definition.VisualScale = DefaultDefinition.VisualScale;
+                UE_LOG(LogTemp, Warning,
+                    TEXT("[GF Ship] Selected mesh for '%s' is unavailable; using Player Fighter Mk.I visuals while retaining selected ship stats."),
+                    *Definition.Id.ToString());
+            }
+        }
+    }
+
     if (SelectedMesh)
     {
         ShipMesh->SetStaticMesh(SelectedMesh);
