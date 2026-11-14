@@ -5,6 +5,7 @@
 #include "GFEnemyShip.generated.h"
 
 class UStaticMeshComponent;
+class UPointLightComponent;
 class UGFDamageableComponent;
 class UGFWeaponComponent;
 
@@ -39,6 +40,12 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy")
     TObjectPtr<UGFWeaponComponent> Weapon;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy|VFX")
+    TObjectPtr<UPointLightComponent> LeftEngineGlow;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy|VFX")
+    TObjectPtr<UPointLightComponent> RightEngineGlow;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy|AI")
     float MaximumSpeed = 7000.0f;
@@ -80,4 +87,6 @@ private:
     float StrafeTimer = 1.0f;
     float EvasionPhase = 0.0f;
     bool bWeaponActive = false;
+    bool bEngineGlowConfigured = false;
+    float CurrentEngineGlowIntensity = 500.0f;
 };
