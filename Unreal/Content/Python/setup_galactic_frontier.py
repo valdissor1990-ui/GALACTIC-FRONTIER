@@ -259,19 +259,64 @@ def import_glb(source_path: Path, destination_path: str):
         elif asset is None:
             load_errors.append(object_path)
 
+    is_ship = source_path.parent.name.lower() == "ships"
+    rename_results = []
+    if is_ship and len(mesh_assets) == 1:
+        mesh = mesh_assets[0]
+        expected_package_path = destination_path.rstrip("/") + "/" + source_path.stem
+        expected_object_path = expected_package_path + "." + source_path.stem
+        current_object_path = mesh.get_path_name()
+        if current_object_path != expected_object_path:
+            if unreal.EditorAssetLibrary.does_asset_exist(expected_object_path):
+                rename_results.append({
+                    "from": current_object_path,
+                    "to": expected_object_path,
+                    "status": "failed_target_exists",
+                })
+                unreal.log_error(
+                    "[GF Setup] Cannot normalize ship asset name; target already exists: " +
+                    expected_object_path)
+            else:
+                renamed = unreal.EditorAssetLibrary.rename_asset(
+                    current_object_path, expected_package_path)
+                reloaded = unreal.EditorAssetLibrary.load_asset(expected_object_path) if renamed else None
+                if renamed and isinstance(reloaded, unreal.StaticMesh):
+                    mesh_assets[0] = reloaded
+                    rename_results.append({
+                        "from": current_object_path,
+                        "to": expected_object_path,
+                        "status": "renamed",
+                    })
+                    log("Normalized ship asset name: " + expected_object_path)
+                else:
+                    rename_results.append({
+                        "from": current_object_path,
+                        "to": expected_object_path,
+                        "status": "failed_rename",
+                    })
+                    unreal.log_error(
+                        "[GF Setup] Failed to normalize ship asset name: " +
+                        current_object_path + " -> " + expected_object_path)
+
     mesh_paths = [mesh.get_path_name() for mesh in mesh_assets]
     is_ship = source_path.parent.name.lower() == "ships"
     expected_mesh_count = 1 if is_ship else None
+    expected_name_path = (destination_path.rstrip("/") + "/" + source_path.stem +
+                          "." + source_path.stem) if is_ship else None
     checks = {
         "source_mesh_instances": len(source_nodes),
         "imported_static_mesh_count": len(mesh_assets),
         "expected_static_mesh_count": expected_mesh_count,
+        "expected_ship_object_path": expected_name_path,
+        "ship_name_normalization": rename_results,
+        "ship_name_matches_catalog": (not is_ship or mesh_paths == [expected_name_path]),
         "all_imported_objects_load": len(load_errors) == 0,
         "imported_object_count": len(imported),
     }
     passed = bool(imported) and not load_errors and bool(mesh_assets)
     if is_ship:
-        passed = passed and len(source_nodes) == 1 and len(mesh_assets) == 1
+        passed = (passed and len(source_nodes) == 1 and len(mesh_assets) == 1
+                  and mesh_paths == [expected_name_path])
 
     log("GLB " + source_path.name + ": " + json.dumps(checks) +
         ", static_meshes=" + str(mesh_paths))
@@ -293,6 +338,7 @@ def import_glb(source_path: Path, destination_path: str):
         "imported_objects": imported,
         "static_meshes": mesh_paths,
         "load_errors": load_errors,
+        "ship_name_normalization": rename_results,
         "checks": checks,
         "status": "validated" if passed else "failed",
     })
