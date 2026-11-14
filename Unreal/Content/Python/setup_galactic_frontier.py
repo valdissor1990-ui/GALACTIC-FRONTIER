@@ -487,6 +487,31 @@ def spawn_lighting():
             component.recapture_sky()
 
 
+def spawn_mesh_display(mesh, label, location, scale=1.0):
+    if not isinstance(mesh, unreal.StaticMesh):
+        unreal.log_warning("[GF Setup] Cannot spawn visual actor '" + label + "': StaticMesh is missing.")
+        return None
+
+    actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
+        unreal.StaticMeshActor, location, unreal.Rotator(0, 0, 0))
+    if not actor:
+        unreal.log_error("[GF Setup] Failed to spawn visual actor '" + label + "'.")
+        return None
+
+    actor.set_actor_label(label)
+    actor.set_actor_scale3d(unreal.Vector(scale, scale, scale))
+    component = actor.get_component_by_class(unreal.StaticMeshComponent)
+    if not component:
+        unreal.log_error("[GF Setup] StaticMeshActor '" + label + "' has no StaticMeshComponent.")
+        unreal.EditorLevelLibrary.destroy_actor(actor)
+        return None
+
+    component.set_static_mesh(mesh)
+    component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    component.set_generate_overlap_events(False)
+    return actor
+
+
 def create_flight_test_level(imported):
     level_path = "/Game/GF/Maps/L_FlightTest"
     if not unreal.EditorLevelLibrary.new_level(level_path):
@@ -495,9 +520,34 @@ def create_flight_test_level(imported):
 
     spawn_lighting()
     player_start = unreal.EditorLevelLibrary.spawn_actor_from_class(
-        unreal.PlayerStart, unreal.Vector(0, 0, 0), unreal.Rotator(-90, 0, 0))
+        unreal.PlayerStart, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
     if player_start:
         player_start.set_actor_label("GF_PlayerStart")
+    else:
+        unreal.log_error("[GF Setup] PlayerStart could not be created.")
+
+    # The backdrop is a large two-sided emissive sphere. Planet meshes are
+    # placed at kilometre-scale distances so the player has a readable horizon.
+    backdrop_mesh = find_static_mesh(imported, "space_backdrop")
+    if backdrop_mesh:
+        spawn_mesh_display(backdrop_mesh, "GF_DeepSpace_Backdrop",
+                           unreal.Vector(0, 0, 0), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Space backdrop mesh is missing or ambiguous.")
+
+    verdant_mesh = find_static_mesh(imported, "planet_verdant")
+    if verdant_mesh:
+        spawn_mesh_display(verdant_mesh, "GF_Planet_Verdant",
+                           unreal.Vector(185000, 65000, 42000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Verdant planet mesh is missing or ambiguous.")
+
+    glacius_mesh = find_static_mesh(imported, "planet_glacius")
+    if glacius_mesh:
+        spawn_mesh_display(glacius_mesh, "GF_Planet_Glacius",
+                           unreal.Vector(-260000, -115000, 90000), 1.0)
+    else:
+        unreal.log_warning("[GF Setup] Glacius planet mesh is missing or ambiguous.")
 
     enemy_mesh = find_static_mesh(imported, "enemy_fighter")
     mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
