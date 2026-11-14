@@ -6,6 +6,7 @@ an in-engine lighting review. It checks every model category when present.
 """
 from __future__ import annotations
 
+import base64
 import json
 import math
 import struct
@@ -236,6 +237,7 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
         if view_index is None and not uri:
             fail(errors, f"image {image_index} has neither bufferView nor URI")
             continue
+        payload = b""
         if view_index is not None:
             view = buffer_views[view_index]
             buffer_index = view.get("buffer", 0)
@@ -244,11 +246,16 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
                 offset = view.get("byteOffset", 0)
                 length = view.get("byteLength", 0)
                 payload = binary[offset:offset + length]
-                if payload.startswith(b"\\x89PNG\\r\\n\\x1a\\n") and len(payload) >= 24:
-                    width, height = struct.unpack(">II", payload[16:24])
-                    image_dimensions.append({"index": image_index, "width": width, "height": height})
-                elif image.get("mimeType") == "image/png":
-                    fail(errors, f"image {image_index} has an invalid/truncated embedded PNG header")
+        elif isinstance(uri, str) and uri.startswith("data:") and ";base64," in uri:
+            try:
+                payload = base64.b64decode(uri.split(",", 1)[1], validate=True)
+            except (ValueError, base64.binascii.Error):
+                fail(errors, f"image {image_index} has an invalid base64 data URI")
+        if payload.startswith(b"\\x89PNG\\r\\n\\x1a\\n") and len(payload) >= 24:
+            width, height = struct.unpack(">II", payload[16:24])
+            image_dimensions.append({"index": image_index, "width": width, "height": height})
+        elif image.get("mimeType") == "image/png":
+            fail(errors, f"image {image_index} has an invalid/truncated embedded PNG header")
 
     minimum_texture_width = (
         1024 if is_ship or path.parent.name == "planets" else
