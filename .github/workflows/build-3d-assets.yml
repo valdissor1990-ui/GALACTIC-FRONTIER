@@ -172,6 +172,11 @@ jobs:
           cp build/unreal-assets/single-mesh-report.json assets/models/ships/single-mesh-report.json
           cp build/unreal-assets/BUILD_REPORT.md assets/models/BUILD_REPORT.md
 
+      - name: Validate exported GLB geometry and PBR textures
+        run: |
+          set -euo pipefail
+          python3 scripts/validate_unreal_asset_contract.py
+
       - name: Commit validated generated assets to migration branch
         run: |
           set -euo pipefail
