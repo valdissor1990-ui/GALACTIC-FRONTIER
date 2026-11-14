@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "UObject/SoftObjectPath.h"
 
 /**
@@ -31,6 +32,18 @@ public:
                 TEXT("[GF ShipAsset] %s: failed to load StaticMesh for ship '%s' from '%s'. Spawn/selection must be aborted."),
                 Consumer, *ShipId.ToString(), *AssetPath.ToString());
             return nullptr;
+        }
+
+        // Imported GLB meshes may have no simple collision. Projectile sweeps
+        // depend on collision geometry, so make this visible instead of silently
+        // accepting a ship that cannot receive damage.
+        const UBodySetup* Body = Mesh->GetBodySetup();
+        if (!Body || (Body->AggGeom.GetElementCount() == 0 &&
+            Body->CollisionTraceFlag != CTF_UseComplexAsSimple))
+        {
+            UE_LOG(LogTemp, Warning,
+                TEXT("[GF ShipAsset] %s: mesh '%s' has no collision shapes; projectile hits may not register. Run Content/Python/gf_fix_ship_collision.py."),
+                Consumer, *AssetPath.ToString());
         }
 
         return Mesh;
