@@ -17,6 +17,7 @@
 #include "Engine/GameInstance.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"
 
 AGFPlayerShipPawn::AGFPlayerShipPawn()
 {
@@ -226,7 +227,49 @@ void AGFPlayerShipPawn::ConfigureCamerasForShipMesh(UStaticMesh* Mesh)
         CockpitLocation.X, CockpitLocation.Y, CockpitLocation.Z, FollowDistance);
 }
 
-void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
+#if !UE_BUILD_SHIPPING
+void AGFPlayerShipPawn::DebugSelectShipByIndex(const int32 ShipIndex)
+{
+    const TArray<FGFShipDefinition> Ships = UGFGameCatalog::GetShips();
+    if (!Ships.IsValidIndex(ShipIndex))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[GF Debug Hangar] Invalid ship index %d."), ShipIndex + 1);
+        return;
+    }
+
+    UGameInstance* GI = GetGameInstance();
+    UGFSaveSubsystem* Saves = GI ? GI->GetSubsystem<UGFSaveSubsystem>() : nullptr;
+    UGFPlayerProfileSave* Profile = Saves ? Saves->GetProfile() : nullptr;
+    if (!Profile)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Cannot switch ship: pilot profile is unavailable."));
+        return;
+    }
+
+    const FName PreviousSelection = Profile->SelectedShipId;
+    Profile->SelectedShipId = Ships[ShipIndex].Id;
+    const bool bApplied = ApplySelectedShipConfiguration();
+    Profile->SelectedShipId = PreviousSelection; // Temporary PIE override; never changes saved progression.
+
+    if (!bApplied)
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Could not apply %s; previous ship configuration remains active."),
+            *Ships[ShipIndex].Id.ToString());
+        return;
+    }
+
+    const FString Message = FString::Printf(TEXT("DEBUG SHIP: %s  |  %d credits"),
+        *Ships[ShipIndex].DisplayName.ToString(), Ships[ShipIndex].Price);
+    UE_LOG(LogTemp, Display, TEXT("[GF Debug Hangar] %s"), *Message);
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(
+            -1, 3.0f, FColor(70, 220, 255), Message);
+    }
+}
+#endif
+
+bool AGFPlayerShipPawn::ApplySelectedShipConfiguration()
 {
     UGameInstance* GI = GetGameInstance();
     UGFSaveSubsystem* Saves = GI ? GI->GetSubsystem<UGFSaveSubsystem>() : nullptr;
@@ -237,9 +280,9 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         if (!UGFGameCatalog::FindShip(TEXT("player_fighter"), Definition))
         {
             UE_LOG(LogTemp, Error, TEXT("[GF Ship] No selected ship and default Player Fighter catalog entry is unavailable."));
-            return;
+            return false;
         }
-        UE_LOG(LogTemp, Warning, TEXT("[GF Ship] No saved ship selection; falling back to Player Fighter Mk.I."));
+        UE_LOG(LogTemp, Warning, TEXT("[GF Ship] No saved ship selection; using the catalog starter ship."));
     }
 
     UStaticMesh* SelectedMesh = FGFShipAssetLoader::LoadStaticMesh(
@@ -249,9 +292,11 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         // Fail closed: never show a different ship while applying this ship's stats.
         SetActorTickEnabled(false);
         if (Flight) Flight->SetFlightDisabled(true);
-        return;
+        return false;
     }
 
+    if (Flight) Flight->SetFlightDisabled(false);
+    SetActorTickEnabled(true);
     ShipMesh->SetStaticMesh(SelectedMesh);
     ShipMesh->SetRelativeScale3D(FVector(Definition.VisualScale));
     ConfigureCamerasForShipMesh(SelectedMesh);
@@ -325,6 +370,7 @@ void AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         Damageable->CurrentHull = Damageable->MaximumHull;
         Damageable->CurrentShield = Damageable->MaximumShield;
     }
+    return true;
 }
 
 void AGFPlayerShipPawn::HandleShipDestroyed()
