@@ -29,7 +29,8 @@ def main():
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
     setup_py = read("Unreal/Content/Python/setup_galactic_frontier.py")
-    validator = read("scripts/validate_unreal_asset_contract.py")\n    space_builder = read("scripts/blender/build_space_environment.py")
+    validator = read("scripts/validate_unreal_asset_contract.py")
+    space_builder = read("scripts/blender/build_space_environment.py")
 
     require("void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);" in pawn_h,
             "Pawn header must declare mesh-aware camera setup")
