@@ -5,6 +5,7 @@ This does not replace UnrealHeaderTool, UBT, Editor import, or a runtime test.
 It catches source-level contract drift before those engine-level checks are available.
 """
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +83,24 @@ def main():
                 "Game catalog is missing expected mesh path: " + object_path)
         require(object_path in setup_py,
                 "Editor import validator is missing expected mesh path: " + object_path)
+
+    ship_blocks = re.findall(
+        r'Ship\\.Id = TEXT\\("([^"]+)"\\);(.*?)(?=Ship = FGFShipDefinition\\(\\);|return Items;)',
+        catalog_cpp, re.S)
+    expected_ids = [
+        "player_fighter", "cargo_hauler", "raider_interceptor",
+        "aegis_heavy_fighter", "bastion_bomber", "frigate", "cruiser"]
+    require([ship_id for ship_id, _ in ship_blocks] == expected_ids,
+            "Catalog must contain the seven fleet ships in the intended progression order")
+    catalog_prices = []
+    for ship_id, block in ship_blocks:
+        price_match = re.search(r'Ship\\.Price = (\\d+);', block)
+        require(price_match is not None and "Items.Add(Ship);" in block,
+                "Catalog entry must have a price and be added exactly once: " + ship_id)
+        if price_match:
+            catalog_prices.append(int(price_match.group(1)))
+    require(catalog_prices == sorted(catalog_prices) and catalog_prices[0] == 0,
+            "Fleet purchase prices must progress monotonically from the free starter")
 
     require("DefaultPawnClass = AGFPlayerShipPawn::StaticClass()" in game_mode_cpp,
             "GameMode must spawn the player ship pawn")
