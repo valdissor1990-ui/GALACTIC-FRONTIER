@@ -34,6 +34,7 @@ def main():
     interceptor_builder = read("scripts/blender/build_enemy_interceptor.py")
     fleet_builder = read("scripts/blender/build_fleet_expansion.py")
     pbr_utility = read("scripts/blender/pbr_surface_maps.py")
+    player_builder = read("scripts/blender/build_player_fighter.py")
     asset_workflow = read(".github/workflows/build-3d-assets.yml")
 
     require("void ConfigureCamerasForShipMesh(UStaticMesh* Mesh);" in pawn_h,
@@ -94,7 +95,7 @@ def main():
             "Fleet expansion ships must bake exportable PBR surface maps")
     require("def ensure_glb_file_image" in pbr_utility and
             "def apply_exportable_surface_maps" in pbr_utility and
-            "size = 1024" in pbr_utility and
+            "size = 1024" in pbr_utility and "size = 1024" in player_builder and
             "normal_map.outputs" in pbr_utility,
             "Shared PBR utility must stage albedo, roughness and tangent normal textures")
     require("len(images) < 3" in validator and
