@@ -298,7 +298,7 @@ void AGFMissionDirector::AdvanceAfterEncounter()
     if (Stage == EGFMissionStage::DefendRelay)
     {
         Stage = EGFMissionStage::InvestigateWreck;
-        if (RelayMarker) RelayMarker->SetVisibility(false, true);
+        if (RelayMarker) RelayMarker->SetVisibility(false, false);
         if (RelayMarkerGlow) RelayMarkerGlow->SetVisibility(false, true);
         UpdateObjectiveMarker(WreckMarker, WreckPosition);
         if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(true, true);
@@ -309,7 +309,7 @@ void AGFMissionDirector::AdvanceAfterEncounter()
         Stage = EGFMissionStage::ReturnHome;
         if (WreckMarker) WreckMarker->SetVisibility(false, true);
         if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(false, true);
-        if (RelayMarker) RelayMarker->SetVisibility(true, true);
+        if (RelayMarker) RelayMarker->SetVisibility(true, false);
         UpdateObjectiveMarker(RelayMarker, CarrierPosition);
         UE_LOG(LogTemp, Display, TEXT("GF Mission: Return to the carrier and press F to complete the contract."));
     }
