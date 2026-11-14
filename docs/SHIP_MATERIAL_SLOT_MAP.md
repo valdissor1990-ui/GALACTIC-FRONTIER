@@ -40,12 +40,12 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Raider | graphite recess` | `M_GF_Trim` |
-| `Raider | obsidian ceramic` | `M_GF_Hull` |
-| `Raider | plasma core` | `M_GF_Engine` |
-| `Raider | polarized canopy` | `M_GF_Glass` |
-| `Raider | titanium armor` | `M_GF_Hull` |
-| `Raider | warning vermilion` | `M_GF_Trim` |
+| `Raider &#124; graphite recess` | `M_GF_Trim` |
+| `Raider &#124; obsidian ceramic` | `M_GF_Hull` |
+| `Raider &#124; plasma core` | `M_GF_Engine` |
+| `Raider &#124; polarized canopy` | `M_GF_Glass` |
+| `Raider &#124; titanium armor` | `M_GF_Hull` |
+| `Raider &#124; warning vermilion` | `M_GF_Trim` |
 
 ### Aegis Heavy Fighter
 
@@ -53,12 +53,12 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Aegis Heavy Fighter | canopy glass` | `M_GF_Glass` |
-| `Aegis Heavy Fighter | engine plasma` | `M_GF_Engine` |
-| `Aegis Heavy Fighter | graphite` | `M_GF_Trim` |
-| `Aegis Heavy Fighter | hull` | `M_GF_Hull` |
-| `Aegis Heavy Fighter | identification` | `M_GF_Trim` |
-| `Aegis Heavy Fighter | titanium armor` | `M_GF_Hull` |
+| `Aegis Heavy Fighter &#124; canopy glass` | `M_GF_Glass` |
+| `Aegis Heavy Fighter &#124; engine plasma` | `M_GF_Engine` |
+| `Aegis Heavy Fighter &#124; graphite` | `M_GF_Trim` |
+| `Aegis Heavy Fighter &#124; hull` | `M_GF_Hull` |
+| `Aegis Heavy Fighter &#124; identification` | `M_GF_Trim` |
+| `Aegis Heavy Fighter &#124; titanium armor` | `M_GF_Hull` |
 
 ### Bastion Bomber
 
@@ -66,12 +66,12 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Bastion Bomber | canopy glass` | `M_GF_Glass` |
-| `Bastion Bomber | engine plasma` | `M_GF_Engine` |
-| `Bastion Bomber | graphite` | `M_GF_Trim` |
-| `Bastion Bomber | hull` | `M_GF_Hull` |
-| `Bastion Bomber | identification` | `M_GF_Trim` |
-| `Bastion Bomber | titanium armor` | `M_GF_Hull` |
+| `Bastion Bomber &#124; canopy glass` | `M_GF_Glass` |
+| `Bastion Bomber &#124; engine plasma` | `M_GF_Engine` |
+| `Bastion Bomber &#124; graphite` | `M_GF_Trim` |
+| `Bastion Bomber &#124; hull` | `M_GF_Hull` |
+| `Bastion Bomber &#124; identification` | `M_GF_Trim` |
+| `Bastion Bomber &#124; titanium armor` | `M_GF_Hull` |
 
 ### Mule Cargo Hauler
 
@@ -79,12 +79,12 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Mule Cargo Hauler | canopy glass` | `M_GF_Glass` |
-| `Mule Cargo Hauler | engine plasma` | `M_GF_Engine` |
-| `Mule Cargo Hauler | graphite` | `M_GF_Trim` |
-| `Mule Cargo Hauler | hull` | `M_GF_Hull` |
-| `Mule Cargo Hauler | identification` | `M_GF_Trim` |
-| `Mule Cargo Hauler | titanium armor` | `M_GF_Hull` |
+| `Mule Cargo Hauler &#124; canopy glass` | `M_GF_Glass` |
+| `Mule Cargo Hauler &#124; engine plasma` | `M_GF_Engine` |
+| `Mule Cargo Hauler &#124; graphite` | `M_GF_Trim` |
+| `Mule Cargo Hauler &#124; hull` | `M_GF_Hull` |
+| `Mule Cargo Hauler &#124; identification` | `M_GF_Trim` |
+| `Mule Cargo Hauler &#124; titanium armor` | `M_GF_Hull` |
 
 ### Vanguard Frigate
 
@@ -92,11 +92,11 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Vanguard Frigate | canopy glass` | `M_GF_Glass` |
-| `Vanguard Frigate | engine plasma` | `M_GF_Engine` |
-| `Vanguard Frigate | graphite` | `M_GF_Trim` |
-| `Vanguard Frigate | hull` | `M_GF_Hull` |
-| `Vanguard Frigate | titanium armor` | `M_GF_Hull` |
+| `Vanguard Frigate &#124; canopy glass` | `M_GF_Glass` |
+| `Vanguard Frigate &#124; engine plasma` | `M_GF_Engine` |
+| `Vanguard Frigate &#124; graphite` | `M_GF_Trim` |
+| `Vanguard Frigate &#124; hull` | `M_GF_Hull` |
+| `Vanguard Frigate &#124; titanium armor` | `M_GF_Hull` |
 
 ### Leviathan Cruiser
 
@@ -104,12 +104,12 @@ The names below are reproduced from the source report. The final Unreal slot ind
 
 | Source material name | Planned master |
 |---|---|
-| `Leviathan Cruiser | canopy glass` | `M_GF_Glass` |
-| `Leviathan Cruiser | engine plasma` | `M_GF_Engine` |
-| `Leviathan Cruiser | graphite` | `M_GF_Trim` |
-| `Leviathan Cruiser | hull` | `M_GF_Hull` |
-| `Leviathan Cruiser | identification` | `M_GF_Trim` |
-| `Leviathan Cruiser | titanium armor` | `M_GF_Hull` |
+| `Leviathan Cruiser &#124; canopy glass` | `M_GF_Glass` |
+| `Leviathan Cruiser &#124; engine plasma` | `M_GF_Engine` |
+| `Leviathan Cruiser &#124; graphite` | `M_GF_Trim` |
+| `Leviathan Cruiser &#124; hull` | `M_GF_Hull` |
+| `Leviathan Cruiser &#124; identification` | `M_GF_Trim` |
+| `Leviathan Cruiser &#124; titanium armor` | `M_GF_Hull` |
 
 ## UE Editor reconciliation checklist
 
