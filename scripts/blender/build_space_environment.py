@@ -77,11 +77,13 @@ def make_texture(name, kind, resolution, seed):
     height_px = max(128, resolution // 2)
     image = bpy.data.images.new(name, width=width, height=height_px, alpha=True)
     pixels = []
+    heights = []
     for y in range(height_px):
         latitude = (y / max(1, height_px - 1) - 0.5) * math.pi
         for x in range(width):
             longitude = (x / width) * math.tau
             h = fractal(longitude, latitude, seed)
+            heights.append(h)
             color = palette(kind, h, latitude, longitude)
             # Polar caps on the ocean and desert planets add a readable silhouette.
             if kind in ("ocean", "desert") and abs(latitude) > 1.27:
@@ -89,10 +91,58 @@ def make_texture(name, kind, resolution, seed):
             pixels.extend(color)
     image.pixels.foreach_set(pixels)
     image.pack()
-    return image
+    return image, heights, width, height_px
 
 
-def make_material(name, image, roughness=0.72, metallic=0.0):
+def make_surface_maps(name, kind, heights, width, height_px):
+    """Bake equirectangular roughness and tangent-space normal maps for glTF."""
+    roughness = bpy.data.images.new(name + "_Roughness", width=width, height=height_px, alpha=False)
+    roughness.colorspace_settings.name = "Non-Color"
+    rough_pixels = []
+    for y in range(height_px):
+        latitude = (y / max(1, height_px - 1) - 0.5) * math.pi
+        row = y * width
+        for x in range(width):
+            h = heights[row + x]
+            if kind == "ocean":
+                value = 0.34 if h < -0.02 else 0.78
+            elif kind == "ice":
+                value = 0.28 + min(0.55, abs(latitude) * 0.16)
+            elif kind == "desert":
+                value = 0.86 - min(0.16, abs(h) * 0.08)
+            else:
+                value = 0.52 + 0.12 * math.sin(latitude * 22.0 + h * 3.0)
+            value = max(0.12, min(0.95, value))
+            rough_pixels.extend((value, value, value, 1.0))
+    roughness.pixels.foreach_set(rough_pixels)
+    roughness.pack()
+
+    normal = bpy.data.images.new(name + "_Normal", width=width, height=height_px, alpha=False)
+    normal.colorspace_settings.name = "Non-Color"
+    normal_pixels = []
+    for y in range(height_px):
+        ym = max(0, y - 1) * width
+        yp = min(height_px - 1, y + 1) * width
+        row = y * width
+        for x in range(width):
+            xm = (x - 1) % width
+            xp = (x + 1) % width
+            dx = (heights[row + xp] - heights[row + xm]) * 0.5
+            dy = (heights[yp + x] - heights[ym + x]) * 0.5
+            # Keep the relief subtle at the poles to avoid UV-stretch artifacts.
+            latitude = (y / max(1, height_px - 1) - 0.5) * math.pi
+            pole_fade = max(0.08, math.cos(latitude))
+            nx, ny, nz = -dx * 1.8 * pole_fade, -dy * 1.8 * pole_fade, 1.0
+            length = math.sqrt(nx * nx + ny * ny + nz * nz)
+            normal_pixels.extend((nx / length * 0.5 + 0.5,
+                                  ny / length * 0.5 + 0.5,
+                                  nz / length * 0.5 + 0.5, 1.0))
+    normal.pixels.foreach_set(normal_pixels)
+    normal.pack()
+    return roughness, normal
+
+
+def make_material(name, image, roughness_map, normal_map, roughness=0.72, metallic=0.0):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
     material.use_backface_culling = False
@@ -104,15 +154,21 @@ def make_material(name, image, roughness=0.72, metallic=0.0):
     texture.interpolation = "Linear"
     links.new(texture.outputs["Color"], principled.inputs["Base Color"])
 
-    # Use the generated terrain map as a restrained height source. This adds
-    # real lighting response to ridges and ice without changing the silhouette.
-    grayscale = nodes.new("ShaderNodeRGBToBW")
-    bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.12
-    bump.inputs["Distance"].default_value = 0.018
-    links.new(texture.outputs["Color"], grayscale.inputs["Color"])
-    links.new(grayscale.outputs["Val"], bump.inputs["Height"])
-    links.new(bump.outputs["Normal"], principled.inputs["Normal"])
+    rough_node = nodes.new("ShaderNodeTexImage")
+    rough_node.image = roughness_map
+    rough_node.interpolation = "Linear"
+    rough_node.label = "Baked planetary roughness"
+    links.new(rough_node.outputs["Color"], principled.inputs["Roughness"])
+
+    normal_node = nodes.new("ShaderNodeTexImage")
+    normal_node.image = normal_map
+    normal_node.interpolation = "Linear"
+    normal_node.label = "Baked planetary tangent normal"
+    normal_map_node = nodes.new("ShaderNodeNormalMap")
+    normal_map_node.space = "TANGENT"
+    normal_map_node.inputs["Strength"].default_value = 0.72
+    links.new(normal_node.outputs["Color"], normal_map_node.inputs["Color"])
+    links.new(normal_map_node.outputs["Normal"], principled.inputs["Normal"])
 
     principled.inputs["Roughness"].default_value = roughness
     principled.inputs["Metallic"].default_value = metallic
@@ -127,9 +183,14 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
     for polygon in planet.data.polygons:
         polygon.use_smooth = True
 
-    image = make_texture(display_name + "_Albedo", kind, resolution, seed)
-    planet.data.materials.append(make_material(display_name + "_PBR", image,
-                                                roughness=0.82 if kind != "gas" else 0.48))
+    image, heights, texture_width, texture_height = make_texture(
+        display_name + "_Albedo", kind, resolution, seed)
+    roughness_map, normal_map = make_surface_maps(
+        display_name, kind, heights, texture_width, texture_height)
+    planet.data.materials.append(make_material(
+        display_name + "_PBR", image, roughness_map, normal_map,
+        roughness=0.82 if kind != "gas" else 0.48))
+    del heights
     planet["gf_asset_role"] = "planet_surface"
     planet["gf_planet_class"] = kind
 
