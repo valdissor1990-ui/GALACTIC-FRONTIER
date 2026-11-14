@@ -96,6 +96,7 @@ def main():
     require("len(images) < 3" in validator and
             "metallicRoughnessTexture" in validator and "normalTexture" in validator and
             'path.parent.name in ("space", "planets")' in validator and
+            "despite texture-based shading" in validator and
             "uv_primitive_count != primitive_count" in validator and
             "normal_primitive_count != primitive_count" in validator,
             "Ship GLBs must have embedded PBR maps, UVs and normals on every primitive")
