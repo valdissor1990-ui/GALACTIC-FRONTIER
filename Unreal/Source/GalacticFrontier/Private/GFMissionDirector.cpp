@@ -298,7 +298,10 @@ void AGFMissionDirector::AdvanceAfterEncounter()
     if (Stage == EGFMissionStage::DefendRelay)
     {
         Stage = EGFMissionStage::InvestigateWreck;
-        UpdateObjectiveMarker(RelayMarker, WreckPosition);
+        if (RelayMarker) RelayMarker->SetVisibility(false, true);
+        if (RelayMarkerGlow) RelayMarkerGlow->SetVisibility(false, true);
+        UpdateObjectiveMarker(WreckMarker, WreckPosition);
+        if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(true, true);
         UE_LOG(LogTemp, Display, TEXT("GF Mission: Proceed to the wreck and press F to recover its data."));
     }
     else if (Stage == EGFMissionStage::DefendWreck)
