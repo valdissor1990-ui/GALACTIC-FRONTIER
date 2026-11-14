@@ -93,8 +93,9 @@ def main():
             "GLB validator must check binary structure and PBR material properties")
     require("MODEL_DIRS = (\"ships\", \"environment\", \"space\", \"planets\")" in validator,
             "GLB quality validation must cover every model category")
-    require("ShaderNodeRGBToBW" in space_builder and "ShaderNodeBump" in space_builder,
-            "Planet materials must include subtle terrain relief for lighting response")
+    require("ShaderNodeNormalMap" in space_builder and "Baked planetary roughness" in space_builder and
+            "Baked planetary tangent normal" in space_builder and "make_surface_maps" in space_builder,
+            "Planet materials must export baked roughness and tangent-space normal maps")
     require("--resolution 1024" in asset_workflow,
             "Planet and backdrop generation must use 1024-pixel source textures")
     require("apply_exportable_surface_maps" in interceptor_builder and
@@ -111,6 +112,7 @@ def main():
     require("len(images) < 3" in validator and
             "metallicRoughnessTexture" in validator and "normalTexture" in validator and
             "minimum_texture_width" in validator and "image_dimensions" in validator and "base64.b64decode" in validator and
+            'path.parent.name == "planets"' in validator and
             'path.parent.name in ("space", "planets")' in validator and
             "despite texture-based shading" in validator and
             "uv_primitive_count != primitive_count" in validator and
