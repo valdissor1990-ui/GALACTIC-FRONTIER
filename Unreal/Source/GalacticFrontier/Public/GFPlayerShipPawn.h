@@ -8,6 +8,7 @@ class UCameraComponent;
 class UInputComponent;
 class UPointLightComponent;
 class USpringArmComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UGFShipFlightComponent;
 class UGFDamageableComponent;
