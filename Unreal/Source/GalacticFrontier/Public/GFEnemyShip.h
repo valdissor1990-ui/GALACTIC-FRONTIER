@@ -32,6 +32,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Enemy|AI")
     void SetCombatTarget(AActor* Target);
 
+    /** Loads a complete catalog ship mesh and applies its combat tuning. */
+    bool ConfigureFromCatalogShip(FName ShipId, float HealthMultiplier = 1.0f, float DamageMultiplier = 1.0f);
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy")
     TObjectPtr<UStaticMeshComponent> ShipMesh;
 
