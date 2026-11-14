@@ -57,6 +57,7 @@ def read_glb(path: Path) -> dict:
     document = json.loads(json_chunks[0].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
     document["_glb_chunks"] = [{"type": kind.decode("ascii", "replace"), "bytes": len(data)}
                                for kind, data in chunks]
+    document["_glb_binary_chunks"] = [data for kind, data in chunks if kind == b"BIN\\0"]
     return document
 
 
@@ -224,13 +225,42 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
         source = texture.get("source")
         if source is not None and not valid_index(source, images):
             fail(errors, f"texture {texture_index} references invalid image {source}")
+    image_dimensions: list[dict] = []
+    binary_chunks = doc.get("_glb_binary_chunks", [])
     for image_index, image in enumerate(images):
-        view = image.get("bufferView")
+        view_index = image.get("bufferView")
         uri = image.get("uri")
-        if view is not None and not valid_index(view, buffer_views):
-            fail(errors, f"image {image_index} references invalid bufferView {view}")
-        if view is None and not uri:
+        if view_index is not None and not valid_index(view_index, buffer_views):
+            fail(errors, f"image {image_index} references invalid bufferView {view_index}")
+            continue
+        if view_index is None and not uri:
             fail(errors, f"image {image_index} has neither bufferView nor URI")
+            continue
+        if view_index is not None:
+            view = buffer_views[view_index]
+            buffer_index = view.get("buffer", 0)
+            if valid_index(buffer_index, binary_chunks):
+                binary = binary_chunks[buffer_index]
+                offset = view.get("byteOffset", 0)
+                length = view.get("byteLength", 0)
+                payload = binary[offset:offset + length]
+                if payload.startswith(b"\\x89PNG\\r\\n\\x1a\\n") and len(payload) >= 24:
+                    width, height = struct.unpack(">II", payload[16:24])
+                    image_dimensions.append({"index": image_index, "width": width, "height": height})
+                elif image.get("mimeType") == "image/png":
+                    fail(errors, f"image {image_index} has an invalid/truncated embedded PNG header")
+
+    minimum_texture_width = (
+        1024 if is_ship or path.parent.name == "planets" else
+        2048 if path.parent.name == "space" else 0
+    )
+    if minimum_texture_width:
+        if not image_dimensions:
+            fail(errors, f"asset requires embedded PNG textures at least {minimum_texture_width}px wide")
+        elif min(item["width"] for item in image_dimensions) < minimum_texture_width:
+            fail(errors, f"texture resolution below {minimum_texture_width}px: {image_dimensions}")
+    if is_ship and len(image_dimensions) < 3:
+        fail(errors, f"ship requires at least three readable embedded PNG maps; found {len(image_dimensions)}")
 
     if materials and not assigned_materials:
         warnings.append("no mesh primitive explicitly references a material")
