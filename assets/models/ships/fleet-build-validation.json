@@ -41,7 +41,7 @@
         "material_count": 7,
         "embedded_images": 9
       },
-      "preview_bytes": 489539
+      "preview_bytes": 489881
     },
     {
       "name": "enemy_fighter",
@@ -75,9 +75,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 6,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 589371
+      "preview_bytes": 589603
     },
     {
       "name": "heavy_fighter",
@@ -111,9 +111,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 6,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 431318
+      "preview_bytes": 431437
     },
     {
       "name": "bomber",
@@ -147,9 +147,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 6,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 440435
+      "preview_bytes": 440424
     },
     {
       "name": "cargo_hauler",
@@ -183,9 +183,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 6,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 459977
+      "preview_bytes": 460100
     },
     {
       "name": "frigate",
@@ -218,9 +218,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 5,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 426346
+      "preview_bytes": 426309
     },
     {
       "name": "cruiser",
@@ -254,9 +254,9 @@
         "mesh_nodes": 1,
         "node_count": 2,
         "material_count": 6,
-        "embedded_images": 0
+        "embedded_images": 7
       },
-      "preview_bytes": 444189
+      "preview_bytes": 444063
     }
   ],
   "note": "Structural build gate only; visual quality and Unreal import still require separate acceptance."
