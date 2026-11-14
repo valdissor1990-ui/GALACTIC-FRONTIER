@@ -59,8 +59,11 @@ def main():
     expected_paths = (
         "/Game/GF/Ships/player_fighter.player_fighter",
         "/Game/GF/Ships/enemy_fighter.enemy_fighter",
+        "/Game/GF/Ships/cargo_hauler.cargo_hauler",
         "/Game/GF/Ships/heavy_fighter.heavy_fighter",
         "/Game/GF/Ships/bomber.bomber",
+        "/Game/GF/Ships/frigate.frigate",
+        "/Game/GF/Ships/cruiser.cruiser",
     )
     for object_path in expected_paths:
         require(object_path in catalog_cpp,
