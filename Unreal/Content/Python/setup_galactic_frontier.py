@@ -335,7 +335,7 @@ def import_existing_fleet():
 
         stage_results = [item for item in PIPELINE_REPORT
                          if item.get("source", "").startswith("assets/models/" + category + "/")]
-        failed = sum(1 for item in stage_results if item.get("status") != "imported")
+        failed = sum(1 for item in stage_results if item.get("status") != "validated")
         log("PIPELINE STAGE COMPLETE " + category.upper() + ": " +
             str(len(stage_results) - failed) + "/" + str(len(sources)) + " imported")
     return imported
