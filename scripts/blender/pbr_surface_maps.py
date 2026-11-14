@@ -65,11 +65,11 @@ def ensure_glb_file_image(image):
 
 def apply_exportable_surface_maps(material, principled, base_color, base_roughness, label):
     """Attach packed, UV-based PBR maps that survive Blender -> glTF -> Godot."""
-    size = 512
+    size = 1024
     token = "".join(ch if ch.isalnum() else "_" for ch in label)
     albedo_name = "GF_Surface_%s_Albedo" % token
     roughness_name = "GF_Surface_%s_Roughness" % token
-    normal_name = "GF_Aerospace_MicroNormal_512"
+    normal_name = "GF_Aerospace_MicroNormal_1024"
 
     def clamp01(value):
         return max(0.0, min(1.0, value))
