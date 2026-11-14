@@ -72,6 +72,7 @@ void AGFMissionDirector::Tick(const float DeltaSeconds)
         if (Player->Damageable && Player->Damageable->IsDestroyed())
         {
             Stage = EGFMissionStage::Failed;
+            FailureReason = FText::FromString(TEXT("Your ship was destroyed."));
             UE_LOG(LogTemp, Warning, TEXT("GF Mission: player ship destroyed; mission failed."));
         }
     }
@@ -231,6 +232,7 @@ void AGFMissionDirector::SpawnWave()
         UE_LOG(LogTemp, Error,
             TEXT("[GF Mission] Wave %d produced no valid enemies; contract marked failed instead of skipping combat."),
             WaveIndex);
+        FailureReason = FText::FromString(TEXT("Hostile reinforcements could not be deployed. Contract aborted."));
         Stage = EGFMissionStage::Failed;
     }
 }
