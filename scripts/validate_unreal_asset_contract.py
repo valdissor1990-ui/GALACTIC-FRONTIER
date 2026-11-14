@@ -268,6 +268,8 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
             fail(errors, f"texture resolution below {minimum_texture_width}px: {image_dimensions}")
     if is_ship and len(image_dimensions) < 3:
         fail(errors, f"ship requires at least three readable embedded PNG maps; found {len(image_dimensions)}")
+    if path.parent.name == "planets" and len(image_dimensions) < 3:
+        fail(errors, f"planet requires embedded albedo/roughness/normal PNG maps; found {len(image_dimensions)}")
 
     if materials and not assigned_materials:
         warnings.append("no mesh primitive explicitly references a material")
