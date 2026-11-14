@@ -35,9 +35,6 @@ public:
     virtual void Tick(float DeltaSeconds) override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Assets")
-    TObjectPtr<UStaticMesh> EnemyShipMesh;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Assets")
     TObjectPtr<UStaticMesh> ObjectiveMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Mission|Tuning")
