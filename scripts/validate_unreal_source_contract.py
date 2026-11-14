@@ -85,7 +85,7 @@ def main():
                 "Editor import validator is missing expected mesh path: " + object_path)
 
     ship_blocks = re.findall(
-        r'Ship\\.Id = TEXT\\("([^"]+)"\\);(.*?)(?=Ship = FGFShipDefinition\\(\\);|return Items;)',
+        r'Ship\.Id = TEXT\("([^"]+)"\);(.*?)(?=Ship = FGFShipDefinition\(\);|return Items;)',
         catalog_cpp, re.S)
     expected_ids = [
         "player_fighter", "cargo_hauler", "raider_interceptor",
@@ -94,7 +94,7 @@ def main():
             "Catalog must contain the seven fleet ships in the intended progression order")
     catalog_prices = []
     for ship_id, block in ship_blocks:
-        price_match = re.search(r'Ship\\.Price = (\\d+);', block)
+        price_match = re.search(r'Ship\.Price = (\d+);', block)
         require(price_match is not None and "Items.Add(Ship);" in block,
                 "Catalog entry must have a price and be added exactly once: " + ship_id)
         if price_match:
