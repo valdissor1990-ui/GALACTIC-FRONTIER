@@ -6,6 +6,7 @@
 
 class UCameraComponent;
 class UInputComponent;
+class UPointLightComponent;
 class USpringArmComponent;
 class UStaticMeshComponent;
 class UGFShipFlightComponent;
@@ -48,6 +49,12 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|VFX")
     TObjectPtr<UGFShipVfxComponent> ShipVfx;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|VFX")
+    TObjectPtr<UPointLightComponent> LeftEngineGlow;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|VFX")
+    TObjectPtr<UPointLightComponent> RightEngineGlow;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Ship|Camera")
     TObjectPtr<USpringArmComponent> ChaseArm;
@@ -92,4 +99,5 @@ private:
     float YawInput = 0.0f;
     float RollInput = 0.0f;
     bool bCockpitCameraActive = false;
+    float CurrentEngineGlowIntensity = 650.0f;
 };
