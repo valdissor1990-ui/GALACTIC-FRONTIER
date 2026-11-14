@@ -44,6 +44,19 @@ TArray<FGFShipDefinition> UGFGameCatalog::GetShips()
     Items.Add(Ship);
 
     Ship = FGFShipDefinition();
+    Ship.Id = TEXT("cargo_hauler");
+    Ship.DisplayName = FText::FromString(TEXT("Mule Cargo Hauler"));
+    Ship.MeshAsset = FSoftObjectPath(TEXT("/Game/GF/Ships/cargo_hauler.cargo_hauler"));
+    Ship.VisualScale = 0.26f; Ship.Price = 1800;
+    Ship.MaxSpeed = 62.0f; Ship.Acceleration = 20.0f; Ship.Drag = 1.12f;
+    Ship.BoostSpeedMultiplier = 1.28f; Ship.BoostAccelerationMultiplier = 1.15f; Ship.BrakeDrag = 24.0f;
+    Ship.RotationSpeed = 0.68f; Ship.RotationAcceleration = 3.0f; Ship.RotationStabilization = 2.8f;
+    Ship.BoostCapacity = 14.0f; Ship.BoostRechargeRate = 1.4f;
+    Ship.Hull = 240.0f; Ship.Shield = 80.0f; Ship.ShieldRegen = 5.0f;
+    Ship.ShotsPerSecond = 1.4f; Ship.ProjectileSpeed = 145.0f; Ship.ProjectileDamage = 12.0f;
+    Items.Add(Ship);
+
+    Ship = FGFShipDefinition();
     Ship.Id = TEXT("bastion_bomber");
     Ship.DisplayName = FText::FromString(TEXT("Bastion Bomber"));
     Ship.MeshAsset = FSoftObjectPath(TEXT("/Game/GF/Ships/bomber.bomber"));
@@ -54,6 +67,31 @@ TArray<FGFShipDefinition> UGFGameCatalog::GetShips()
     Ship.BoostCapacity = 10.0f; Ship.BoostRechargeRate = 1.6f;
     Ship.Hull = 200.0f; Ship.Shield = 85.0f; Ship.ShieldRegen = 5.0f;
     Ship.ShotsPerSecond = 1.8f; Ship.ProjectileSpeed = 160.0f; Ship.ProjectileDamage = 42.0f;
+    Ship = FGFShipDefinition();
+    Ship.Id = TEXT("frigate");
+    Ship.DisplayName = FText::FromString(TEXT("Vanguard Frigate"));
+    Ship.MeshAsset = FSoftObjectPath(TEXT("/Game/GF/Ships/frigate.frigate"));
+    Ship.VisualScale = 0.24f; Ship.Price = 11000;
+    Ship.MaxSpeed = 72.0f; Ship.Acceleration = 25.0f; Ship.Drag = 0.96f;
+    Ship.BoostSpeedMultiplier = 1.38f; Ship.BoostAccelerationMultiplier = 1.22f; Ship.BrakeDrag = 21.0f;
+    Ship.RotationSpeed = 0.76f; Ship.RotationAcceleration = 3.4f; Ship.RotationStabilization = 3.1f;
+    Ship.BoostCapacity = 15.0f; Ship.BoostRechargeRate = 1.5f;
+    Ship.Hull = 260.0f; Ship.Shield = 300.0f; Ship.ShieldRegen = 16.0f;
+    Ship.ShotsPerSecond = 2.4f; Ship.ProjectileSpeed = 175.0f; Ship.ProjectileDamage = 28.0f;
+    Items.Add(Ship);
+
+    Ship = FGFShipDefinition();
+    Ship.Id = TEXT("cruiser");
+    Ship.DisplayName = FText::FromString(TEXT("Leviathan Cruiser"));
+    Ship.MeshAsset = FSoftObjectPath(TEXT("/Game/GF/Ships/cruiser.cruiser"));
+    Ship.VisualScale = 0.22f; Ship.Price = 16000;
+    Ship.MaxSpeed = 48.0f; Ship.Acceleration = 16.0f; Ship.Drag = 1.18f;
+    Ship.BoostSpeedMultiplier = 1.22f; Ship.BoostAccelerationMultiplier = 1.10f; Ship.BrakeDrag = 27.0f;
+    Ship.RotationSpeed = 0.48f; Ship.RotationAcceleration = 2.1f; Ship.RotationStabilization = 2.4f;
+    Ship.BoostCapacity = 18.0f; Ship.BoostRechargeRate = 1.2f;
+    Ship.Hull = 420.0f; Ship.Shield = 220.0f; Ship.ShieldRegen = 9.0f;
+    Ship.ShotsPerSecond = 1.6f; Ship.ProjectileSpeed = 165.0f; Ship.ProjectileDamage = 40.0f;
+    Items.Add(Ship);
     Items.Add(Ship);
     return Items;
 }
