@@ -1,4 +1,5 @@
 #include "GFGraphicsSettings.h"
+#include "Engine/Engine.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Kismet/KismetSystemLibrary.h"
 
