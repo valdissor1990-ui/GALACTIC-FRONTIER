@@ -157,8 +157,11 @@ def make_material(name, image, roughness_map, normal_map, roughness=0.72, metall
     rough_node = nodes.new("ShaderNodeTexImage")
     rough_node.image = roughness_map
     rough_node.interpolation = "Linear"
-    rough_node.label = "Baked planetary roughness"
-    links.new(rough_node.outputs["Color"], principled.inputs["Roughness"])
+    rough_node.label = "Baked planetary metallic-roughness"
+    separate = nodes.new("ShaderNodeSeparateRGB")
+    links.new(rough_node.outputs["Color"], separate.inputs["Image"])
+    links.new(separate.outputs["G"], principled.inputs["Roughness"])
+    links.new(separate.outputs["B"], principled.inputs["Metallic"])
 
     normal_node = nodes.new("ShaderNodeTexImage")
     normal_node.image = normal_map
