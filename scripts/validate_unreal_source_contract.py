@@ -39,6 +39,7 @@ def main():
     weapon_cpp = read("Unreal/Source/GalacticFrontier/Private/GFWeaponComponent.cpp")
     weapon_h = read("Unreal/Source/GalacticFrontier/Public/GFWeaponComponent.h")
     catalog_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameCatalog.cpp")
+    catalog_test = read("Unreal/Source/GalacticFrontier/Private/Tests/GFGameCatalogTests.cpp")
     game_mode_cpp = read("Unreal/Source/GalacticFrontier/Private/GFGameModeBase.cpp")
     engine_ini = read("Unreal/Config/DefaultEngine.ini")
     setup_py = read("Unreal/Content/Python/setup_galactic_frontier.py")
@@ -160,6 +161,9 @@ def main():
     require(catalog_prices == sorted(catalog_prices) and catalog_prices[0] == 0,
             "Fleet purchase prices must progress monotonically from the free starter")
 
+    require('All seven catalog ships are preserved' in catalog_test and
+            'Ships.Num(), 7' in catalog_test,
+            "Unreal catalog automation test must match the seven-entry ship catalog")
     require("DefaultPawnClass = AGFPlayerShipPawn::StaticClass()" in game_mode_cpp,
             "GameMode must spawn the player ship pawn")
     require("UPointLightComponent" in enemy_h and
@@ -247,7 +251,7 @@ def main():
     print("PASS: ship collision diagnostics and repair utility")
     print("PASS: flight input signs, angular response and weapon fire cadence")
     print("PASS: pause input remains available while paused")
-    print("PASS: four ship catalog/import paths agree")
+    print("PASS: seven-ship catalog automation expectation matches catalog")
     print("PASS: GameMode and default map configuration")
     print("PASS: flight test level includes backdrop and planets")
     print("PASS: asset import naming and stage-report gates")
