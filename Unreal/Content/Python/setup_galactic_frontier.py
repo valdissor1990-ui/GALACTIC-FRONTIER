@@ -410,8 +410,11 @@ def validate_catalog_ship_assets():
     expected = {
         "player_fighter": "/Game/GF/Ships/player_fighter.player_fighter",
         "raider_interceptor": "/Game/GF/Ships/enemy_fighter.enemy_fighter",
+        "cargo_hauler": "/Game/GF/Ships/cargo_hauler.cargo_hauler",
         "aegis_heavy_fighter": "/Game/GF/Ships/heavy_fighter.heavy_fighter",
         "bastion_bomber": "/Game/GF/Ships/bomber.bomber",
+        "frigate": "/Game/GF/Ships/frigate.frigate",
+        "cruiser": "/Game/GF/Ships/cruiser.cruiser",
     }
     results = {}
     for ship_id, object_path in expected.items():
