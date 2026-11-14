@@ -120,7 +120,7 @@ def make_material(name, image, roughness=0.72, metallic=0.0):
 
 
 def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings=False):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=128, ring_count=64, radius=radius)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=256, ring_count=128, radius=radius)
     planet = bpy.context.object
     planet.name = display_name + "_Surface"
     planet.data.name = display_name + "_SurfaceMesh"
@@ -136,7 +136,7 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
     if with_rings:
         bpy.ops.mesh.primitive_torus_add(major_radius=radius * 1.55,
                                         minor_radius=radius * 0.075,
-                                        major_segments=192, minor_segments=24,
+                                        major_segments=256, minor_segments=32,
                                         location=(0, 0, 0))
         rings = bpy.context.object
         rings.name = display_name + "_RingSystem"
@@ -212,7 +212,7 @@ def create_space_backdrop(resolution):
     image.pixels.foreach_set(pixels)
     image.pack()
 
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=128, ring_count=64, radius=5000.0)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=256, ring_count=128, radius=5000.0)
     sky = bpy.context.object
     sky.name = "GF_DeepSpace_Backdrop"
     sky.data.name = "GF_DeepSpace_BackdropMesh"
