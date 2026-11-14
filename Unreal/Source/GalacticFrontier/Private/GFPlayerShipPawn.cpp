@@ -243,7 +243,7 @@ void AGFPlayerShipPawn::DebugSelectShipByIndex(const int32 ShipIndex)
 
     if (!bApplied)
     {
-        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Could not apply %s; no alternate ship/stats were substituted."),
+        UE_LOG(LogTemp, Error, TEXT("[GF Debug Hangar] Could not apply %s; selection rejected and no alternate ship/stats were substituted."),
             *Ships[ShipIndex].Id.ToString());
         return;
     }
