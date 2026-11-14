@@ -255,7 +255,8 @@ void AGFPlayerShipPawn::DebugSelectShipByIndex(const int32 ShipIndex)
     {
         GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor(70, 220, 255), Message);
     }
-}#endif
+}
+#endif
 
 bool AGFPlayerShipPawn::ApplySelectedShipConfiguration()
 {
@@ -330,11 +331,11 @@ bool AGFPlayerShipPawn::ApplySelectedShipConfiguration()
         Weapon->ProjectileDamage = Definition.ProjectileDamage;
     }
 
-    if (!Saves) return;
+    if (!Saves) return true;
     UGFPlayerProfileSave* Profile = Saves->GetProfile();
-    if (!Profile) return;
+    if (!Profile) return true;
     const TArray<FName>* Installed = Profile->InstalledModules.Find(Definition.Id);
-    if (!Installed) return;
+    if (!Installed) return true;
 
     for (const FName ModuleId : *Installed)
     {
