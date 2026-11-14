@@ -191,6 +191,17 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
                 fail(errors, f"material {material_index} references invalid base-color texture")
             else:
                 used_textures.add(texture_index)
+            if is_ship:
+                roughness_info = pbr.get("metallicRoughnessTexture")
+                normal_info = material.get("normalTexture")
+                if not isinstance(roughness_info, dict) or not valid_index(roughness_info.get("index"), textures):
+                    fail(errors, f"ship material {material_index} has no valid roughness/metallic texture")
+                else:
+                    used_textures.add(roughness_info["index"])
+                if not isinstance(normal_info, dict) or not valid_index(normal_info.get("index"), textures):
+                    fail(errors, f"ship material {material_index} has no valid tangent-space normal texture")
+                else:
+                    used_textures.add(normal_info["index"])
         emissive = material.get("emissiveFactor", [0.0, 0.0, 0.0])
         if not isinstance(emissive, list) or len(emissive) != 3 or not all(
                 isinstance(v, (int, float)) and math.isfinite(v) and 0.0 <= v <= 1.0 for v in emissive):
