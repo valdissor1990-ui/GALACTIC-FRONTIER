@@ -1,6 +1,7 @@
 #include "GFEnemyShip.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "GFDamageableComponent.h"
 #include "GFWeaponComponent.h"
 #include "GFPlayerShipPawn.h"
@@ -15,6 +16,22 @@ AGFEnemyShip::AGFEnemyShip()
     ShipMesh->SetCollisionProfileName(TEXT("BlockAll"));
     Damageable = CreateDefaultSubobject<UGFDamageableComponent>(TEXT("Damageable"));
     Weapon = CreateDefaultSubobject<UGFWeaponComponent>(TEXT("Weapon"));
+
+    LeftEngineGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("LeftEngineGlow"));
+    LeftEngineGlow->SetupAttachment(ShipMesh);
+    LeftEngineGlow->SetLightColor(FLinearColor(1.0f, 0.16f, 0.045f));
+    LeftEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+    LeftEngineGlow->SetAttenuationRadius(360.0f);
+    LeftEngineGlow->SetSourceRadius(20.0f);
+    LeftEngineGlow->SetCastShadows(false);
+
+    RightEngineGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RightEngineGlow"));
+    RightEngineGlow->SetupAttachment(ShipMesh);
+    RightEngineGlow->SetLightColor(FLinearColor(1.0f, 0.16f, 0.045f));
+    RightEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+    RightEngineGlow->SetAttenuationRadius(360.0f);
+    RightEngineGlow->SetSourceRadius(20.0f);
+    RightEngineGlow->SetCastShadows(false);
     Tags.Add(TEXT("CombatTarget"));
 
     // Match the Godot enemy combat tuning, converted from metres to cm.
@@ -53,6 +70,35 @@ void AGFEnemyShip::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     if (!Damageable || Damageable->IsDestroyed() || DeltaSeconds <= 0.0f) return;
+
+    if (!bEngineGlowConfigured && ShipMesh && ShipMesh->GetStaticMesh() &&
+        LeftEngineGlow && RightEngineGlow)
+    {
+        const FBox Bounds = ShipMesh->GetStaticMesh()->GetBoundingBox();
+        if (Bounds.IsValid)
+        {
+            const FVector Size = Bounds.GetSize();
+            const float EngineX = Bounds.Min.X - FMath::Max(Size.X, 1.0f) * 0.035f;
+            const float EngineY = FMath::Max(Size.Y, 1.0f) * 0.28f;
+            const float EngineZ = Bounds.Min.Z + FMath::Max(Size.Z, 1.0f) * 0.48f;
+            LeftEngineGlow->SetRelativeLocation(FVector(EngineX, -EngineY, EngineZ));
+            RightEngineGlow->SetRelativeLocation(FVector(EngineX, EngineY, EngineZ));
+            bEngineGlowConfigured = true;
+        }
+    }
+
+    if (LeftEngineGlow && RightEngineGlow)
+    {
+        const float SpeedNorm = FMath::Clamp(Velocity.Size() / FMath::Max(1.0f, MaximumSpeed), 0.0f, 1.0f);
+        const float TargetGlow = FMath::Lerp(500.0f, 1800.0f, SpeedNorm);
+        CurrentEngineGlowIntensity = FMath::FInterpTo(CurrentEngineGlowIntensity, TargetGlow, DeltaSeconds, 5.0f);
+        LeftEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+        RightEngineGlow->SetIntensity(CurrentEngineGlowIntensity);
+        const FLinearColor GlowColor = FLinearColor::LerpUsingHSV(
+            FLinearColor(1.0f, 0.12f, 0.025f), FLinearColor(1.0f, 0.42f, 0.08f), SpeedNorm);
+        LeftEngineGlow->SetLightColor(GlowColor);
+        RightEngineGlow->SetLightColor(GlowColor);
+    }
 
     AActor* Target = CombatTarget.Get();
     if (!IsValid(Target))
