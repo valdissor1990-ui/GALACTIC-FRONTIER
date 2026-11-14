@@ -7,13 +7,19 @@ on:
     paths:
       - "assets/models/ships/**"
       - "Unreal/Content/Python/setup_galactic_frontier.py"
+      - "Unreal/Source/GalacticFrontier/**"
+      - "Unreal/Config/**"
       - "scripts/validate_unreal_asset_contract.py"
+      - "scripts/validate_unreal_source_contract.py"
       - ".github/workflows/unreal-source-asset-contract.yml"
   pull_request:
     paths:
       - "assets/models/ships/**"
       - "Unreal/Content/Python/setup_galactic_frontier.py"
+      - "Unreal/Source/GalacticFrontier/**"
+      - "Unreal/Config/**"
       - "scripts/validate_unreal_asset_contract.py"
+      - "scripts/validate_unreal_source_contract.py"
       - ".github/workflows/unreal-source-asset-contract.yml"
   workflow_dispatch:
 
@@ -33,6 +39,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile Unreal Editor Python script syntax
-        run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/validate_unreal_asset_contract.py
+        run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/validate_unreal_asset_contract.py scripts/validate_unreal_source_contract.py
+      - name: Validate Unreal gameplay and asset integration
+        run: python scripts/validate_unreal_source_contract.py
       - name: Validate all ship GLB files
         run: python scripts/validate_unreal_asset_contract.py
