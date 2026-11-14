@@ -636,7 +636,6 @@ def create_flight_test_level(imported):
     else:
         unreal.log_warning("[GF Setup] Helios gas giant mesh is missing or ambiguous.")
 
-    enemy_mesh = find_static_mesh(imported, "enemy_fighter")
     mission_class = unreal.load_class(None, "/Script/GalacticFrontier.GFMissionDirector")
     if not mission_class:
         unreal.log_error("[GF Setup] GFMissionDirector class not found. Compile C++ and rerun.")
@@ -646,10 +645,6 @@ def create_flight_test_level(imported):
         mission_class, unreal.Vector(0, 0, 0), unreal.Rotator(0, 0, 0))
     if mission:
         mission.set_actor_label("The Silent Relay - Mission Director")
-        if enemy_mesh:
-            mission.set_editor_property("enemy_ship_mesh", enemy_mesh)
-        else:
-            unreal.log_warning("[GF Setup] Enemy Fighter mesh is missing or ambiguous.")
 
     unreal.EditorLevelLibrary.save_current_level()
     unreal.EditorAssetLibrary.save_directory("/Game/GF", only_if_is_dirty=False, recursive=True)
