@@ -103,6 +103,17 @@ def make_material(name, image, roughness=0.72, metallic=0.0):
     texture.image = image
     texture.interpolation = "Linear"
     links.new(texture.outputs["Color"], principled.inputs["Base Color"])
+
+    # Use the generated terrain map as a restrained height source. This adds
+    # real lighting response to ridges and ice without changing the silhouette.
+    grayscale = nodes.new("ShaderNodeRGBToBW")
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.12
+    bump.inputs["Distance"].default_value = 0.018
+    links.new(texture.outputs["Color"], grayscale.inputs["Color"])
+    links.new(grayscale.outputs["Val"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], principled.inputs["Normal"])
+
     principled.inputs["Roughness"].default_value = roughness
     principled.inputs["Metallic"].default_value = metallic
     return material
@@ -140,6 +151,21 @@ def create_planet(slug, display_name, kind, radius, resolution, seed, with_rings
         bsdf.inputs["Roughness"].default_value = 0.62
         rings.data.materials.append(ring_mat)
         rings["gf_asset_role"] = "planetary_rings"
+
+    # Keep ring geometry and the planet surface in one StaticMesh asset while
+    # retaining their separate material slots. This avoids ambiguous multi-mesh
+    # lookups in Unreal and keeps the visual asset self-contained.
+    bpy.ops.object.select_all(action="DESELECT")
+    planet.select_set(True)
+    bpy.context.view_layer.objects.active = planet
+    if with_rings:
+        ring_object = bpy.data.objects.get(display_name + "_RingSystem")
+        if ring_object is None:
+            raise RuntimeError("Ring system was requested but was not created")
+        ring_object.select_set(True)
+        bpy.ops.object.join()
+        planet.name = display_name + "_SurfaceAndRings"
+        planet.data.name = display_name + "_CompleteMesh"
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.context.view_layer.objects.active = planet
@@ -201,6 +227,7 @@ def create_space_backdrop(resolution):
     principled = nodes.get("Principled BSDF")
     texture = nodes.new("ShaderNodeTexImage")
     texture.image = image
+    texture.interpolation = "Closest"
     links.new(texture.outputs["Color"], principled.inputs["Base Color"])
     emission_socket = principled.inputs.get("Emission Color")
     if emission_socket:
