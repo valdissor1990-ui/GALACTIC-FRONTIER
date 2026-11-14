@@ -1,6 +1,8 @@
 #include "GFHangarSubsystem.h"
 #include "GFSaveSubsystem.h"
 #include "GFPlayerProfileSave.h"
+#include "GFGameCatalog.h"
+#include "GFShipAssetLoader.h"
 
 UGFSaveSubsystem* UGFHangarSubsystem::GetSave() const
 {
@@ -41,6 +43,20 @@ bool UGFHangarSubsystem::SelectContract(FName ContractId)
         return Save->SetActiveContract(ContractId);
     }
     return false;
+}
+
+UStaticMesh* UGFHangarSubsystem::GetShipPreviewMesh(const FName ShipId) const
+{
+    FGFShipDefinition Definition;
+    if (!UGFGameCatalog::FindShip(ShipId, Definition))
+    {
+        UE_LOG(LogTemp, Error,
+            TEXT("[GF Hangar] Cannot preview unknown ship id '%s'."),
+            *ShipId.ToString());
+        return nullptr;
+    }
+    return FGFShipAssetLoader::LoadStaticMesh(
+        Definition.Id, Definition.MeshAsset, TEXT("HangarPreview"));
 }
 
 FName UGFHangarSubsystem::GetSelectedShipId() const
