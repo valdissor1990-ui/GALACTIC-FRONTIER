@@ -7,7 +7,6 @@ on:
       - chatgpt/unreal-migration-ue5.8
     paths:
       - "scripts/blender/**"
-      - "scripts/validate_unreal_asset_contract.py"
       - ".github/workflows/build-3d-assets.yml"
 
 permissions:
