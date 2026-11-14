@@ -8,6 +8,9 @@
 #include "GFGameCatalog.h"
 #include "Engine/GameInstance.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -22,6 +25,28 @@ AGFMissionDirector::AGFMissionDirector()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     if (SphereAsset.Succeeded()) ObjectiveMesh = SphereAsset.Object;
 
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> MarkerMaterial(
+        TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+    if (MarkerMaterial.Succeeded())
+    {
+        if (RelayMarker)
+        {
+            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerMaterial.Object, this))
+            {
+                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.08f, 0.58f, 0.82f));
+                RelayMarker->SetMaterial(0, Material);
+            }
+        }
+        if (WreckMarker)
+        {
+            if (UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(MarkerMaterial.Object, this))
+            {
+                Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.82f, 0.28f, 0.06f));
+                WreckMarker->SetMaterial(0, Material);
+            }
+        }
+    }
+
     RelayMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RelayMarker"));
     SetRootComponent(RelayMarker);
     RelayMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -29,7 +54,25 @@ AGFMissionDirector::AGFMissionDirector()
 
     WreckMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WreckMarker"));
     WreckMarker->SetupAttachment(RelayMarker);
-    WreckMarker->SetRelativeScale3D(FVector(12.0f));
+    WreckMarker->SetRelativeScale3D(FVector(7.0f));
+
+    RelayMarkerGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RelayMarkerGlow"));
+    RelayMarkerGlow->SetupAttachment(RelayMarker);
+    RelayMarkerGlow->SetRelativeLocation(FVector::ZeroVector);
+    RelayMarkerGlow->SetLightColor(FLinearColor(0.08f, 0.72f, 1.0f));
+    RelayMarkerGlow->SetIntensity(42000.0f);
+    RelayMarkerGlow->SetAttenuationRadius(22000.0f);
+    RelayMarkerGlow->SetSourceRadius(180.0f);
+    RelayMarkerGlow->SetCastShadows(false);
+
+    WreckMarkerGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("WreckMarkerGlow"));
+    WreckMarkerGlow->SetupAttachment(WreckMarker);
+    WreckMarkerGlow->SetRelativeLocation(FVector::ZeroVector);
+    WreckMarkerGlow->SetLightColor(FLinearColor(1.0f, 0.38f, 0.08f));
+    WreckMarkerGlow->SetIntensity(30000.0f);
+    WreckMarkerGlow->SetAttenuationRadius(16000.0f);
+    WreckMarkerGlow->SetSourceRadius(140.0f);
+    WreckMarkerGlow->SetCastShadows(false);
 }
 
 void AGFMissionDirector::BeginPlay()
@@ -58,6 +101,7 @@ void AGFMissionDirector::BeginPlay()
     if (WreckMarker && ObjectiveMesh) WreckMarker->SetStaticMesh(ObjectiveMesh);
     UpdateObjectiveMarker(RelayMarker, RelayPosition);
     if (WreckMarker) WreckMarker->SetVisibility(false, true);
+    if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(false, true);
     BindMissionInput();
     UE_LOG(LogTemp, Display, TEXT("GF Mission: Contract started. Fly to the relay and press F."));
 }
@@ -259,6 +303,7 @@ void AGFMissionDirector::AdvanceAfterEncounter()
     {
         Stage = EGFMissionStage::ReturnHome;
         if (WreckMarker) WreckMarker->SetVisibility(false, true);
+        if (WreckMarkerGlow) WreckMarkerGlow->SetVisibility(false, true);
         if (RelayMarker) RelayMarker->SetVisibility(true, true);
         UpdateObjectiveMarker(RelayMarker, CarrierPosition);
         UE_LOG(LogTemp, Display, TEXT("GF Mission: Return to the carrier and press F to complete the contract."));
@@ -269,6 +314,6 @@ void AGFMissionDirector::UpdateObjectiveMarker(UStaticMeshComponent* Marker, con
 {
     if (!Marker) return;
     Marker->SetWorldLocation(Position);
-    Marker->SetRelativeScale3D(Marker == WreckMarker ? FVector(12.0f) : FVector(18.0f));
+    Marker->SetRelativeScale3D(Marker == WreckMarker ? FVector(7.0f) : FVector(10.0f));
     Marker->SetVisibility(true, true);
 }
