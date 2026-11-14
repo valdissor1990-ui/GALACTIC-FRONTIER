@@ -54,10 +54,15 @@ def main():
             "CurrentEngineGlowIntensity" in pawn_cpp and "EngineX = Bounds.Min.X - Length * 0.035f" in pawn_cpp and
             "EngineY = Width * 0.28f" in pawn_cpp,
             "Player ship must have speed/boost-reactive engine illumination")
-    require("using Player Fighter Mk.I visuals" in pawn_cpp,
-            "Missing selected mesh must have a visible fallback path")
-    require("UGFGameCatalog::FindShip(TEXT(\"player_fighter\"), Definition)" in pawn_cpp,
-            "Missing selection must fall back to the default catalog ship")
+    require("FGFShipAssetLoader::LoadStaticMesh" in pawn_cpp and
+            "SetFlightDisabled(true)" in pawn_cpp,
+            "Player pawn must fail closed when the selected catalog mesh is missing")
+    require("FGFShipAssetLoader::LoadStaticMesh" in ship_loader and
+            "failed to load StaticMesh for ship" in ship_loader and
+            "AssetPath.ToString()" in ship_loader,
+            "Shared ship loader must log ship id and exact asset path on failure")
+    require("UGFGameCatalog::FindShip(TEXT(\\"player_fighter\\"), Definition)" in pawn_cpp,
+            "Missing saved selection must resolve to the starter ship")
 
     expected_paths = (
         "/Game/GF/Ships/player_fighter.player_fighter",
