@@ -214,6 +214,13 @@ def validate_model(path: Path, is_ship: bool) -> tuple[list[str], list[str], dic
         warnings.append("textures exist but no base-color texture is referenced by a material")
     if not images and textures:
         fail(errors, "texture table exists but image table is empty")
+    if is_ship:
+        if len(images) < 3 or not textures or not used_textures:
+            fail(errors, f"ship must export embedded PBR maps (albedo/roughness/normal); found images={len(images)}, textures={len(textures)}")
+        if uv_primitive_count != primitive_count:
+            fail(errors, f"ship UV coverage incomplete: {uv_primitive_count}/{primitive_count} primitives")
+        if normal_primitive_count != primitive_count:
+            fail(errors, f"ship normal coverage incomplete: {normal_primitive_count}/{primitive_count} primitives")
 
     summary = {
         "file": str(path.relative_to(ROOT)),
