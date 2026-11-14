@@ -94,35 +94,34 @@ void UGFShipFlightComponent::TickComponent(
     const float EffectiveMaxSpeed = MaxSpeed * (bBoosting ? BoostSpeedMultiplier : 1.0f);
     Velocity = Velocity.GetClampedToMaxSize(EffectiveMaxSpeed);
 
-    // Match Godot's rate-based pitch/yaw/roll angular inertia.
+    // Apply exactly one angular response per tick: accelerate while input is
+    // held, otherwise stabilise toward zero. Applying both in one tick stacks
+    // two damping steps and makes release substantially too abrupt.
     const FVector DesiredAngularVelocity = RotationInput * RotationSpeed;
-    AngularVelocity = FMath::VInterpConstantTo(
-        AngularVelocity,
-        DesiredAngularVelocity,
-        DeltaTime,
-        RotationAcceleration);
+    if (RotationInput.IsNearlyZero())
+    {
+        AngularVelocity = FMath::VInterpConstantTo(
+            AngularVelocity, FVector::ZeroVector, DeltaTime, RotationStabilization);
+    }
+    else
+    {
+        AngularVelocity = FMath::VInterpConstantTo(
+            AngularVelocity, DesiredAngularVelocity, DeltaTime, RotationAcceleration);
+    }
 
     Owner->AddActorLocalRotation(FRotator(
         FMath::RadiansToDegrees(AngularVelocity.X * DeltaTime),
         FMath::RadiansToDegrees(AngularVelocity.Y * DeltaTime),
         FMath::RadiansToDegrees(AngularVelocity.Z * DeltaTime)));
 
-    if (RotationInput.IsNearlyZero())
-    {
-        AngularVelocity = FMath::VInterpConstantTo(
-            AngularVelocity,
-            FVector::ZeroVector,
-            DeltaTime,
-            RotationStabilization);
-    }
-
-    // Mouse look is immediate and consumed once per tick, independently of
-    // keyboard angular inertia, matching the existing Godot controller.
+    // DefaultInput.ini maps MouseX with +1 and MouseY with -1. Positive Unreal
+    // yaw turns right, so horizontal mouse motion must keep its positive sign.
     if (!PendingMouseDelta.IsNearlyZero())
     {
-        constexpr float MouseRadiansPerPixel = 0.00024f;
-        const float MouseYaw = FMath::RadiansToDegrees(-PendingMouseDelta.X * MouseRadiansPerPixel);
-        const float MousePitch = FMath::RadiansToDegrees(-PendingMouseDelta.Y * MouseRadiansPerPixel);
+        const float MouseYaw = FMath::RadiansToDegrees(
+            PendingMouseDelta.X * MouseLookRadiansPerPixel);
+        const float MousePitch = FMath::RadiansToDegrees(
+            -PendingMouseDelta.Y * MouseLookRadiansPerPixel);
         Owner->AddActorLocalRotation(FRotator(MousePitch, MouseYaw, 0.0f));
         PendingMouseDelta = FVector2D::ZeroVector;
     }
