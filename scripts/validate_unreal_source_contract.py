@@ -73,7 +73,8 @@ def main():
             "Missing saved selection must resolve to the starter ship")
     require("DebugSelectShipByIndex" in pawn_h and
             "#if !UE_BUILD_SHIPPING" in pawn_h and
-            "Profile->SelectedShipId = PreviousSelection" in pawn_cpp and
+            "DebugShipOverrideId = NAME_None" in pawn_cpp and
+            "UGFGameCatalog::FindShip(DebugShipOverrideId, Definition)" in pawn_cpp and
             "AddOnScreenDebugMessage" in pawn_cpp,
             "Debug ship selection must be development-only, temporary and report the chosen ship")
     require(all(f"BindKey(EKeys::{key}" in controller_cpp for key in
