@@ -5,6 +5,7 @@ Run: blender --background --python scripts/blender/build_enemy_interceptor.py --
 """
 import bpy, math, os, sys
 from mathutils import Vector
+from pbr_surface_maps import apply_exportable_surface_maps
 
 def outdir():
     args=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -26,6 +27,8 @@ def mat(name, color, metal=.65, rough=.32, emission=None, strength=0):
     l.new(coords.outputs["Generated"],tex.inputs["Vector"])
     l.new(tex.outputs["Fac"],bump.inputs["Height"]); l.new(bump.outputs["Normal"],p.inputs["Normal"])
     l.new(tex.outputs["Fac"],rough_map.inputs["Value"]); l.new(rough_map.outputs["Result"],p.inputs["Roughness"])
+    if any(token in name.lower() for token in ("graphite", "obsidian", "ceramic", "titanium", "armor", "hull")):
+        apply_exportable_surface_maps(m, p, color, rough, name)
     return m
 
 def finish(o,m,bevel=.04):
