@@ -14,7 +14,7 @@ bool FGFGameCatalogIntegrityTest::RunTest(const FString& Parameters)
     const TArray<FGFModuleDefinition> Modules = UGFGameCatalog::GetModules();
     const TArray<FGFContractDefinition> Contracts = UGFGameCatalog::GetContracts();
 
-    TestEqual(TEXT("Four flyable ships are preserved"), Ships.Num(), 4);
+    TestEqual(TEXT("All seven catalog ships are preserved"), Ships.Num(), 7);
     TestEqual(TEXT("Five ship modules are preserved"), Modules.Num(), 5);
     TestEqual(TEXT("Three contract definitions are preserved"), Contracts.Num(), 3);
 
