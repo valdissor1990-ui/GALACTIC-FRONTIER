@@ -1,0 +1,38 @@
+name: Unreal Source Asset Contract
+
+on:
+  push:
+    branches:
+      - chatgpt/unreal-migration-ue5.8
+    paths:
+      - "assets/models/ships/**"
+      - "Unreal/Content/Python/setup_galactic_frontier.py"
+      - "scripts/validate_unreal_asset_contract.py"
+      - ".github/workflows/unreal-source-asset-contract.yml"
+  pull_request:
+    paths:
+      - "assets/models/ships/**"
+      - "Unreal/Content/Python/setup_galactic_frontier.py"
+      - "scripts/validate_unreal_asset_contract.py"
+      - ".github/workflows/unreal-source-asset-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate GLB source contract and Editor script syntax
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Unreal Editor Python script syntax
+        run: python -m py_compile Unreal/Content/Python/setup_galactic_frontier.py scripts/validate_unreal_asset_contract.py
+      - name: Validate all ship GLB files
+        run: python scripts/validate_unreal_asset_contract.py
